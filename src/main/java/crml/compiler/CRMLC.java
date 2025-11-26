@@ -194,7 +194,7 @@ public class CRMLC {
           System.out.println("File : " + out_file.toString() + " within : " + within);
           if(!within.isEmpty())
             writer.write("within " + within + ";\n");
-          writer.write(result.contents);
+          writer.write(result.toModelica());
           writer.close();
           logger.trace("Translated: " + file);
           logger.trace("Output Modelica file: " + out_file.getAbsolutePath());

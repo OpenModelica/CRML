@@ -84,7 +84,7 @@ integrate : 'integrate' exp 'on' exp;
 
 tick : 'tick' id;
     
- exp : sub_exp | id | constant | constructor | sum |trim |  proj | period_op 
+ exp : sub_exp | id | constant | constructor | sum |trim |  proj | period_op | iterator
 	 //| 'apply' cat=id 'on' '(' exp ')'
 	 | right=exp runary=right_op 
 	 | lunary=builtin_op left=exp 
@@ -95,6 +95,8 @@ tick : 'tick' id;
  	 | 'element' | 'terminate' | when_exp | exp 'at' at=exp 
  	 | integrate | tick |crml_component_reference | if_exp | set_def | 'evaluate' exp ;
  	 
+iterator : name= IDENT '.element';
+
 if_exp : 'if' if_e=exp 'then' then_e=exp ('else' else_e=exp);
 
 constructor : 'new' type exp;

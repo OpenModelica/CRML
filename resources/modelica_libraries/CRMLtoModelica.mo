@@ -572,6 +572,15 @@ end cvBooleanToBoolean4;
 
     end ClockAdd;
 
+    model setAnd
+    
+    input Types.Boolean4 [:] r1;
+    
+    output Types.Boolean4 out;
+    equation
+
+    end setAnd;
+
 
 
   

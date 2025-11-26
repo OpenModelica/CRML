@@ -1,5 +1,9 @@
+//model TrafficLightSpecification is flatten ETLlibrary union {
+
 model TrafficLightSpecification is {
 // Requirement model for the traffic light example
+
+
 
 	// User-defined types and operators
 		// Definition of Requirement type
@@ -34,7 +38,7 @@ model TrafficLightSpecification is {
 			// Operators for the evaluation of requirements
 			// Check
 			Operator [ Boolean ] 'check' Boolean phi 'over' Periods P 
-				= and ('evaluate' phi 'over' P);
+				= and ('evaluate' phi 'over' P.element);
   
 			// Category c1 is Category increasing1 
 				//= { (>, >), (>=, >=), (<, >=), (<=, >), (==, >), (<>, >) };
@@ -64,7 +68,7 @@ model TrafficLightSpecification is {
 			// Checking that the number of event occurrences at the end of a time period is lower or higher than a threshold
 			// Option 1: without category
 			Operator [ Boolean ] Periods P 'check count' Clock E '==' Integer n 
-			= 'check'(('count' E 'inside' P) == n) 'over' P;
+			= 'check'(('count' E 'inside' P.element) == n) 'over' P;
 			
 			// // Option 2 (later support): with category
 			// Operator [ Boolean ] Periods P 'check count' Clock E '==' Integer n 

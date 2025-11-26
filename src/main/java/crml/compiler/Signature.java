@@ -1,6 +1,9 @@
-package crml.compiler;
+ package crml.compiler;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
@@ -37,73 +40,36 @@ public class Signature {
 		this.mtype = t;
 		this.variable_types = params;
 		this.return_type = return_t;
-		if(params.size()==1)
-			this.variable_is_set = Arrays.asList(false);
-		else
-			this.variable_is_set = Arrays.asList(false, false);
+		this.variable_is_set = new ArrayList<Boolean>();
+		for (int i=0; i < params.size(); i++){
+			this.variable_is_set.add(false);
+		}
 		this.is_return_set=false;
 		this.temp_var_name = name; // unless otherwise specified
 	}
 	
 	public Signature(String name, List<String> params, String return_t, String out_var_name, Type t) {
-		this.function_name = name;
-		this.mtype = t;
-		this.variable_types = params;
-		this.return_type = return_t;
-		if(params.size()==1)
-			this.variable_is_set = Arrays.asList(false);
-		else
-			this.variable_is_set = Arrays.asList(false, false);
-		this.is_return_set=false;
+		this(name, params, return_t, t);
 		this.temp_var_name = out_var_name; 
 	}
 	
 	public Signature(String name, List<String> params, List<String> param_names, String return_t, Type t) {
-		this.function_name = name;
-		this.mtype = t;
-		this.variable_types = params;
+		this(name, params, return_t, t);
 		this.variable_names= param_names;
-		this.return_type = return_t;
-		if(params.size()==1)
-			this.variable_is_set = Arrays.asList(false);
-		else
-			this.variable_is_set = Arrays.asList(false, false);
-		this.is_return_set=false;
-		this.temp_var_name = name; // unless otherwise specified
 	}
 	
 	public Signature(String name, List<String> params, List<String> param_names, String return_t, String out_var_name, Type t) {
-		this.function_name = name;
-		this.mtype = t;
-		this.variable_types = params;
-		this.variable_names= param_names;
-		this.return_type = return_t;
-		if(params.size()==1)
-			this.variable_is_set = Arrays.asList(false);
-		else
-			this.variable_is_set = Arrays.asList(false, false);
-		this.is_return_set=false;
-		this.temp_var_name = out_var_name; // unless otherwise specified
+		this(name, params, param_names, return_t, t); 
+		this.temp_var_name = out_var_name; 
 	}
 	
 	public Signature(String name, List<String> params, List<String> param_names, String return_t, Type t, List<Boolean> isSet, Boolean returnSet) {
-		this.function_name = name;
-		this.mtype = t;
-		this.variable_types = params;
-		this.variable_names= param_names;
-		this.return_type = return_t;
-		this.variable_is_set = isSet;
+		this(name, params, param_names, return_t, t); 
 		this.is_return_set=returnSet;
-		this.temp_var_name = name; // unless otherwise specified
 	}
 	
 	public Signature(String name, List<String> params, List<String> param_names, String return_t, Type t, String out_var_name, List<Boolean> isSet, Boolean returnSet) {
-		this.function_name = name;
-		this.mtype = t;
-		this.variable_types = params;
-		this.variable_names= param_names;
-		this.return_type = return_t;
-		this.variable_is_set = isSet;
+		this(name, params, param_names, return_t, t); 
 		this.is_return_set=returnSet;
 		this.temp_var_name = out_var_name;
 	}
