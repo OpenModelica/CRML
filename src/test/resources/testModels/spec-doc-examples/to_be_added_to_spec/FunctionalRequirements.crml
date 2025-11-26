@@ -1,0 +1,27 @@
+model FunctionalRequirements is {
+
+	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P = phi 'or'  new Boolean (P end));
+	Operator [ Boolean ] 'evaluate' Boolean phi 'over' Period P = integrate (('decide' phi 'over' P) * phi) on P;
+	Operator [ Boolean ] 'check' Boolean phi 'over' Periods P = and ({'evaluate' phi 'over' P.element}); 
+	//	and ({'evaluate' phi 'over' P.element})
+	//		= and( {'evaluate' phi 'over' P.e1, ..., 'evaluate' phi 'over' P.en} )
+	//		= 'evaluate over'(phi, P.e1) and ... and 'evaluate over'(phi, P.en)
+	//		= fold( and, {'evaluate' phi 'over' P.element})
+	//		= fold( and, map( 'evaluate over', P))
+		
+	Periods P1;
+	Periods P2;
+	
+	Boolean phi;
+	
+	Boolean R1 is 'check' phi 'over' P1;
+	Boolean R2 is 'check' phi 'over' P2;
+	Boolean R_on_all_periods is 'check' phi 'over' (P1 union P2); // Illegal (i.e. currently not defined) since Periods are not considered as typed set and 'union' operator is not defined for this specific type
+	Boolean R_on_all_periods2 is ('check' phi 'over' P1) and ('check' phi 'over' P2); // OK but a 'functional notation' would be preferable to be more concise
+	Boolean R_on_all_periods3 is 'check' phi 'over' {P1,P2}; // Should be equivalent to R_on_all_periods2
+	//  'check' phi 'over' {P1,P2}
+	//		= 'check over'(phi,{P1,P2})
+	//		= and( { 'evaluate over'( phi , {P1,P2}.element ) } )
+	//		= and( { 'evaluate over'( phi , P1.element ) }, { 'evaluate over'( phi , P2.element ) } )
+	//		= fold( 'check over', phi, {P1, P2} )
+};
