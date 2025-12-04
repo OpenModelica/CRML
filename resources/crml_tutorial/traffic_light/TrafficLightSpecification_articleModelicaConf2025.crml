@@ -1,0 +1,54 @@
+model TrafficLightSpecification_article is 
+ // Import of libraries
+ flatten {ETL, FORM_L}
+ union {
+ // List of external variables
+ Boolean red is external;
+ Boolean yellow is external;
+ Boolean green is external;
+ 
+ Boolean operation is external;
+ Boolean night_mode is external;
+ Boolean day_mode is not night_mode;
+
+ // Definition of requirements
+ // req0: "During operation, no more than one light should be on (a flashing mode could be specified later)"
+ Boolean{} lights is {red, yellow, green};
+ Integer n_lights_on is card { filter lights (element == true) };
+ 
+ Requirement req0 is
+  ('during' operation) ('check anytime' (n_lights_on <= 1) );
+ 
+ // Day_mode
+ // req1: "After green, next step is yellow"
+ Requirement req1 is 
+  (( 'after' ( green 'becomes true' ) 'before' ( yellow 'becomes true' )) while day_mode)
+  ('check count' (red 'becomes true') '==' 0);
+
+ // req2: "Step green should stay active for at least 30 seconds"
+ Requirement req2 is
+  (( 'after' (green 'becomes true') 'for' 30) while day_mode)
+  ('ensure' green);
+
+ // req3: "After green becomes active + 30 seconds, next step should turn yellow within 0.2 seconds"
+ Requirement req3 is
+  (( 'after' (green 'becomes true' + 30) 'for' 0.2) while day_mode)
+  ('check at end' yellow);
+ 
+ // Night_mode
+ // req4: "During night, yellow should only be used"
+ Requirement req4 is
+  ('during' night_mode)
+  ('check count' ( (red or green) 'becomes true') '==' 0);
+ // req5: "During night, yellow should flash every 2 seconds"
+ Requirement req5a is
+  ('during' night_mode) 
+  ('check count' ( yellow 'becomes true') '<>' 0);
+ Requirement req5b is
+  ('after' ( yellow 'becomes true') 'within' 2) while night_mode)
+  ('ensure' yellow); 
+ Requirement req5c is
+  ('after' ( yellow 'becomes true') 'for' 2) while night_mode)
+  ('check at end' not yellow); 
+ Requirement req5 is req5a and req5b and req5c; 
+};
