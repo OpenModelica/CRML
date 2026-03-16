@@ -37,16 +37,7 @@ plugins {
     implementation "com.aventstack:extentreports:5.0.9"
 
     implementation 'com.j2html:j2html:1.6.0' 
-    }
-
-    sourceSets { // adding tests to source directories to run test suite
-    main {
-        java {
-            srcDir 'src/test/java'
-        }
-    }
-}
-    
+}    
 
 task(crmlc, dependsOn: 'classes', type: JavaExec) {
    mainClass = 'crml.compiler.CRMLC'
@@ -93,3 +84,5 @@ compileJava {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 }
+
+// Use: ./gradlew test --tests "ctests.*TLTests"
