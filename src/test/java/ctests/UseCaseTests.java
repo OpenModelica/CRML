@@ -1,6 +1,7 @@
 package ctests;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,7 @@ public class UseCaseTests {
 	@Test
 	void testTraficLight () throws InterruptedException, IOException, ModelicaSimulationException{
 		String filePath = "traffic_light/";
-		Util.runTest(filePath, cs, CompileStage.TRANSLATE);
+		Util.runTest(Path.of(filePath), cs, CompileStage.TRANSLATE);
 	}
 
 	/** @DisplayName("Pumping System use-case test")

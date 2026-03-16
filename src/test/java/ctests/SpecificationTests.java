@@ -1,6 +1,7 @@
 package ctests;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +36,7 @@ public class SpecificationTests {
         @ParameterizedTest
 	    @MethodSource("fileNameSource")
 	    public void simulateTestFile(final String fileName) throws InterruptedException, IOException, ModelicaSimulationException {
-		    Util.runTest(fileName, cs, CompileStage.VERIFY);
+		    Util.runTest(Path.of(fileName), cs, CompileStage.VERIFY);
 	    }
     }
 }

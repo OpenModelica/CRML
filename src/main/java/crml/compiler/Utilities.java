@@ -1,6 +1,7 @@
 package crml.compiler;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.antlr.v4.runtime.misc.Utils;
@@ -14,9 +15,8 @@ public class Utilities {
      * /path/to/some/FILE.ext -> FILE
      * @return
      */
-    public static String stripNameEndingAndPath(String name) {
-        File f = new File(name);
-        String fileName = f.getName();
+    public static String stripNameEndingAndPath(Path name) {
+        String fileName = name.getFileName().toString();
         // check if it even has an extension and return the name if not!
         int dotPos = fileName.lastIndexOf('.');
         if (dotPos == -1) {

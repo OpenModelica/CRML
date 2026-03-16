@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
@@ -83,7 +84,7 @@ public class OMCUtil {
     return new File(startedFrom + java.io.File.separator + CompileSettings.CRMLLibrary);
   }
 
-  public static String generateSimulationScript(String stripped_file_name, String verifModelFolder, String out_dir) throws IOException {
+  public static String generateSimulationScript(String stripped_file_name, Path verifModelFolder, Path out_dir) throws IOException {
     File crml2Modelica = getCRMLToModelicaFile();
     File crmlLib = getCRMLLibrary();
 
@@ -112,14 +113,14 @@ public class OMCUtil {
       "getErrorString();\n";
    
     // check if there is a simulation example to run the test-case
-    File verif_model = new File(Utilities.addDirToPath(verifModelFolder, stripped_file_name));
+    File verif_model = verifModelFolder.resolve(stripped_file_name).toFile();
     
     if(verif_model.exists()) {
       // copy files 
       File [] fnames = verif_model.listFiles();
       
       for (File f : fnames) {
-        Files.copy(f.toPath(), Paths.get(out_dir, f.getName()), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(f.toPath(), out_dir.resolve(f.getName()), StandardCopyOption.REPLACE_EXISTING);
         //System.err.println(f.getName());
       }
       mos_text += "if not loadFile(\""+ Utilities.toUnixPath(crmlLib.getAbsolutePath()) + "\") then\n" +
@@ -162,7 +163,7 @@ public class OMCUtil {
     return mos_text;
   }
 
-    public static OMCmsg compile(String stripped_file_name, String out_dir, CompileSettings cs) throws ModelicaSimulationException, IOException, InterruptedException {
+    public static OMCmsg compile(String stripped_file_name, Path out_dir, CompileSettings cs) throws ModelicaSimulationException, IOException, InterruptedException {
     
     String filePrefix = out_dir + java.io.File.separator + stripped_file_name;
     String script_file_name =  filePrefix + ".mos";
@@ -171,7 +172,7 @@ public class OMCUtil {
     
     // check if a reference file to compare to is available
 
-    File ref_file = new File(Utilities.addDirToPath(cs.referenceResFolder, stripped_file_name + "_verif_ref.mat"));
+    File ref_file = cs.referenceResFolder.resolve(stripped_file_name + "_verif_ref.mat").toFile();
     
     if(ref_file.exists()){
       mos_text +=  OMCUtil.compareSimulationResults(stripped_file_name + "." + stripped_file_name + "_verif_res.mat", ref_file.getPath());
@@ -191,7 +192,7 @@ public class OMCUtil {
     String omc = locateOMC();
     
     // calling omc
-    cs.processBuilder.directory(new File(out_dir));
+    cs.processBuilder.directory(out_dir.toFile());
     cs.processBuilder.command(omc, stripped_file_name + ".mos");
 
     Process process = cs.processBuilder.redirectErrorStream(true).start();

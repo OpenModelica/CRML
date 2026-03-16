@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,32 +80,31 @@ public class CRMLC {
     }
 
     if(cmd.simulate != null)
-      cs.verifModelFolder = cmd.simulate;
+      cs.verifModelFolder = Path.of(cmd.simulate);
     
     if(cmd.verify != null)
-      cs.referenceResFolder = cmd.verify;
+      cs.referenceResFolder = Path.of(cmd.verify);
     
     logger.trace("Output dir: " + cmd.outputDir);
     // remove quotes if they exist
-    cmd.outputDir = cmd.outputDir.replace("\"", "");
+    //cmd.outputDir = cmd.outputDir.replace("\"", "");
       
-    File out_dir = new File(cmd.outputDir);
+    File out_dir = cmd.outputDir.toFile();
     out_dir.mkdir();
 
     logger.trace("Directory for generated .mo files: [" + out_dir.getPath() + "] absolute path: [" + out_dir.getAbsolutePath() + "]");
 
     for(String f : cmd.files){
        // remove quotes if they exist
-       f = f.replace("\"", "");
-       String path = new File(f).getCanonicalPath();
-       File file = new File ( path );
+       Path path = Path.of(f.replace("\"", ""));
+       File file = path.toFile();
        String [] testFiles;
        if (file.isDirectory()){
           testFiles=file.list();
            for (String test : testFiles) {
             if(test.endsWith(".crml")) {
             logger.trace("Translating test: " + test);
-              parse_file(path, test, cmd.outputDir, cmd.stacktrace, cmd.printAST , 
+              parse_file(path, Path.of(test), cmd.outputDir, cmd.stacktrace, cmd.printAST , 
                 cmd.generateExternal, cmd.within, cmd.causal);
               if(cmd.simulate!=null) {
                 OMCmsg msg;
@@ -123,8 +123,8 @@ public class CRMLC {
         } else if (file.isFile()){
         logger.trace("Translating file: " + file);
           String stripped_file_name = Utilities.stripNameEndingAndPath(path);
-          String outputDir = Utilities.addDirToPath(cmd.outputDir, stripped_file_name);
-          parse_file("", path, outputDir, cmd.stacktrace, 
+          Path outputDir = cmd.outputDir.resolve(stripped_file_name);
+          parse_file(Path.of(""), path, outputDir, cmd.stacktrace, 
             cmd.printAST, cmd.generateExternal, cmd.within, cmd.causal);
          if(cmd.simulate!=null){
                 OMCmsg msg;
@@ -145,8 +145,8 @@ public class CRMLC {
   }
 
   public static void parse_file (
-      String dir, String file, 
-      String gen_dir, Boolean testMode, Boolean printAST,
+      Path dir, Path file, 
+      Path gen_dir, Boolean testMode, Boolean printAST,
       Boolean generateExternal,
       String within,
       Boolean causal) throws Exception {
@@ -185,8 +185,7 @@ public class CRMLC {
   
         if (result != null) {  	
         
-          File out_file = new File(gen_dir + java.io.File.separator + 
-            Utilities.stripNameEndingAndPath(Utilities.removeWindowsDriveLetter(file)) + ".mo");
+          File out_file = gen_dir.resolve(Utilities.stripNameEndingAndPath(file) + ".mo").toFile();
         
           out_file.getParentFile().mkdirs();   	
         
@@ -257,7 +256,6 @@ public class CRMLC {
     String testSuitePackage = "ctests";
     SummaryGeneratingListener listener = new SummaryGeneratingListener();
     TestListener tl = new TestListener();
-
     LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
       .selectors(
           DiscoverySelectors.selectPackage(testSuitePackage))

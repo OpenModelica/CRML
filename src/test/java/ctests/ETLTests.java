@@ -3,6 +3,7 @@ package ctests;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +35,7 @@ public class ETLTests  {
         @ParameterizedTest
         @MethodSource("fileNameSource")
         public void simulateTestFile(final String fileName) throws InterruptedException, IOException, ModelicaSimulationException {
-            OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
+            OMCmsg ret = Util.runTest(Path.of(fileName), cs, CompileStage.SIMULATE);
             files = ret.files;
             if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
 			fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 

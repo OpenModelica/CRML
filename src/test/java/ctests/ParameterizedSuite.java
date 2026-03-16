@@ -26,7 +26,7 @@ public class ParameterizedSuite {
 	public static List<String> fileNameSource() throws IOException {
 		List<String> fileList;
 		
-		try (Stream<Path> list = Files.list(Paths.get(cs.testFolderIn))) {
+		try (Stream<Path> list = Files.list(cs.testFolderIn)) {
 			fileList = list.map(path -> path.getFileName()
 					.toString())
 					.filter(name -> name.endsWith(".crml")).collect(Collectors.toList());

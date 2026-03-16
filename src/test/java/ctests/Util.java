@@ -2,6 +2,7 @@ package ctests;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import crml.compiler.CompileSettings;
 import crml.compiler.ModelicaSimulationException;
@@ -24,13 +25,13 @@ public class Util {
 	 * @throws IOException
 	 * @throws ModelicaSimulationException
 	 */
-	static OMCmsg runTest( final String fileName, 
+	static OMCmsg runTest( final Path fileName, 
 						final CompileSettings cs,
 						final CompileStage stage) 
 							throws InterruptedException, IOException, ModelicaSimulationException {
 		
 		String stripped_file_name = Utilities.stripNameEndingAndPath(fileName);
-		String out_dir = Utilities.addDirToPath(cs.outputFolder, stripped_file_name);
+		Path out_dir = cs.outputFolder.resolve(stripped_file_name);
 
 		// try compiling crml to modelica
 		try {
@@ -43,9 +44,9 @@ public class Util {
 		}
 
 		if (stage == CompileStage.TRANSLATE) {
-			String fullName = out_dir + java.io.File.separator + stripped_file_name + ".mo";
-			File mo_file = new File (fullName);
-			String files =  p(join(a(fullName).withHref(mo_file.toURI().toString()), br())).render();
+			Path fullName = out_dir.resolve(stripped_file_name + ".mo") ;
+			File mo_file = fullName.toFile();
+			String files =  p(join(a(fullName.toAbsolutePath().toString()).withHref(mo_file.toURI().toString()), br())).render();
 			System.out.println("STAGE + " + CompileStage.TRANSLATE);
 			return new OMCmsg(files, "");
 		}

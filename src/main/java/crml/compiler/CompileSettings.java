@@ -2,13 +2,14 @@ package crml.compiler;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Path;
 
 public class CompileSettings {
     
-    public String testFolderIn;
-	public String verifModelFolder;
-    public String referenceResFolder;
-    public String outputFolder = defaultOutputRoot; // if not set explicitly
+    public Path testFolderIn;
+	public Path verifModelFolder;
+    public Path referenceResFolder;
+    public Path outputFolder = Path.of(defaultOutputRoot); // if not set explicitly
     public String within = ""; 
 
     static final String defaultOutputRoot = "build/testSuiteGenerated";
@@ -19,10 +20,10 @@ public class CompileSettings {
     public ProcessBuilder processBuilder; // used for running omc commands
 
     public void initAllDirs(String testF, String verifF, String refResF, String subFolder){
-        String sf =  java.io.File.separator + subFolder;
-        testFolderIn = getResourcePath(testF) + sf;
-        verifModelFolder = getResourcePath(verifF) + sf;
-        referenceResFolder = getResourcePath(refResF) + sf;
+        //File sf =  new File(subFolder);
+        testFolderIn = getResourcePath(testF).resolve(subFolder);
+        verifModelFolder = getResourcePath(verifF).resolve(subFolder);
+        referenceResFolder = getResourcePath(refResF).resolve(subFolder);
     }
 
      public void initTestDir(String testF){
@@ -35,22 +36,17 @@ public class CompileSettings {
      * Puts the tests in a sub-folder in the default putput directory
      */
     public void setOutputSubFolder(String subFolder){
-        outputFolder = defaultOutputRoot + java.io.File.separator + subFolder;
+        outputFolder = Path.of(defaultOutputRoot, subFolder);
     }
 
-    private static String getResourcePath(String dirName){
+    private static Path getResourcePath(String dirName){
         System.out.println(Thread.currentThread().getContextClassLoader().toString());
 
         URL url = Thread.currentThread().getContextClassLoader().getResource(dirName);
-        String path;
-        
-            if(url != null) {
-                path = url.getPath();
-                path = Utilities.removeWindowsDriveLetter(path);
-            } else {
-                String dir = "src/test/resources/" + dirName; 
-                path = new File(dir).getAbsolutePath();
-            }            
-		return path;
+        if(url != null) {
+            return Path.of(url.getPath());
+        } else {
+            return Path.of("src/test/resources/", dirName);
+        }            
 	}
 }
