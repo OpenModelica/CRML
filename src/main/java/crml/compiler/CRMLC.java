@@ -3,7 +3,6 @@ package crml.compiler;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,20 +18,10 @@ import grammar.crmlLexer;
 import grammar.crmlParser;
 
 import org.apache.logging.log4j.Logger;
-import org.junit.platform.launcher.Launcher;
-import org.junit.platform.launcher.LauncherDiscoveryRequest;
-import org.junit.platform.launcher.LauncherSession;
-import org.junit.platform.launcher.TestPlan;
-import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
-import org.junit.platform.launcher.core.LauncherFactory;
-import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
-import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import com.beust.jcommander.JCommander;
 
 import org.apache.logging.log4j.LogManager;
-import org.junit.platform.engine.discovery.ClassNameFilter;
-import org.junit.platform.engine.discovery.DiscoverySelectors;
 
 
 
@@ -44,7 +33,6 @@ import org.junit.platform.engine.discovery.DiscoverySelectors;
 public class CRMLC {
 
    private static final Logger logger = LogManager.getLogger();	
-   private static Launcher launcher;
 
    public static void main( String[] args ) throws Exception {
 
@@ -119,7 +107,7 @@ public class CRMLC {
          if(cmd.simulate!=null){
                 OMCmsg msg;
                 try {
-                  msg = OMCUtil.compile(file.getPath(), cmd.outputDir, cs);
+                  msg = OMCUtil.compile(file.getPath(), cmd.outputDir, cs);// TODO: Why does it get path for Stripped file name?
                   if(msg.msg.contains("false"))
                   logger.error("Unable to load Modelica model " + file + 
                       "\n omc fails with the following message: \n" + msg);
