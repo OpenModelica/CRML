@@ -1,9 +1,6 @@
  package crml.compiler;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
@@ -65,6 +62,7 @@ public class Signature {
 	
 	public Signature(String name, List<String> params, List<String> param_names, String return_t, Type t, List<Boolean> isSet, Boolean returnSet) {
 		this(name, params, param_names, return_t, t); 
+		this.variable_is_set = isSet;
 		this.is_return_set=returnSet;
 	}
 	
