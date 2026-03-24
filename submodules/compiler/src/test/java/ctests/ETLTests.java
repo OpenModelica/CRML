@@ -19,7 +19,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 
 
 public class ETLTests extends ParameterizedSuite {
-    //public static String files="blanc";
     public static CompileSettings cs;
     
     static List<Path> fileNameSource() {

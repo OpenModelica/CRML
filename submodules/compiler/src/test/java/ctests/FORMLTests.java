@@ -19,7 +19,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 
 
 public class FORMLTests extends ParameterizedSuite {
-    public static String files="blanc";
     public static CompileSettings cs;
 
     static List<Path> fileNameSource() {
@@ -43,8 +42,8 @@ public class FORMLTests extends ParameterizedSuite {
         OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
         emit(ret.files);
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
-		fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 
-		new Throwable( "\n omc fails with the following message: \n" + ret.msg));
+		    fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 
+		            new Throwable( "\n omc fails with the following message: \n" + ret.msg));
 	
     }
 }
