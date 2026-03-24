@@ -53,7 +53,6 @@ public class ParameterizedSuite {
 			return list
 				.filter(Files::isRegularFile)
             	.filter(p -> p.toString().endsWith(".crml"))
-				.limit(5)
             	.collect(Collectors.toList());
 		} catch (IOException e) {
 			// Test configuration is expected to be correct, 
