@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import crml.compiler.omc.OMCmsg;
+import crml.compiler.util.SharedParameter;
 import crml.compiler.Utilities;
 import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.omc.CompileSettings;
@@ -41,6 +42,7 @@ public class ETLTests extends ParameterizedSuite {
     @ParameterizedTest
     @MethodSource("fileNameSource")
     public void simulateTestFile(final Path fileName) throws InterruptedException, IOException, ModelicaSimulationException {
+        emit(fileName, SharedParameter.CRML_FILE_KEY);
         OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
 
         emit(ret.files);

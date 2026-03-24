@@ -1,12 +1,14 @@
 package crml.compiler.util;
 
-import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -23,16 +25,20 @@ import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
+import crml.compiler.omc.OMCUtil.OMCFilesLog;
+
 import static com.aventstack.extentreports.Status.FAIL;
 import static com.aventstack.extentreports.Status.INFO;
 import static com.aventstack.extentreports.Status.WARNING;
+
+import static j2html.TagCreator.*;
 
 public class TestListener implements TestExecutionListener, AfterEachCallback  {
   private final ExtentSparkReporter reporter = new ExtentSparkReporter("build"+ java.io.File.separator+ "test_report.html");
   private final ExtentReports extentReport = new ExtentReports();
   private static final Map<TestIdentifier, TestExecutionResult> RESULTS = new HashMap<>();
   private static final Map<TestIdentifier, String> SKIPPED = new HashMap<>();
-  private static final Map<String, String> FILES = new HashMap<>();
+  private static final Map<String, Map<String,? extends Object>> SHARED = new HashMap<>();
 
   @Override
   public void testPlanExecutionStarted(TestPlan testPlan) {
@@ -79,8 +85,33 @@ public class TestListener implements TestExecutionListener, AfterEachCallback  {
 
     final ExtentTest node = testKlass.createNode(name);
 
-    if(FILES.containsKey(test.getDisplayName())){
-      node.info(FILES.get(test.getDisplayName()));
+    for(Entry<String, ? extends Object> entry : SHARED.getOrDefault(test.getDisplayName(), new HashMap<String, Object>()).entrySet()){
+      if(entry.getValue() instanceof OMCFilesLog files){
+        node.info(
+          join(
+            p(join(entry.getKey(), br())),
+            p(join(
+              Stream.<Path>of(files.files()).map(f -> 
+                join(a(f.toString()).withHref(f.toUri().toString()), br())
+              ).toArray())
+            )
+          ).render()
+        );
+      } else if (entry.getValue() instanceof Path path){
+        node.info(
+          join(
+            p(join(entry.getKey(), br())),
+            p(a(path.toString()).withHref(path.toUri().toString()))
+          ).render()
+        );
+      } else {
+        node.info(
+          join(
+            p(join(entry.getKey(), br())),
+            p(entry.getValue().toString())
+          ).render()
+        );
+      }
     }
       
     
@@ -143,8 +174,6 @@ public class TestListener implements TestExecutionListener, AfterEachCallback  {
 
     @Override
     public void afterEach(final ExtensionContext context) throws Exception {
-        String message = Objects.toString(context.getStore(SharedParameter.MESSAGE_NAMESPACE).get(SharedParameter.OMC_MESSAGE_KEY));
-        if(message!=null)
-          FILES.put(context.getDisplayName(), message);
+        SHARED.put(context.getDisplayName(), SharedParameter.asMap(context));
     }
 }

@@ -12,13 +12,7 @@ import crml.compiler.omc.OMCUtil.OMCFilesLog;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
 
-import java.io.File;
-
-import static j2html.TagCreator.*;
-
 public class Util {
-
-
 	/**
 	 * General method for test cases
 	 * @param fileName

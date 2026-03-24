@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
+import crml.compiler.omc.OMCmsg;
+import crml.compiler.util.SharedParameter;
 
 /**
  * 
@@ -23,7 +25,7 @@ import crml.compiler.omc.ModelicaSimulationException;
 public class SpecificationTests extends ParameterizedSuite {
 	public static CompileSettings cs;
 
-	static List<Path> fileNameSource() {
+        static List<Path> fileNameSource() {
         return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels","spec-doc-examples"));
     }
 
@@ -40,6 +42,8 @@ public class SpecificationTests extends ParameterizedSuite {
     @ParameterizedTest
     @MethodSource("fileNameSource")
 	public void simulateTestFile(final Path fileName) throws InterruptedException, IOException, ModelicaSimulationException {
-	    Util.runTest(fileName, cs, CompileStage.VERIFY);
+	    emit(fileName, SharedParameter.CRML_FILE_KEY);
+                OMCmsg ret = Util.runTest(fileName, cs, CompileStage.VERIFY);
+        emit(ret.files);
 	}
 }

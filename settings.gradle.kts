@@ -11,8 +11,7 @@ rootProject.name = "crml-compiler"
 
 include(
         "language",
-        "compiler"//,
-        //"integration"
+        "compiler"
 )
 for (project in rootProject.children) {
     val projectName = project.name

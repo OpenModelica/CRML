@@ -30,11 +30,15 @@ public class ParameterizedSuite {
 	public void emit(Object message){
 		context.put(SharedParameter.OMC_MESSAGE_KEY, message);
 	}
-
+	public void emit(Object message, String key){
+		context.put(key, message);
+	}
 	static {
 		try {
-			RESOURCES = Paths.get(Thread.currentThread().getContextClassLoader().getResource("").toURI());
+			RESOURCES = Paths.get(Thread.currentThread().getContextClassLoader().getResource("compilerTestRoot").toURI()).getParent();
+			System.out.println("Resources: "+RESOURCES);
 			OUT = Path.of("build","testSuiteGenerated");
+			System.out.println("Output:"+OUT);
 		} catch (URISyntaxException e) {
 			// Test configuration is expected to be correct, 
 			// therefore, we just wrap potential errors in a runtime exception to hide it in code.

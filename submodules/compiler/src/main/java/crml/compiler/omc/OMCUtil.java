@@ -13,11 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import crml.compiler.Utilities;
-
-import static j2html.TagCreator.*;
 
 /**
  * Wrapper for OpenModelica compiler calls
@@ -25,25 +22,7 @@ import static j2html.TagCreator.*;
 public class OMCUtil {
     public enum CompileStage {TRANSLATE, SIMULATE, VERIFY};
 
-  public static record Foo(Path... files){};
-    public static record OMCFilesLog(Path... files){
-    @Override
-    public String toString(){
-      return join(
-        p(join("Files", br())),
-        p(join(
-          Stream.<Path>of(files).map(f -> 
-            join(a(f.toString()).withHref(f.toUri().toString()), br())
-          ).toArray())
-        )
-      ).render();
-//          a(mos.toString()).withHref(mos.toURI().toString()), br(),
-//          a(mo.toString()).withHref(mo.toURI().toString()), br(),
-//          a(crml2modelica.toString()).withHref(crml2modelica.toUri().toString()), br(),
-//          a(crml.toString()).withHref(crml.toUri().toString()), br()))
-//      ).render();
-    }
-  };
+    public static record OMCFilesLog(Path... files){};
     /**
    * Method for comparing omc simulation results to reference files
    * @param res_file simulation result file
