@@ -7,27 +7,28 @@ Go to: [![Makefile CI](https://github.com/OpenModelica/CRML/actions/workflows/ma
 
 Unzip it to some place and run:
 ```
+java -jar crml-compiler-all.jar --help
+```
+To see all the help flags and configurations
+
+To run the test suite:
+```
 java -jar crml-compiler-all.jar --testsuite
 ```
 A directory generated/ will be created and for each crml 
 test in the directory above a Modelica file will be created 
 in the generated/ directory.
 
-## Build on Linux & MacOS
-To build and run the tests of the parser on the crml files
-```
-# build the parser/translator and run the tests
-make
-# to clean the repository
-make clean
-```
+## Build 
 
-## Build on Windows
-To build and run the tests of the parser/translator on the crml files
-```
-project-run.bat
-REM to clean call: project-clean.bat
-```
+You can use gradle to build the project from scratch.
+
+
+## VSCode plugin
+
+[project repoisotry](https://github.com/lenaRB/crml-vscode)
+
+
 
 # CRML specification
 
