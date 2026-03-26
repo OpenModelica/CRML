@@ -1,4 +1,6 @@
-# crml-compiler
+# crml compiler
+
+A POC compiler from CRML to Modelica. For questions contact lena.buffoni at liu.com
 
 
 ## Download it via github actions
