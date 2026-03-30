@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.9.2 Operators - before (Event <= Event = Boolean)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Event e1 is external;
+    Event e2 is external;
+    Boolean b is e1 <= e2;
+};

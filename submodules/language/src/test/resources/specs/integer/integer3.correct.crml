@@ -1,0 +1,1 @@
+model Foo is { Integer x3 is -25; };

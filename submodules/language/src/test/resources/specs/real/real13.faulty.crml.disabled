@@ -1,0 +1,11 @@
+// -------------------------------------------------------------------------
+// 4.5.1 Constructors
+// -------------------------------------------------------------------------
+
+/* Note: "Real x10 is E+3;" from the spec is NOT tested as a parse error
+ * because the grammar parses it as "(variable E) + (constant 3)", which
+ * is syntactically valid. That is a semantic, not a syntactic, error.
+ */
+model Foo is {
+    Real x10 is E+3;;
+};

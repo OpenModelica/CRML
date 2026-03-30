@@ -1,0 +1,4 @@
+model Foo is {
+    // E3 is interpreted as a varaible, therefore it will parse
+    Integer x10 is E3; 
+};
