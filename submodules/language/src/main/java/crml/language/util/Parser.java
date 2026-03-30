@@ -16,6 +16,7 @@ import org.antlr.v4.runtime.misc.Utils;
 
 import crml.language.grammar.crmlLexer;
 import crml.language.grammar.crmlParser;
+import crml.language.util.ErrorListener.CRMLSyntaxResults;
 
 public class Parser {
     public ParserResult parse(File model) throws IOException{
@@ -31,16 +32,24 @@ public class Parser {
     }
 
     public ParserResult parse(CharStream model){
+        ErrorListener errors = new ErrorListener();
+
         crmlLexer lexer = new crmlLexer(model);
+        lexer.removeErrorListeners(); // Remove default listener that prints the output
+        lexer.addErrorListener(errors);
+
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         crmlParser parser = new crmlParser(tokens);
+        parser.removeErrorListeners(); // Remove default listener that prints the output
+        parser.addErrorListener(errors);
+
         List<String> ruleNames = Arrays.asList(parser.getRuleNames());
         ParseTree tree = parser.definition();
 
-        return new ParserResult(parser, tree, ruleNames);
+        return new ParserResult(parser, tree, ruleNames, errors.getErrors());
     }
 
-    public static record ParserResult(crmlParser parser, ParseTree ast, List<String> ruleNames) {
+    public static record ParserResult(crmlParser parser, ParseTree ast, List<String> ruleNames, CRMLSyntaxResults syntax) {
         private static final String EOL = System.getProperty("line.separator");
         private static final String INDENTS = "  ";
         /**
