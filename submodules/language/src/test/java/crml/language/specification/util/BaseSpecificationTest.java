@@ -5,8 +5,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,9 +18,10 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.junit.jupiter.params.provider.Arguments;
 
+import crml.language.specification.util.SharedParameter.Keys;
 import crml.language.util.Parser;
 
-@ExtendWith({SpecificationTestListener.class, crml.language.specification.util.SharedParameter.class})
+@ExtendWith({SpecificationTestListener.class, SharedParameter.class})
 public class BaseSpecificationTest {
 	public static final Path RESOURCES;
 	public static final Path OUT;
@@ -31,6 +34,8 @@ public class BaseSpecificationTest {
 	}
 
 	public void emit(Object message, String key){
+		SharedParameter.registerKey(key, context);
+
 		System.out.println("Emit: "+key);
 		context.put(key, message);
 	}

@@ -1,6 +1,7 @@
 package crml.language.specification.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -8,6 +9,11 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 public class SharedParameter implements ParameterResolver {
+    public static class Keys extends HashSet<String> {
+        public Keys(Object _ignored){};
+        public static final String keyCode = "crml.language.specification.util.SharedParameter.Keys.keyCode";
+    }
+
     public static final ExtensionContext.Namespace MESSAGE_NAMESPACE =
             ExtensionContext.Namespace.create("CRML", "message");
 
@@ -21,12 +27,22 @@ public class SharedParameter implements ParameterResolver {
         return ec.getStore(MESSAGE_NAMESPACE);
     }
     
+    public static void registerKey(String key, ExtensionContext.Store context){
+        if(key==Keys.keyCode){
+            throw new IllegalArgumentException("Store key \""+key + "\" is reserved.");
+        }
+
+        Keys keys = context.getOrComputeIfAbsent("keys", Keys::new, Keys.class);
+        keys.add(key);
+    }
+
     public static Map<String, Object> asMap(ExtensionContext context){
         ExtensionContext.Store store = context.getStore(SharedParameter.MESSAGE_NAMESPACE);
         Map<String, Object> map = new HashMap<>();
 
-        addIfExists(map, "CRML model", store);
-        addIfExists(map, "Syntax Errors", store);
+
+        Keys keys = store.getOrComputeIfAbsent("keys", Keys::new, Keys.class);
+        keys.forEach(key -> addIfExists(map, key, store));
 
         return map;
     }
