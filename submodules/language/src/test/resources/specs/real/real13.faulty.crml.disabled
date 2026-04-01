@@ -7,5 +7,5 @@
  * is syntactically valid. That is a semantic, not a syntactic, error.
  */
 model Foo is {
-    Real x10 is E+3;;
+    Real x10 is E+3;
 };
