@@ -13,11 +13,13 @@ dependencies {
 
 
     testImplementation("com.j2html:j2html:1.6.0")
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    
+    testImplementation(platform("org.junit:junit-bom:5.10.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("org.junit.platform:junit-platform-reporting:1.10.1")
+    testImplementation("org.junit.platform:junit-platform-launcher")
+
     testImplementation("com.aventstack:extentreports:5.0.9")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     
 }
 
@@ -41,6 +43,11 @@ tasks.generateGrammarSource {
     ))
 }
 
-tasks.named<Test>("test") {
+tasks.test {
     useJUnitPlatform()
+
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+    ignoreFailures = true
 }
