@@ -3,5 +3,5 @@
 // -------------------------------------------------------------------------
 
 model Foo is {
-    Operator [ Boolean ] Boolean b1 or Boolean b2 = not (not b1 and not b2);
+    Operator [ Boolean ] Boolean b1 'or' Boolean b2 = not (not b1 and not b2);
 };

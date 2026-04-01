@@ -3,5 +3,5 @@
 // -------------------------------------------------------------------------
 
 model Foo is {
-    Operator [ Clock ] ticks Clock c inside Period P = c filter (tick >= P start) and (tick <= P end);
+    Operator [ Clock ] ticks Clock c inside Period P = c filter (tick >= P start) and (tick <= P end); //4.13.2, Example 1 (TODO)
 };

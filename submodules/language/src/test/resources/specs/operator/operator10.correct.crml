@@ -3,5 +3,5 @@
 // -------------------------------------------------------------------------
 
 model Foo is {
-    Operator count = Operator [ Integer ] count [ Boolean ] b inside [ Period ] P = card (ticks new Clock b inside P);
+    Operator count = Operator [ Integer ] count [ Boolean ] b inside [ Period ] P = card (ticks new Clock b inside P);  // 4.13.2, Example 8
 };
