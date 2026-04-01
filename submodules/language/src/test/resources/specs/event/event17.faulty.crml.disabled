@@ -3,5 +3,5 @@
 // -------------------------------------------------------------------------
 
 model Foo is {
-    Event e17 is true;
+    Event e17 is true; // Doesn't make sense to use, but it should be fine.
 };

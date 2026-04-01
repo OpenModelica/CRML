@@ -1,9 +1,8 @@
 // -------------------------------------------------------------------------
 // 4.9.2 Operators - elapsed physical time (time from Event = Real)
-// This in not in the specification?
 // -------------------------------------------------------------------------
 
 model Foo is {
     Event e is external;
-    Real d is time from e;
+    Real d is time from e; // 4.9.2, Elapsed physical time
 };
