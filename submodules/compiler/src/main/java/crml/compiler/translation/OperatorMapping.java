@@ -272,7 +272,7 @@ public class OperatorMapping {
 
     // integrate operator
     built_in_operators.put("integrate",
-      Arrays.asList(new Signature("CRMLtoModelica.Blocks.Integrate", Arrays.asList("Boolean", "Period"), param1,
+      Arrays.asList(new Signature("CRMLtoModelica.Blocks.Integrate", Arrays.asList("Boolean", "Period"), params2,
       "Integer", Type.BLOCK)));
 
     // CONSTRUCTORS TODO finalize constructor table
@@ -349,7 +349,7 @@ public class OperatorMapping {
           && s.variable_types.get(1).equals(type2)
           && s.variable_is_set.get(0) == isSet1 && s.variable_is_set.get(1) == isSet2)
             return s;
-
+      
     return null;
   }
 
