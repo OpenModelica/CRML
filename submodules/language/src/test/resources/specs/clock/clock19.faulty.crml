@@ -4,5 +4,5 @@
 
 model Foo is {
     Integer i;
-    Clock c is new Clock i;
+    Clock c is new Clock i; // Type of argument is not validated. (TODO)
 };

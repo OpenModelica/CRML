@@ -4,5 +4,5 @@
 
 model Foo is {
     Boolean b;
-    Integer n is card b;
+    Integer n is card b; // Card should only be interpreted on sets, not valudes, but it is not checked. (TODO)
 };
