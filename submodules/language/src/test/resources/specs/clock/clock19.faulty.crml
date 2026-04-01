@@ -1,0 +1,8 @@
+// -------------------------------------------------------------------------
+// Faulty - wrong type for Clock constructor (Integer instead of Boolean)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Integer i;
+    Clock c is new Clock i;
+};

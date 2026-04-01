@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - disjunction Event or Clock (Event or Clock = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Event e is external;
+    Clock c1 is external;
+    Clock c2 is e or c1;
+};

@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - filter (Clock filter Boolean tick = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Clock c1 is external;
+    Boolean cond is external;
+    Clock c2 is c1 filter cond tick;
+};
