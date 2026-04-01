@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - mixed syntax (count, variant 3)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator count = Operator [ Integer ] count [ Boolean ] b inside [ Period ] P = card (ticks new Clock b inside P);
+};

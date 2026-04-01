@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - natural language syntax (boolean disjunction)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator [ Boolean ] Boolean b1 or Boolean b2 = not (not b1 and not b2);
+};

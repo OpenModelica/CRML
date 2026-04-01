@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - mixed syntax
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator f is new Operator [ Clock ] ticks Clock c inside Period P = c filter (tick >= P start) and (tick <= P end);
+};

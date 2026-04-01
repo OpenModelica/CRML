@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - natural language syntax (ticks inside period)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator [ Clock ] ticks Clock c inside Period P = c filter (tick >= P start) and (tick <= P end);
+};

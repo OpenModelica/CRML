@@ -1,0 +1,8 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - mathematical syntax (count using subClock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator subClock = new Operator [ Clock ] (Clock c, Period P) = c filter (tick >= P start) and (tick <= P end);
+    Operator count = new Operator [ Integer ] (Boolean b, Period P) = card (subClock (new Clock b, P));
+};

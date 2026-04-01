@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.14 Type Template - three-parameter template (elicitation rule)
+// Section 3.18 Example 3
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Template b1 'implies' b2 = not b1 or b2;
+    Template 'rule' A R1 R2 = (A 'implies' R1) and (not A 'implies' R2);
+};

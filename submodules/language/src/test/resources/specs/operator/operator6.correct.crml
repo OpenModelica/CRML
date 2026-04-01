@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - natural language syntax (count)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator [ Integer ] count [ Boolean ] b inside [ Period ] P = card ticks new Clock b inside P;
+};
