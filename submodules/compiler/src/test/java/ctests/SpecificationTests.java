@@ -26,15 +26,15 @@ public class SpecificationTests extends ParameterizedSuite {
 	public static CompileSettings cs;
 
         static List<Path> fileNameSource() {
-        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels","spec-doc-examples"));
+        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels").resolve("spec-doc-examples"));
     }
 
  	@BeforeAll
     public static void setupTestSuite() {
 		cs = new CompileSettings(
-                RESOURCES.resolve("testModels","spec-doc-examples"),
-                RESOURCES.resolve("verificationModels","spec-doc-examples"),
-                RESOURCES.resolve("refResults","spec-doc-examples"));
+                RESOURCES.resolve("testModels").resolve("spec-doc-examples"),
+                RESOURCES.resolve("verificationModels").resolve("spec-doc-examples"),
+                RESOURCES.resolve("refResults").resolve("spec-doc-examples"));
         cs.processBuilder = new ProcessBuilder();
         cs.outputFolder = OUT.resolve("spec-doc-examples");
 	}

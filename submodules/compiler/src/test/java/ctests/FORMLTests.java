@@ -22,15 +22,15 @@ public class FORMLTests extends ParameterizedSuite {
     public static CompileSettings cs;
 
     static List<Path> fileNameSource() {
-        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels","libraries","FORML_test"));
+        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels").resolve("libraries").resolve("FORML_test"));
     }
  
     @BeforeAll
     public static void setupTestSuite() {
         cs = new CompileSettings(
-                RESOURCES.resolve("testModels","libraries","FORML_test"),
-                RESOURCES.resolve("verificationModels","libraries","FORML_test"),
-                RESOURCES.resolve("refResults","libraries","FORML_test"));
+                RESOURCES.resolve("testModels").resolve("libraries").resolve("FORML_test"),
+                RESOURCES.resolve("verificationModels").resolve("libraries").resolve("FORML_test"),
+                RESOURCES.resolve("refResults").resolve("libraries").resolve("FORML_test"));
         cs.processBuilder = new ProcessBuilder();
         cs.outputFolder = OUT.resolve("FORML_test");
     }

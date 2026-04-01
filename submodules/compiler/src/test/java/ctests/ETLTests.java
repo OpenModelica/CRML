@@ -23,15 +23,15 @@ public class ETLTests extends ParameterizedSuite {
     public static CompileSettings cs;
     
     static List<Path> fileNameSource() {
-        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels","libraries","ETL_test"));
+        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels").resolve("libraries").resolve("ETL_test"));
     }
  
     @BeforeAll
     public static void setupTestSuite() {
         cs = new CompileSettings(
-                RESOURCES.resolve("testModels","libraries","ETL_test"),
-                RESOURCES.resolve("verificationModels","libraries","ETL_test"),
-                RESOURCES.resolve("refResults","libraries","ETL_test"));
+                RESOURCES.resolve("testModels").resolve("libraries").resolve("ETL_test"),
+                RESOURCES.resolve("verificationModels").resolve("libraries").resolve("ETL_test"),
+                RESOURCES.resolve("refResults").resolve("libraries").resolve("ETL_test"));
         cs.processBuilder = new ProcessBuilder();
         cs.outputFolder = OUT.resolve("ETL_test");
 

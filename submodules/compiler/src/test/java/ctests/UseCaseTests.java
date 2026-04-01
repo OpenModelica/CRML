@@ -18,7 +18,7 @@ public class UseCaseTests {
     @BeforeAll
     public static void setupTestSuite() {
 		cs = new CompileSettings(
-                ParameterizedSuite.RESOURCES.resolve("..","..","..","..","crml_tutorial"),
+                ParameterizedSuite.RESOURCES.resolve("..").resolve("..").resolve("..").resolve("..").resolve("crml_tutorial"),
                 null,
                 null);
         cs.processBuilder = new ProcessBuilder();
