@@ -5,10 +5,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.junit.jupiter.params.provider.Arguments;
 
-import crml.language.specification.util.SharedParameter.Keys;
 import crml.language.util.Parser;
 
 @ExtendWith({SpecificationTestListener.class, SharedParameter.class})
@@ -49,7 +46,7 @@ public class BaseSpecificationTest {
 		} catch (URISyntaxException e) {
 			// Test configuration is expected to be correct, 
 			// therefore, we just wrap potential errors in a runtime exception to hide it in code.
-			throw new RuntimeException("Hello");
+			throw new RuntimeException("Incorrect project setup. Resources not found.");
 		}
 	}
 
@@ -62,6 +59,7 @@ public class BaseSpecificationTest {
 			return list
 				.filter(Files::isRegularFile)
 				.filter(p -> p.toString().endsWith(".crml") || p.toString().endsWith(".crml.disabled"))
+				.sorted(new NaturalCompare())
 				.map(p -> {
 					String name = p.getFileName().toString().toLowerCase();
 
