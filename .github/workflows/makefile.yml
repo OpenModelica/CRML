@@ -50,7 +50,7 @@ jobs:
         # this is just an example, we should create .mos 
         # files for each .mo file to run each as a JUnit test
         # load the library
-        echo 'loadFile("./resources/modelica_libraries/CRMLtoModelica.mo"); getErrorString();' >> runTests.mos
+        echo 'loadFile("./libraries/modelica/CRMLtoModelica.mo"); getErrorString();' >> runTests.mos
         # load a translated file
         echo 'loadFile("./build/testSuiteGenerated/spec-doc-examples/BooleanAccumulation/BooleanAccumulation.mo"); getErrorString();' >> runTests.mos
         # check the translated file
