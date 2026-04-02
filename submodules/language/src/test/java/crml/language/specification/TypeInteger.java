@@ -30,6 +30,7 @@ public class TypeInteger extends BaseSpecificationTest {
         var parsed = parse(fileName);
 
         emit(parsed.syntax(), "Syntax Errors");
+        emit(parsed.toPrettyTree(), "AST");
         assertEquals(isValid, !parsed.syntax().hasErrors());
     }
 }

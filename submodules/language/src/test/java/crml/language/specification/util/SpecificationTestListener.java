@@ -2,9 +2,14 @@ package crml.language.specification.util;
 
 import static j2html.TagCreator.a;
 import static j2html.TagCreator.br;
+import static j2html.TagCreator.code;
+import static j2html.TagCreator.details;
 import static j2html.TagCreator.join;
 import static j2html.TagCreator.p;
+import static j2html.TagCreator.pre;
+import static j2html.TagCreator.summary;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -180,11 +185,29 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
             if (entry.getValue() instanceof Path path) {
-                node.info(join(p(join(entry.getKey(), br())),
-                        p(a(path.toString()).withHref(path.toUri().toString()))).render());
+                try { 
+                    String fileContent = Files.readString(path); 
+                    node.info(join(
+                        p(join(entry.getKey(), br())),
+                        pre(code(fileContent)),
+                        p(a(path.toString()).withHref(path.toUri().toString()))
+                    ).render());
+                } catch (Exception e) {
+                    node.info(join(
+                        p(join(entry.getKey(), br())),
+                        p(a(path.toString()).withHref(path.toUri().toString()))
+                    ).render());
+                }     
             } else if (entry.getValue() instanceof CRMLSyntaxResults syntax) {
-                node.info(join(p(join(entry.getKey(), br())),
-                        p(join(syntax.errors().stream().map(Object::toString).toArray()))).render());
+                node.info(join(
+                    p(join(entry.getKey(), br())),
+                    join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
+                ).render());
+            } else if (entry.getValue() instanceof String ast && "AST".equals(entry.getKey())) {
+                    node.info(details(
+                        summary(entry.getKey()),
+                        pre(code(ast))
+                    ).render());
             } else {
                 node.info(join(p(join(entry.getKey(), br())),
                         p(entry.getValue().toString())).render());

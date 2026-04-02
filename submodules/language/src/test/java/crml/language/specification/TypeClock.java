@@ -21,7 +21,9 @@ public class TypeClock extends BaseSpecificationTest {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
         var parsed = parse(fileName);
+        
         emit(parsed.syntax(), "Syntax Errors");
+        emit(parsed.toPrettyTree(), "AST");
         assertEquals(isValid, !parsed.syntax().hasErrors());
     }
 }

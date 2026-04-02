@@ -10,9 +10,9 @@ import crml.language.specification.util.BaseSpecificationTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 
-public class TypeOperator extends BaseSpecificationTest {
+public class TypeClass extends BaseSpecificationTest {
     static List<Arguments> fileNameSource() {
-        return BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("operator"));
+        return BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("class"));
     }
 
     @ParameterizedTest
