@@ -12,8 +12,8 @@ public class CompileSettings {
     public String within = ""; //Used in OMCUtil
 
     //static final String defaultOutputRoot = "build/testSuiteGenerated";
-	//static final String CRMLtoModelicaLibrary = "resources/modelica_libraries/CRMLtoModelica.mo";
-	//static final String CRMLLibrary = "resources/modelica_libraries/CRML.mo";
+	//static final String CRMLtoModelicaLibrary = "libraries/modelica/CRMLtoModelica.mo";
+	//static final String CRMLLibrary = "libraries/modelica/CRML.mo";
 
 
     public ProcessBuilder processBuilder; // used for running omc commands
