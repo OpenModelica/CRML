@@ -10,8 +10,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import crml.compiler.CompileSettings;
-import crml.compiler.TestListener;
+import crml.omc.CompileSettings;
+import crml.test.TestListener;
 
 @ExtendWith(TestListener.class) // a hook for catching succesful test results in the test report
 public class ParameterizedSuite {

@@ -7,9 +7,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-
-import crml.compiler.ModelicaSimulationException;
-import crml.compiler.OMCUtil.CompileStage;
+import crml.omc.ModelicaSimulationException;
+import crml.omc.OMCUtil.CompileStage;
 
 /**
  * 

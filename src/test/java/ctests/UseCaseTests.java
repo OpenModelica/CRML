@@ -6,9 +6,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import crml.compiler.CompileSettings;
-import crml.compiler.ModelicaSimulationException;
-import crml.compiler.OMCUtil.CompileStage;
+import crml.omc.CompileSettings;
+import crml.omc.ModelicaSimulationException;
+import crml.omc.OMCUtil.CompileStage;
 
 
 public class UseCaseTests {

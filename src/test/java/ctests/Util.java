@@ -3,12 +3,12 @@ package ctests;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 
-import crml.compiler.CompileSettings;
-import crml.compiler.ModelicaSimulationException;
-import crml.compiler.OMCUtil;
-import crml.compiler.OMCmsg;
-import crml.compiler.Utilities;
-import crml.compiler.OMCUtil.CompileStage;
+import crml.Utilities;
+import crml.omc.CompileSettings;
+import crml.omc.ModelicaSimulationException;
+import crml.omc.OMCUtil;
+import crml.omc.OMCmsg;
+import crml.omc.OMCUtil.CompileStage;
 
 import java.io.File;
 
@@ -35,7 +35,7 @@ public class Util {
 		// try compiling crml to modelica
 		try {
     		
-			crml.compiler.CRMLC.parse_file(cs.testFolderIn, fileName, out_dir, 
+			crml.CRMLC.parse_file(cs.testFolderIn, fileName, out_dir, 
 				true, false, true, stripped_file_name, false);
 			
     	} catch (Exception e) {

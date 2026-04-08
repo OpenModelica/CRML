@@ -1,4 +1,4 @@
-package crml.compiler;
+package crml;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,6 +28,14 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import com.beust.jcommander.JCommander;
+
+import crml.compiler.Value;
+import crml.compiler.crmlVisitorImpl;
+import crml.omc.CompileSettings;
+import crml.omc.ModelicaSimulationException;
+import crml.omc.OMCUtil;
+import crml.omc.OMCmsg;
+import crml.test.TestListener;
 
 import org.apache.logging.log4j.LogManager;
 import org.junit.platform.engine.discovery.ClassNameFilter;
