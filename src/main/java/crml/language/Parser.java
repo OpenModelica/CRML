@@ -19,19 +19,19 @@ import grammar.crmlParser;
 import crml.language.ErrorListener.CRMLSyntaxResults;
 
 public class Parser {
-    public ParserResult parse(File model) throws IOException{
+    public static ParserResult parse(File model) throws IOException{
         return parse(CharStreams.fromPath(model.toPath()));
     }
     
-    public ParserResult parse(Path model) throws IOException{
+    public static ParserResult parse(Path model) throws IOException{
         return parse(CharStreams.fromPath(model));
     }
 
-    public ParserResult parse(String model){
+    public static ParserResult parse(String model){
         return parse(CharStreams.fromString(model));
     }
 
-    public ParserResult parse(CharStream model){
+    public static ParserResult parse(CharStream model){
         ErrorListener errors = new ErrorListener();
 
         crmlLexer lexer = new crmlLexer(model);
