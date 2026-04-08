@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.params.provider.Arguments;
@@ -18,7 +19,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 public class TypeReal extends BaseSpecificationTest {
     
     static List<Arguments> fileNameSource() {
-        return BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("real"));
+        List<Arguments> tests = new ArrayList<>();
+        tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("real")));
+        tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("real").resolve("docs")));
+        return tests;
     }
     
     @ParameterizedTest
