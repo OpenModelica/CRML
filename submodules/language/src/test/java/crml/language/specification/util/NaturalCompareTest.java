@@ -11,10 +11,12 @@ import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import crml.language.specification.util.NaturalCompare.PathCompare;
+
 @Disabled //This is just for testing the sorting. Not required later.
 public class NaturalCompareTest {
     
-    private final NaturalCompare comparator = new NaturalCompare();
+    private final PathCompare comparator = new PathCompare();
 
     @Test
     void testSimpleNumericOrdering() {

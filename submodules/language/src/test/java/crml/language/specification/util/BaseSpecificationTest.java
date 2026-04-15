@@ -59,7 +59,7 @@ public class BaseSpecificationTest {
 			return list
 				.filter(Files::isRegularFile)
 				.filter(p -> p.toString().endsWith(".crml") || p.toString().endsWith(".crml.disabled"))
-				.sorted(new NaturalCompare())
+				.sorted(new NaturalCompare.PathCompare())
 				.map(p -> {
 					String name = p.getFileName().toString().toLowerCase();
 

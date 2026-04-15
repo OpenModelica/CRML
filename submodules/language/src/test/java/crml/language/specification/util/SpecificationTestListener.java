@@ -12,6 +12,7 @@ import static j2html.TagCreator.summary;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,9 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     public void testPlanExecutionFinished(TestPlan testPlan) {
         testPlan.getChildren(getRoot(testPlan)).forEach(klass -> {
             final ExtentTest testKlass = extentReport.createTest(getKlassName(klass.getUniqueId()));
-            testPlan.getDescendants(klass).forEach(test -> processTestNode(testKlass, test));
+            testPlan.getDescendants(klass).stream()
+                    .sorted(Comparator.comparing(TestIdentifier::getDisplayName, NaturalCompare::compareStrings))
+                    .forEach(test -> processTestNode(testKlass, test));
         });
         extentReport.flush();
     }
