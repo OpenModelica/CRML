@@ -1,0 +1,4 @@
+model TypeRequirement is {
+    // Requirement is a Boolean type with forbidden operators
+    type Requirement is Boolean forbid { *, +, integrate };
+};

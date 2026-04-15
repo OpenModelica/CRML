@@ -1,0 +1,40 @@
+package crml.language.specification;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import crml.language.specification.util.BaseSpecificationTest;
+
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.params.ParameterizedTest;
+
+
+public class TypeType extends BaseSpecificationTest {
+    
+    static List<Arguments> fileNameSource() {
+        List<Arguments> tests = new ArrayList<>();
+        tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("type")));
+        //tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(RESOURCES.resolve("type").resolve("docs")));
+        return tests;
+    }
+    
+    @ParameterizedTest
+    @MethodSource("fileNameSource")
+    public void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+        emit(fileName, "CRML model");
+        Assumptions.assumeFalse(isDisabled); 
+
+        var parsed = parse(fileName);
+        
+        emit(parsed.syntax(), "Syntax Errors");
+        emit(parsed.toPrettyTree(), "AST");
+        assertEquals(isValid, !parsed.syntax().hasErrors());
+    }
+}

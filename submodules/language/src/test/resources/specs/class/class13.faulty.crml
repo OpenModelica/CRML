@@ -1,0 +1,13 @@
+// -------------------------------------------------------------------------
+// Faulty - 'extends' placed before the class body instead of after
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment is {
+        String id;
+    };
+
+    class Pump extends Equipment is {
+        Real c is external;
+    };
+};

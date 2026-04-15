@@ -1,0 +1,13 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - basic partial type definition with constructor
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+};

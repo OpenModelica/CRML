@@ -1,0 +1,18 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - time units hierarchy with alias
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    partial type Time is Quantity (SIUnit = "s");
+
+    type TimeSecond is Time (userUnit = "s", rate = 1, offset = 0) alias s;
+    type Hour is Time (userUnit = "h", rate = 3600, offset = 0) alias h;
+};

@@ -1,0 +1,26 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - attribute redeclaration with 'redeclare' in a subclass
+// (CentrifugalPump from spec Section 4.21)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment is {
+        String id;
+        Boolean inOperation is external;
+    };
+
+    class Pump is {
+        Real c is external;
+        Real efficiency is external;
+        Boolean cav is external;
+        Boolean nocav = during inOperation ensure not cav;
+    } extends Equipment;
+
+    class CentrifugalPump is {
+        Real Q is external;
+        Real c_0 is external;
+        Real c_1 is external;
+        Real c_2 is external;
+        redeclare Real c = c_0 + c_1*Q + c_2*Q^2;
+    } extends Pump;
+};
