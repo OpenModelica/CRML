@@ -1,6 +1,6 @@
 model BooleanIntegration is {
 	Boolean a is if 2.0 < time and time < 3.5 then true else false;
-	Period P is [ new Event a new Event not a ];
+	Period P is [ new Event a, new Event not a ];
 	
 	Boolean b_true is if 2.5 < time and time < 5 then undefined else true;
 	Boolean b_false is if 2.5 < time and time < 5 then undefined else false;
