@@ -1,0 +1,11 @@
+within CRML.ETL.Connectors;
+
+connector ClockInput = input Clock "'input Clock' as connector" annotation(
+        defaultComponentName = "u",
+        Icon(graphics = {Polygon(points = {{-34, 6}, {20, 0}, {-34, -8}, {-34, 6}}, lineColor = {175, 175, 175}, fillColor = {175, 175, 175}, fillPattern = FillPattern.Solid, pattern = LinePattern.Dot, lineThickness = 0.5), Polygon(points = {{-100, 100}, {100, 0}, {-100, -100}, {-100, 100}}, lineColor = {95, 95, 95}, fillColor = {0, 140, 72}, fillPattern = FillPattern.Solid)}, coordinateSystem(extent = {{-100, -100}, {100, 100}}, preserveAspectRatio = true, initialScale = 0.2, grid = {2, 2})),
+        Diagram(coordinateSystem(preserveAspectRatio = true, initialScale = 0.2, extent = {{-100, -100}, {100, 100}}, grid = {2, 2}), graphics = {Polygon(points = {{-34, 6}, {20, 0}, {-34, -8}, {-34, 6}}, lineColor = {175, 175, 175}, fillColor = {175, 175, 175}, fillPattern = FillPattern.Solid, pattern = LinePattern.Dot, lineThickness = 0.5), Polygon(points = {{-100, 100}, {100, 0}, {-100, -100}, {-100, 100}}, lineColor = {95, 95, 95}, fillColor = {0, 140, 72}, fillPattern = FillPattern.Solid)}),
+        Documentation(info = "<html>
+<p>
+Connector with one input signal of type Boolean.
+</p>
+</html>"));
