@@ -1,0 +1,60 @@
+package crml.model.generator;
+
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.EcoreFactory;
+import org.eclipse.emf.ecore.EcorePackage;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+
+public class ModelGen {
+    private static EcoreFactory factory = EcoreFactory.eINSTANCE;
+    public static void main(String[] args) throws Exception {
+
+        // 1. Initialize Ecore package
+        EcorePackage.eINSTANCE.eClass();
+
+        // 2. Create package (metamodel)
+        EPackage ePackage = factory.createEPackage();
+        ePackage.setName("personModel");
+        ePackage.setNsPrefix("person");
+        ePackage.setNsURI("http://example.com/person");
+
+        // 3. Create a class
+        EClass personClass = factory.createEClass();
+        personClass.setName("Person");
+
+        // 4. Create an attribute: name : EString
+        EAttribute nameAttr = factory.createEAttribute();
+        nameAttr.setName("name");
+        nameAttr.setEType(EcorePackage.Literals.ESTRING);
+
+        // 5. Add attribute to class
+        personClass.getEStructuralFeatures().add(nameAttr);
+
+        // 6. Add class to package
+        ePackage.getEClassifiers().add(personClass);
+
+        // 7. Register package globally
+        EPackage.Registry.INSTANCE.put(ePackage.getNsURI(), ePackage);
+
+        // 8. Prepare resource set + XMI factory
+        ResourceSet rs = new ResourceSetImpl();
+        rs.getResourceFactoryRegistry()
+          .getExtensionToFactoryMap()
+          .put("xmi", new XMIResourceFactoryImpl());
+
+        // 9. Create resource
+        Resource resource = rs.createResource(
+                org.eclipse.emf.common.util.URI.createFileURI(new File("model.xmi").getAbsolutePath())
+        );
+
+        // 10. Add metamodel to resource and save
+        resource.getContents().add(ePackage);
+        resource.save(null);
+
+        System.out.println("Metamodel saved to model.xmi");
+    }
+}

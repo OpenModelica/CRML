@@ -1,0 +1,35 @@
+module GenerateXcore
+
+import org.eclipse.emf.mwe.utils.*
+import org.eclipse.xtext.generator.*
+import org.eclipse.emf.ecore.xcore.XcoreStandaloneSetup
+
+import org.eclipse.emf.mwe2.runtime.workflow.Workflow
+import org.eclipse.emf.mwe.utils.StandaloneSetup
+import org.eclipse.emf.mwe.utils.DirectoryCleaner
+import org.eclipse.xtext.generator.GeneratorComponent
+
+var modelPath = "src/main/xcore"
+
+var rootPath = "."
+var projectName = "model"
+
+Workflow {
+    bean = StandaloneSetup {
+        platformUri = "${rootPath}"
+        scanClassPath = true
+    }
+    component = DirectoryCleaner {
+		directory = "src/main/emf-gen"
+	}
+
+    component = GeneratorComponent {
+        register = XcoreStandaloneSetup
+
+        slot = "model"
+
+        outlet = {
+            path = "src-gen"
+        }
+    }
+}

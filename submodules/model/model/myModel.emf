@@ -1,0 +1,11 @@
+package ecrml;
+
+class Model {
+    attr String name;
+    val Variable[*] vars;
+}
+
+class Varaible {
+    attr String[1] type;
+    attr String[1..*] names;
+}

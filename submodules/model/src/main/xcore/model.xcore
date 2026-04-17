@@ -1,0 +1,7 @@
+src/main/xcore/model.xcore
+package demo
+
+class Person {
+    String name
+    int age
+}
