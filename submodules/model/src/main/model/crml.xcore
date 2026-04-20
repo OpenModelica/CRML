@@ -1,0 +1,381 @@
+@GenModel(
+    bundleManifest="false",
+    modelDirectory="crml-model/src-gen",
+    complianceLevel="8.0"
+)
+package crml.model.language
+
+// ─── Top-level definition ────────────────────────────────────────────────────
+
+class Definition {
+    DefinitionType kind
+    String name
+    contains Dependency[] dependencies
+    contains Element[] elements
+}
+
+enum DefinitionType {
+    MODEL = 0
+    PACKAGE = 1
+    LIBRARY = 2
+}
+
+class Dependency {
+    boolean flatten
+    String[] names
+}
+
+// ─── Elements (top-level body items) ─────────────────────────────────────────
+
+abstract class Element {}
+
+class CommentElement extends Element {
+    String text
+}
+
+class TemplateDef extends Element {
+    String[] names          // sequence of id / user_keyword tokens
+    contains Expression body
+}
+
+class ClassDef extends Element {
+    String name
+    contains ClassMember[] members
+    contains TypeRef superType
+    contains ClassParams superParams
+    String superAlias        // optional trailing id after 'extends type params? id?'
+}
+
+class TypeDef extends Element {
+    String name
+    contains TypeRef superType
+    contains ArgList superArgs
+    String superAlias
+    contains ClassMember[] members
+}
+
+class OperatorDef extends Element {
+    contains TypeRef returnType
+    contains OperatorSignaturePart[] signature
+    contains ApplyCategory applyCategory
+    contains Expression body
+}
+
+class VarDef extends Element {
+    VarQualifier qualifier
+    contains TypeRef varType
+    String[] names
+    contains ArgList initArgs    // when definition uses call syntax: id(exp, ...)
+    contains Expression initExpr // when definition uses 'is exp'
+    boolean external
+}
+
+class ParameterDecl extends Element {
+    contains TypeRef paramType       // set when 'parameter type id+'
+    StructureTypeKind structureKind  // set when 'parameter class|type id+'
+    boolean isStructure
+    String[] names
+}
+
+class CategoryDef extends Element {
+    String name
+    contains CategoryPair[] pairs
+}
+
+// ─── Class / type members ────────────────────────────────────────────────────
+
+abstract class ClassMember {}
+
+class MemberVarDef extends ClassMember {
+    VarQualifier qualifier
+    contains TypeRef varType
+    String[] names
+    contains ArgList initArgs
+    contains Expression initExpr
+    boolean external
+}
+
+class AliasDecl extends ClassMember {
+    String name
+}
+
+class ForbidDecl extends ClassMember {
+    contains Op[] forbidden
+}
+
+class MemberComment extends ClassMember {
+    String text
+}
+
+class MemberParameterDecl extends ClassMember {
+    contains TypeRef paramType
+    StructureTypeKind structureKind
+    boolean isStructure
+    String[] names
+}
+
+// ─── Operators ────────────────────────────────────────────────────────────────
+
+abstract class Op {}
+
+class BuiltinOp extends Op {
+    BuiltinOpKind kind
+}
+
+class UserKeywordOp extends Op {
+    String keyword
+}
+
+enum BuiltinOpKind {
+    AND = 0
+    MUL = 1
+    ADD = 2
+    SUB = 3
+    DIV = 4
+    WITH = 5
+    MASTER = 6
+    ON = 7
+    FILTER = 8
+    LE = 9
+    LT = 10
+    GE = 11
+    GT = 12
+    NEQ = 13
+    PAR = 14
+    EQ = 15
+    PRE = 16
+    NOT = 17
+    CARD = 18
+    OR = 19
+    POW = 20
+    MOD = 21
+    EXP_OP = 22
+    LOG = 23
+    LOG10 = 24
+    COS = 25
+    ACOS = 26
+    SIN = 27
+    ASIN = 28
+    START = 29   // right_op: exp 'start'
+    END = 30     // right_op: exp 'end'
+}
+
+// ─── Operator definition helpers ─────────────────────────────────────────────
+
+class OperatorSignaturePart {
+    contains TypeRef paramType   // null when this part is a user_keyword token
+    String paramName             // null when this part is a user_keyword token
+    String userKeyword           // null when this part is a typed param
+}
+
+class ApplyCategory {
+    String associativity
+}
+
+class ClassParams {
+    contains NamedArg[] args
+}
+
+class NamedArg {
+    String name
+    contains Expression value
+}
+
+// ─── Category ────────────────────────────────────────────────────────────────
+
+class CategoryPair {
+    contains Op left
+    contains Op right
+}
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+class TypeRef {
+    BuiltinType builtinKind   // NONE means the type is named via typeName
+    String typeName           // set when builtinKind == NONE
+    boolean isSett             // true when '{}' suffix is present // isSet is a reserved keyword? (causes parse error)
+}
+
+enum BuiltinType {
+    NONE = 0
+    INTEGER = 1
+    REAL = 2
+    BOOLEAN = 3
+    STRING = 4
+    CLOCK = 5
+    SET = 6
+    PERIOD = 7
+    PERIODS = 8
+    EVENT = 9
+    REQUIREMENT = 10
+}
+
+enum VarQualifier {
+    NONE = 0
+    FIXED = 1
+}
+
+enum StructureTypeKind {
+    TYPE = 0
+    CLASS = 1
+}
+
+class ArgList {
+    contains Expression[] args
+}
+
+// ─── Expressions ─────────────────────────────────────────────────────────────
+
+abstract class Expression {}
+
+class ParenExpr extends Expression {
+    contains Expression inner
+}
+
+class IdentExpr extends Expression {
+    String name
+}
+
+class ConstantExpr extends Expression {
+    contains Constant value
+}
+
+class ConstructorExpr extends Expression {
+    contains TypeRef constructedType
+    contains Expression argument
+}
+
+class SumExpr extends Expression {
+    contains Expression[] operands   // grammar requires at least two
+}
+
+class TrimExpr extends Expression {
+    contains Expression subject
+    contains Expression period
+}
+
+class ProjExpr extends Expression {
+    String subject
+    String dimension      // optional; null if omitted
+    String target
+}
+
+class PeriodOpExpr extends Expression {
+    boolean leftClosed    // true = '[', false = ']'
+    contains Expression lower
+    contains Expression upper
+    boolean rightClosed   // true = ']', false = '['
+}
+
+class IteratorExpr extends Expression {
+    String iteratorName   // text of ITERATOR token (includes trailing .element)
+}
+
+class RightUnaryOpExpr extends Expression {
+    contains Expression operand
+    BuiltinOpKind opkind     // START or END
+}
+
+class LeftUnaryOpExpr extends Expression {
+    BuiltinOpKind opkind
+    contains Expression operand
+}
+
+class BinaryOpExpr extends Expression {
+    contains Expression left
+    BuiltinOpKind opkind
+    contains Expression right
+}
+
+class UserKeywordPrefixExpr extends Expression {
+    String keyword
+    contains Expression operand
+}
+
+class UserKeywordInfixExpr extends Expression {
+    contains Expression left
+    String keyword
+    contains Expression right
+}
+
+class UserKeywordPostfixExpr extends Expression {
+    contains Expression operand
+    String keyword
+}
+
+class ElementExpr extends Expression {}
+
+class TerminateExpr extends Expression {}
+
+class WhenExpr extends Expression {
+    contains Expression condition
+    contains Expression thenExpr
+}
+
+class AtExpr extends Expression {
+    contains Expression subject
+    contains Expression atTime
+}
+
+class IntegrateExpr extends Expression {
+    contains Expression integrand
+    contains Expression period
+}
+
+class TickExpr extends Expression {
+    String clockId
+}
+
+class ComponentRefExpr extends Expression {
+    boolean relative           // true when leading '.' is present
+    contains ComponentStep[] steps
+}
+
+class ComponentStep {
+    String name
+    contains Subscript[] subscripts
+}
+
+class Subscript {
+    boolean slice              // true for ':', false for an index expression
+    contains Expression index  // null when slice == true
+}
+
+class IfExpr extends Expression {
+    contains Expression condition
+    contains Expression thenExpr
+    contains Expression elseExpr
+}
+
+class SetExpr extends Expression {
+    contains Expression[] elements  // empty list represents '{}'
+}
+
+class EvaluateExpr extends Expression {
+    contains Expression subject
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+abstract class Constant {}
+
+class BooleanConstant extends Constant {
+    BooleanValue value
+}
+
+class StringConstant extends Constant {
+    String value
+}
+
+class NumberConstant extends Constant {
+    double value
+}
+
+class TimeConstant extends Constant {}
+
+enum BooleanValue {
+    TRUE = 0
+    FALSE = 1
+    UNDECIDED = 2
+    UNDEFINED = 3
+}

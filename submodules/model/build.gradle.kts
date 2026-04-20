@@ -21,6 +21,11 @@ repositories {
 }
 
 // ─────────────────────────────────────────────
+//  Configurations
+// ─────────────────────────────────────────────
+val plantUml by configurations.creating
+
+// ─────────────────────────────────────────────
 //  Dependency resolution rules
 // ─────────────────────────────────────────────
 configurations.all {
