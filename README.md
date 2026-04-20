@@ -1,4 +1,4 @@
-# crml compiler
+# CRML compiler
 
 A POC compiler from CRML to Modelica. For questions contact lena.buffoni at liu.com
 
@@ -25,13 +25,15 @@ in the generated/ directory.
 
 You can use gradle to build the project from scratch.
 
-
+# CRML editor
 ## VSCode plugin
 
-[project repoisotry](https://github.com/lenaRB/crml-vscode)
+[project repository](https://github.com/lenaRB/crml-vscode)
 
+## Notepad plugin
 
+[project resources](resources/notepad_profile)
 
 # CRML specification
 
-The documentation for CRML can be found [HERE](./CRML_specification_v1.2.pdf)
+The documentation for CRML can be found [HERE](documentation/crml_specification)
