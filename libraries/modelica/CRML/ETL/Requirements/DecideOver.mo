@@ -1,5 +1,4 @@
 within CRML.ETL.Requirements;
-
 block DecideOver
         Connectors.Boolean4Input u "Boolean4 condition" annotation(
           Placement(transformation(extent = {{-120, -10}, {-100, 10}}), iconTransformation(extent = {{-120, -10}, {-100, 10}})));
@@ -9,11 +8,12 @@ block DecideOver
           Placement(transformation(extent = {{100, -10}, {120, 10}})));
         TimeLocators.Attributes.PeriodEnd periodEnd annotation(
           Placement(transformation(extent = {{-4, -12}, {4, -4}})));
-        CRML.Blocks.Logical4.Or4 or4_n annotation(
+        CRML.Blocks.Logical4.bOr4 or4_n
+                                       annotation(
           Placement(transformation(extent = {{40, -10}, {60, 10}})));
         CRML.Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4 annotation(
           Placement(transformation(extent = {{20, -12}, {28, -4}})));
-      equation
+equation
         connect(periodEnd.y, booleanToBoolean4.u) annotation(
           Line(points = {{4.4, -8}, {19.6, -8}}, color = {217, 67, 180}));
         connect(or4_n.u2, booleanToBoolean4.y) annotation(
@@ -45,4 +45,4 @@ block DecideOver
 <p><br><b><span style=\"font-family: MS Shell Dlg 2;\">Example</span></b> </p>
 <p><span style=\"font-family: MS Shell Dlg 2;\">This block is demonstrated with the following <a href=\"modelica://ReqSysPro.Examples.TimeLocators.Continuous.After\">example</a>:</span></p>
 </html>"));
-      end DecideOver;
+end DecideOver;

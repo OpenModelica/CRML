@@ -1,12 +1,11 @@
 within CRML.Blocks.Logical4;
-
 block Boolean4Constant "Generate a constant signal of type Boolean4"
         import CRML.ETL.Types.Boolean4;
         parameter Boolean4 K = Boolean4.true4 "Constant output value";
         ETL.Connectors.Boolean4Output y annotation(
           extent = [100, -10; 120, 10],
           Placement(transformation(extent = {{100, -10}, {120, 10}})));
-      equation
+equation
         y = K;
         //         Ellipse(
         //           extent={{71,7},{85,-7}},
@@ -24,4 +23,4 @@ block Boolean4Constant "Generate a constant signal of type Boolean4"
 <h4>Adapted from the Modelica.Blocks.Sources library </h4>
 <p><b>Version 1.0</b> </p>
 </html>"));
-      end Boolean4Constant;
+end Boolean4Constant;

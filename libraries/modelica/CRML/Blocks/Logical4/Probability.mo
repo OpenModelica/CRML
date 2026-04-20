@@ -1,5 +1,4 @@
 within CRML.Blocks.Logical4;
-
 block Probability "Probability that input is true"
         import CRML.ETL.Types.Boolean4;
         import Modelica.Utilities.Files;
@@ -38,7 +37,7 @@ block Probability "Probability that input is true"
           Placement(transformation(extent = {{100, -90}, {120, -70}})));
         ETL.Connectors.BooleanInput event annotation(
           Placement(transformation(extent = {{-120, -90}, {-100, -70}}), iconTransformation(extent = {{-120, -90}, {-100, -70}})));
-      algorithm
+algorithm
         /* Start of simulation */
         when initial() then
           /* Check that directory exists */
@@ -136,4 +135,4 @@ block Probability "Probability that input is true"
         annotation(
           Icon(coordinateSystem(preserveAspectRatio = false), graphics = {Rectangle(extent = {{-100, 100}, {100, -100}}, fillColor = {255, 213, 170}, lineThickness = 5, fillPattern = FillPattern.Solid, borderPattern = BorderPattern.Raised, lineColor = {0, 0, 0}), Text(extent = {{-160, 160}, {158, -160}}, lineColor = {0, 0, 0}, textString = "ℙ", fontName = "Cambria Math"), Text(extent = {{-218, 140}, {198, 100}}, lineColor = {0, 0, 255}, lineThickness = 0.5, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, textString = "%fileName")}),
           Diagram(coordinateSystem(preserveAspectRatio = false), graphics = {Rectangle(extent = {{-100, 100}, {100, -100}}, fillColor = {255, 213, 170}, lineThickness = 5, fillPattern = FillPattern.Solid, borderPattern = BorderPattern.Raised, lineColor = {0, 0, 0}), Text(extent = {{-160, 160}, {158, -160}}, lineColor = {0, 0, 0}, textString = "ℙ", fontName = "Cambria Math"), Text(extent = {{-218, 140}, {198, 100}}, lineColor = {0, 0, 255}, lineThickness = 0.5, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, textString = "%fileName")}));
-      end Probability;
+end Probability;

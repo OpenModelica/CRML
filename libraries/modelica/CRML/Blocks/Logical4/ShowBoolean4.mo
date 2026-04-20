@@ -1,12 +1,11 @@
 within CRML.Blocks.Logical4;
-
 block ShowBoolean4 "Show Boolean4 in diagram layer dynamically"
         import CRML.ETL.Types.Boolean4;
         output Boolean4 y;
       public
         ETL.Connectors.Boolean4Input u annotation(
           Placement(transformation(extent = {{-220, -10}, {-200, 10}}), iconTransformation(extent = {{-220, -10}, {-200, 10}})));
-      equation
+equation
         y = u;
         annotation(
           Icon(coordinateSystem(preserveAspectRatio = false, extent = {{-200, -100}, {200, 100}}, initialScale = 0.1), graphics = {Rectangle(lineColor = {0, 0, 127}, fillColor = {255, 213, 170}, fillPattern = FillPattern.Solid, lineThickness = 5, borderPattern = BorderPattern.Raised, extent = {{-200, -40}, {200, 40}}), Text(extent = {{-76, -20}, {76, 26}}, textString = DynamicSelect("-------", if Integer(u) == 1 then "undefined" else if Integer(u) == 2 then "undecided" else if Integer(u) == 3 then "false" else if Integer(u) == 4 then "true" else "????"))}),
@@ -40,4 +39,4 @@ The usage is demonstrated, e.g., in example
 <a href=\"modelica://Modelica.Blocks.Examples.IntegerNetwork1\">Modelica.Blocks.Examples.IntegerNetwork1</a>.
 </p>
 </html>"),Diagram(coordinateSystem(preserveAspectRatio = false, extent = {{-200, -100}, {200, 100}}, initialScale = 0.1), graphics = {Rectangle(lineColor = {0, 0, 127}, fillColor = {255, 213, 170}, fillPattern = FillPattern.Solid, lineThickness = 5, borderPattern = BorderPattern.Raised, extent = {{-200, -40}, {200, 40}}), Text(extent = {{-76, -20}, {76, 26}}, textString = DynamicSelect("-------", if Integer(u) == 1 then "undefined" else if Integer(u) == 2 then "undecided" else if Integer(u) == 3 then "false" else if Integer(u) == 4 then "true" else "????"))}));
-      end ShowBoolean4;
+end ShowBoolean4;

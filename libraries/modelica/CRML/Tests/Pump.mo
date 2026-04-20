@@ -1,5 +1,4 @@
 within CRML.Tests;
-
 model Pump
       TimeLocators.Continuous.FromFor delayToNominalSpeed annotation(
         Placement(transformation(extent = {{40, -32}, {60, -12}})));
@@ -29,7 +28,8 @@ model Pump
         Placement(transformation(extent = {{-100, -40}, {-80, -20}})));
       Requirements.CheckCountLowerEqual Req1(threshold = 3) annotation(
         Placement(transformation(extent = {{40, 20}, {60, 40}})));
-      Blocks.Logical4.And4 and4_1 annotation(
+      Blocks.Logical4.bAnd4 and4_1
+                                  annotation(
         Placement(transformation(extent = {{80, -10}, {100, 10}})));
       Modelica.Blocks.Logical.And pumpStarted annotation(
         Placement(transformation(extent = {{-40, -20}, {-20, 0}})));
@@ -37,7 +37,7 @@ model Pump
         Placement(transformation(extent = {{40, 80}, {60, 100}})));
       Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4_1 annotation(
         Placement(transformation(extent = {{16, 86}, {24, 94}})));
-    equation
+equation
       connect(delayToNominalSpeed.y, Req2.tl) annotation(
         Line(points = {{50, -32}, {50, -80}}, color = {0, 0, 255}));
       connect(plantStarted.y, not2.u) annotation(
@@ -90,4 +90,4 @@ model Pump
         Icon(coordinateSystem(preserveAspectRatio = false), graphics = {Ellipse(lineColor = {75, 138, 73}, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, extent = {{-100, -100}, {100, 100}}), Polygon(lineColor = {0, 0, 255}, fillColor = {75, 138, 73}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, points = {{-36, 60}, {64, 0}, {-36, -60}, {-36, 60}})}),
         Diagram(coordinateSystem(preserveAspectRatio = false)),
         experiment(StopTime = 500));
-    end Pump;
+end Pump;

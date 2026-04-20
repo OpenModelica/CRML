@@ -1,5 +1,4 @@
 within CRML.ETL.Tests;
-
 model EnsureAllAlong
         TimeLocators.Periods timePeriod(leftBoundaryIncluded = false, rightBoundaryIncluded = false) annotation(
           Placement(transformation(extent = {{0, 40}, {20, 60}})));
@@ -19,9 +18,10 @@ model EnsureAllAlong
           Placement(transformation(extent = {{-44, 38}, {-36, 46}})));
         CRML.Blocks.MathInteger.IntegerConstant integerConstant(K = 0) annotation(
           Placement(transformation(extent = {{-80, -80}, {-60, -60}})));
-        CRML.Blocks.Logical4.Not4 not4_1 annotation(
+        CRML.Blocks.Logical4.bNot4 not4_1
+                                         annotation(
           Placement(transformation(extent = {{-26, -36}, {-14, -24}})));
-      equation
+equation
         connect(eventPeriodic.y, booleanToBoolean4_1.u) annotation(
           Line(points = {{-59, -30}, {-44.4, -30}}, color = {217, 67, 180}));
         connect(timePeriod.y, ensure.tl) annotation(
@@ -44,4 +44,4 @@ model EnsureAllAlong
           Icon(coordinateSystem(preserveAspectRatio = false), graphics = {Ellipse(lineColor = {75, 138, 73}, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, extent = {{-100, -100}, {100, 100}}), Polygon(lineColor = {0, 0, 255}, fillColor = {75, 138, 73}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, points = {{-36, 60}, {64, 0}, {-36, -60}, {-36, 60}})}),
           Diagram(coordinateSystem(preserveAspectRatio = false)),
           experiment(StopTime = 14));
-      end EnsureAllAlong;
+end EnsureAllAlong;

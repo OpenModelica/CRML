@@ -1,5 +1,4 @@
 within CRML.Examples.TrafficLight;
-
 model Spec
         TimeLocators.Continuous.AfterBefore afterBefore annotation(
           Placement(transformation(extent = {{-40, 64}, {-20, 84}})));
@@ -31,9 +30,11 @@ model Spec
           Placement(transformation(extent = {{-10, -82}, {14, -58}})));
         Blocks.Logical4.ShowBoolean4 req3 annotation(
           Placement(transformation(extent = {{140, -2}, {162, 22}})));
-        Blocks.Logical4.And4 and4_1 annotation(
+        Blocks.Logical4.bAnd4 and4_1
+                                    annotation(
           Placement(transformation(extent = {{20, -58}, {40, -38}})));
-        Blocks.Logical4.And4 and4_2 annotation(
+        Blocks.Logical4.bAnd4 and4_2
+                                    annotation(
           Placement(transformation(extent = {{112, -50}, {132, -30}})));
         Blocks.Logical4.ShowBoolean4 req annotation(
           Placement(transformation(extent = {{138, -52}, {160, -28}})));
@@ -51,7 +52,7 @@ model Spec
           Placement(transformation(extent = {{84, 76}, {92, 84}})));
         Blocks.Events.Event4ToEvent event4ToEvent annotation(
           Placement(transformation(extent = {{42, 76}, {50, 84}})));
-      equation
+equation
         connect(afterBefore.y, checkInPCount.tl) annotation(
           Line(points = {{-30, 64}, {-30, 44}}, color = {0, 0, 255}));
         connect(const.y, afterFor.duration) annotation(
@@ -112,4 +113,4 @@ model Spec
           Icon(coordinateSystem(preserveAspectRatio = false, extent = {{-100, -100}, {160, 100}}), graphics = {Rectangle(extent = {{-100, 100}, {100, -100}}, lineColor = {28, 108, 200}, fillColor = {215, 215, 215}, fillPattern = FillPattern.Solid), Ellipse(extent = {{-20, 98}, {20, 58}}, lineColor = {238, 46, 47}, fillColor = {238, 46, 47}, fillPattern = FillPattern.Solid), Ellipse(extent = {{-20, 18}, {20, -20}}, lineColor = {244, 125, 35}, fillColor = {244, 125, 35}, fillPattern = FillPattern.Solid), Ellipse(extent = {{-20, -60}, {20, -98}}, lineColor = {0, 140, 72}, fillColor = {0, 140, 72}, fillPattern = FillPattern.Solid), Text(extent = {{-92, 126}, {90, 108}}, lineColor = {28, 108, 200}, fillColor = {255, 255, 255}, fillPattern = FillPattern.None, textString = "%name")}),
           Diagram(coordinateSystem(preserveAspectRatio = false, extent = {{-100, -100}, {160, 100}}), graphics = {Rectangle(extent = {{-86, -16}, {-14, -94}}, lineColor = {28, 108, 200}, fillColor = {255, 255, 170}, fillPattern = FillPattern.Solid), Rectangle(extent = {{-86, 96}, {-14, -10}}, lineColor = {28, 108, 200}, fillColor = {255, 255, 170}, fillPattern = FillPattern.Solid), Text(extent = {{-72, -2}, {-30, -6}}, lineColor = {28, 108, 200}, textString = "After green, next step is yellow"), Text(extent = {{-82, -82}, {-16, -94}}, lineColor = {28, 108, 200}, textString = "Step green should stay active for at least 30 seconds"), Rectangle(extent = {{16, 96}, {134, -16}}, lineColor = {28, 108, 200}, fillColor = {255, 255, 170}, fillPattern = FillPattern.Solid), Text(extent = {{24, -4}, {76, -8}}, lineColor = {28, 108, 200}, textString = "After green becomes active + 30 seconds,"), Text(extent = {{25, -8}, {81, -14}}, lineColor = {28, 108, 200}, textString = "next step should turn yellow within 0.2 seconds"), Text(extent = {{-126, 100}, {-96, 92}}, lineColor = {28, 108, 200}, textString = "red"), Text(extent = {{-126, -58}, {-96, -66}}, lineColor = {28, 108, 200}, textString = "green"), Text(extent = {{-126, 22}, {-96, 14}}, lineColor = {28, 108, 200}, textString = "yellow"), Text(extent = {{-84, 96}, {-58, 86}}, lineColor = {28, 108, 200}, textString = "req1"), Text(extent = {{28, 96}, {54, 86}}, lineColor = {28, 108, 200}, textString = "req3"), Text(extent = {{-84, -18}, {-58, -28}}, lineColor = {28, 108, 200}, textString = "req2")}),
           experiment(StopTime = 100));
-      end Spec;
+end Spec;

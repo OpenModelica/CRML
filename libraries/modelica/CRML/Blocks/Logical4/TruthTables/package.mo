@@ -1,9 +1,8 @@
 within CRML.Blocks.Logical4;
-
 package TruthTables
         import CRML.ETL.Types.Boolean4;
         constant Boolean4 and4[4, 4] = [Boolean4.undefined, Boolean4.undecided, Boolean4.false4, Boolean4.true4; Boolean4.undecided, Boolean4.undecided, Boolean4.false4, Boolean4.undecided; Boolean4.false4, Boolean4.false4, Boolean4.false4, Boolean4.false4; Boolean4.true4, Boolean4.undecided, Boolean4.false4, Boolean4.true4];
         constant Boolean4 not4[4] = {Boolean4.undefined, Boolean4.undecided, Boolean4.true4, Boolean4.false4};
         annotation(
           Icon(graphics = {Rectangle(lineColor = {200, 200, 200}, fillColor = {248, 248, 248}, fillPattern = FillPattern.HorizontalCylinder, extent = {{-100.0, -100.0}, {100.0, 100.0}}, radius = 25.0), Rectangle(lineColor = {128, 128, 128}, extent = {{-100.0, -100.0}, {100.0, 100.0}}, radius = 25.0), Rectangle(extent = {{-76, -26}, {80, -76}}, lineColor = {95, 95, 95}, fillColor = {235, 235, 235}, fillPattern = FillPattern.Solid), Rectangle(extent = {{-76, 24}, {80, -26}}, lineColor = {95, 95, 95}, fillColor = {235, 235, 235}, fillPattern = FillPattern.Solid), Rectangle(extent = {{-76, 74}, {80, 24}}, lineColor = {95, 95, 95}, fillColor = {235, 235, 235}, fillPattern = FillPattern.Solid), Line(points = {{-28, 74}, {-28, -76}}, color = {95, 95, 95}), Line(points = {{24, 74}, {24, -76}}, color = {95, 95, 95})}));
-      end TruthTables;
+end TruthTables;

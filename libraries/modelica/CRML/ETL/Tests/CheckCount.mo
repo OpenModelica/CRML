@@ -1,5 +1,4 @@
 within CRML.ETL.Tests;
-
 model CheckCount
         TimeLocators.Periods timePeriod annotation(
           Placement(transformation(extent = {{-20, 70}, {0, 90}})));
@@ -23,11 +22,12 @@ model CheckCount
           Placement(transformation(extent = {{-20, -20}, {0, 0}})));
         Requirements.CheckInteger ensure2(redeclare model Function = ETL.Requirements.Functions.MathInteger.EventCounter, redeclare model Condition = ETL.Requirements.Conditions.MathInteger.IntegerLowerEqual) annotation(
           Placement(transformation(extent = {{-20, -60}, {0, -40}})));
-        CRML.Blocks.Logical4.And4 and4 annotation(
+        CRML.Blocks.Logical4.bAnd4 and4
+                                       annotation(
           Placement(transformation(extent = {{40, -40}, {60, -20}})));
         CRML.Blocks.Events.ShowEvent showEvent annotation(
           Placement(transformation(extent = {{-34, 46}, {-26, 54}})));
-      equation
+equation
         connect(eventPeriodic.y, booleanToBoolean4_1.u) annotation(
           Line(points = {{-59, 30}, {-44.4, 30}}, color = {217, 67, 180}));
         connect(booleanToBoolean4_1.y, ensure.u) annotation(
@@ -66,4 +66,4 @@ model CheckCount
           Icon(coordinateSystem(preserveAspectRatio = false), graphics = {Ellipse(lineColor = {75, 138, 73}, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, extent = {{-100, -100}, {100, 100}}), Polygon(lineColor = {0, 0, 255}, fillColor = {75, 138, 73}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, points = {{-36, 60}, {64, 0}, {-36, -60}, {-36, 60}})}),
           Diagram(coordinateSystem(preserveAspectRatio = false)),
           experiment(StopTime = 20));
-      end CheckCount;
+end CheckCount;

@@ -1,5 +1,4 @@
 within CRML.ETL.Tests;
-
 model Master
         import CRML;
         TimeLocators.Periods timePeriod annotation(
@@ -36,7 +35,8 @@ model Master
           Placement(transformation(extent = {{56, 28}, {64, 36}})));
         CRML.Blocks.MathInteger.IntegerConstant integerConstant(K = 0) annotation(
           Placement(transformation(extent = {{0, -80}, {20, -60}})));
-        CRML.Blocks.Logical4.Not4 not4_1 annotation(
+        CRML.Blocks.Logical4.bNot4 not4_1
+                                         annotation(
           Placement(transformation(extent = {{54, -46}, {66, -34}})));
         CRML.Blocks.Logical.BooleanPulse booleanPulse(width = 6, period = 20, startTime = 2) annotation(
           Placement(transformation(extent = {{0, 80}, {20, 100}})));
@@ -46,7 +46,7 @@ model Master
           Placement(transformation(extent = {{60, 80}, {80, 100}})));
         CRML.Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4_7 annotation(
           Placement(transformation(extent = {{36, 86}, {44, 94}})));
-      equation
+equation
         connect(eventPeriodic.y, booleanToBoolean4_1.u) annotation(
           Line(points = {{-79, -40}, {-64.4, -40}}, color = {217, 67, 180}));
         connect(booleanToBoolean4_1.y, ensure.u) annotation(
@@ -87,4 +87,4 @@ model Master
           Icon(coordinateSystem(preserveAspectRatio = false), graphics = {Ellipse(lineColor = {75, 138, 73}, fillColor = {255, 255, 255}, fillPattern = FillPattern.Solid, extent = {{-100, -100}, {100, 100}}), Polygon(lineColor = {0, 0, 255}, fillColor = {75, 138, 73}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, points = {{-36, 60}, {64, 0}, {-36, -60}, {-36, 60}})}),
           Diagram(coordinateSystem(preserveAspectRatio = false)),
           experiment(StopTime = 14));
-      end Master;
+end Master;

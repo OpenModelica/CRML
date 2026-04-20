@@ -1,5 +1,4 @@
 within CRML.ETL.Requirements;
-
 block CheckAnytime
       protected
         parameter Integer N = CRML.ETL.Types.nMaxOverlap;
@@ -16,11 +15,13 @@ block CheckAnytime
           Placement(transformation(extent = {{30, -10}, {50, 10}})));
         CRML.Blocks.Routing.Boolean4Replicator boolean4Replicator(nout = N) annotation(
           Placement(transformation(extent = {{-90, -10}, {-70, 10}})));
-        CRML.Blocks.Logical4.Or4[N] or4_1 annotation(
+        CRML.Blocks.Logical4.bOr4
+                                [N] or4_1 annotation(
           Placement(transformation(extent = {{-10, 10}, {10, 30}})));
-        CRML.Blocks.Logical4.Not4[N] not4_1 annotation(
+        CRML.Blocks.Logical4.bNot4
+                                 [N] not4_1 annotation(
           Placement(transformation(extent = {{-50, 20}, {-30, 40}})));
-      equation
+equation
         connect(tl, eval.tl) annotation(
           Line(points = {{0, 100}, {0, 60}, {40, 60}, {40, 10}}, color = {0, 0, 255}));
         connect(u, boolean4Replicator.u) annotation(
@@ -60,4 +61,4 @@ block CheckAnytime
 <p><br><b><span style=\"font-family: MS Shell Dlg 2;\">Example</span></b> </p>
 <p><span style=\"font-family: MS Shell Dlg 2;\">This block is demonstrated with the following <a href=\"modelica://ReqSysPro.Examples.TimeLocators.Continuous.After\">example</a>:</span></p>
 </html>"));
-      end CheckAnytime;
+end CheckAnytime;
