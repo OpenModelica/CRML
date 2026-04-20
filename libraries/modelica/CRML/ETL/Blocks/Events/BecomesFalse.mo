@@ -1,5 +1,4 @@
 within CRML.ETL.Blocks.Events;
-
 model BecomesFalse "Events generated when a Boolean becomes false"
           Connectors.Boolean4Input b1 annotation(
             Placement(transformation(extent = {{-120, 10}, {-100, -10}})));
@@ -9,9 +8,10 @@ model BecomesFalse "Events generated when a Boolean becomes false"
             Placement(transformation(extent = {{-6, -6}, {6, 6}})));
           CRML.Blocks.Events.Event4ToEvent event4ToEvent annotation(
             Placement(transformation(extent = {{-54, -4}, {-46, 4}})));
-          CRML.Blocks.Logical4.Not4 not4_1 annotation(
+          CRML.Blocks.Logical4.bNot4 not4_1
+                                           annotation(
             Placement(transformation(extent = {{-88, -10}, {-68, 10}})));
-        equation
+equation
           connect(clockEvent.y, y) annotation(
             Line(points = {{6.6, 0}, {110, 0}}, color = {175, 175, 175}, pattern = LinePattern.Dot, thickness = 0.5));
           connect(clockEvent.u, event4ToEvent.y) annotation(
@@ -25,4 +25,4 @@ model BecomesFalse "Events generated when a Boolean becomes false"
             Diagram(coordinateSystem(preserveAspectRatio = false)),
             Documentation(info = "<html>
 </html>"));
-        end BecomesFalse;
+end BecomesFalse;
