@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+
 import crml.compiler.CompileSettings;
 import crml.compiler.ModelicaSimulationException;
 import crml.compiler.OMCUtil.CompileStage;

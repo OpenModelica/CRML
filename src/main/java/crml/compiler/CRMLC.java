@@ -3,7 +3,6 @@ package crml.compiler;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,20 +17,10 @@ import grammar.crmlLexer;
 import grammar.crmlParser;
 
 import org.apache.logging.log4j.Logger;
-import org.junit.platform.launcher.Launcher;
-import org.junit.platform.launcher.LauncherDiscoveryRequest;
-import org.junit.platform.launcher.LauncherSession;
-import org.junit.platform.launcher.TestPlan;
-import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
-import org.junit.platform.launcher.core.LauncherFactory;
-import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
-import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import com.beust.jcommander.JCommander;
 
 import org.apache.logging.log4j.LogManager;
-import org.junit.platform.engine.discovery.ClassNameFilter;
-import org.junit.platform.engine.discovery.DiscoverySelectors;
 
 
 
@@ -42,8 +31,7 @@ import org.junit.platform.engine.discovery.DiscoverySelectors;
  */
 public class CRMLC {
 
-   private static final Logger logger = LogManager.getLogger();	
-   private static Launcher launcher;
+   private static final Logger logger = LogManager.getLogger();
 
    public static void main( String[] args ) throws Exception {
 
@@ -62,20 +50,10 @@ public class CRMLC {
     }
 
     // incorrect arguments
-    if (cmd.files.isEmpty()&&!cmd.runTestSuite&&!cmd.testsuiteETL){
+    if (cmd.files.isEmpty()){
       System.err.println(" incorrect arguments");
       jc.usage();
       return;
-    }
-
-    if(cmd.runTestSuite){
-      runTestSuite(".*Tests");
-      return;  
-    }
-
-    if(cmd.testsuiteETL){
-      runTestSuite(".*ETLTests.*");
-      return;  
     }
 
     if(cmd.simulate != null)
@@ -248,37 +226,4 @@ public class CRMLC {
     }
   }
 
-  /**
-   * Run JUnit tests
-   * @param packageName
-   */
-  public static void runTestSuite(String filter) {
-
-    String testSuitePackage = "ctests";
-    SummaryGeneratingListener listener = new SummaryGeneratingListener();
-    TestListener tl = new TestListener();
-
-    LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-      .selectors(
-          DiscoverySelectors.selectPackage(testSuitePackage))
-      .filters(ClassNameFilter.includeClassNamePatterns(filter))
-      .build(); 
-    LauncherSession launcherSession = LauncherFactory.openSession();
-    launcher = launcherSession.getLauncher();
-    launcher.registerTestExecutionListeners(listener, tl);
-    //launcher.registerTestExecutionListeners(LoggingListener.forJavaUtilLogging(Level.INFO));
-  
-    TestPlan testPlan = launcher.discover(request);
-
-    if(!testPlan.containsTests()){
-     logger.error("The testsuite " + testPlan.getClass().getName() + " does not contain any JUnit tests.");
-     return;
-    }
-    
-    launcher.execute(testPlan); 
-    TestExecutionSummary summary = listener.getSummary();
-    summary.printTo(new PrintWriter(System.out));
-  
-    
-  }
 }

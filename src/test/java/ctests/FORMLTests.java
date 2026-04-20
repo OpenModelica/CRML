@@ -3,6 +3,7 @@ package ctests;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -20,8 +21,6 @@ public class FORMLTests  {
 
     @Nested
     public static class SimulationTests extends ParameterizedSuite {
-        public static String files="blanc";
-
         @BeforeAll
         public static void setupTestSuite() throws IOException {
             cs.initAllDirs("testModels", "verificationModels", 
@@ -34,8 +33,11 @@ public class FORMLTests  {
         @ParameterizedTest
         @MethodSource("fileNameSource")
         public void simulateTestFile(final String fileName) throws InterruptedException, IOException, ModelicaSimulationException {
+            emit(Path.of(cs.testFolderIn, fileName), "CRML model");
+
             OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
-            files = ret.files;
+            emit(ret.files, "files");
+
             if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
 			fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 
 			new Throwable( "\n omc fails with the following message: \n" + ret.msg));

@@ -1,4 +1,4 @@
-package crml.compiler;
+package crml.compiler.test.util;
 
 import java.lang.reflect.Field;
 

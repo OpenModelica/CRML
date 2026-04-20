@@ -12,9 +12,6 @@ public class CommandLineArgs {
     @Parameter(names = {"--printAST" }, description = "If set to true will display the AST for the model.")
     public Boolean printAST = false;
 
-    @Parameter(names = {"--testsuite"}, description = "Run the project JUnit testsuite.")
-    public Boolean runTestSuite = false;
-
     @Parameter(names = {"--external", "-e"}, description = "Generate a file containing the external variables found in the CRML model. \n Used to connect the requirement model to validation models.")
     public Boolean generateExternal = false;
 
@@ -36,9 +33,6 @@ public class CommandLineArgs {
     @Parameter(names = "--verify",  description = "verify the files passed in parameters, takes the path to the reference files")
     public String verify = null;
 
-    @Parameter(names = "--testsuiteETL",  description = "run just the ETL tests")
-    public boolean testsuiteETL;
-    
     @Parameter(names = "--within",  description = "generate the translated modelica model within a given class")
     public String within = "";
 

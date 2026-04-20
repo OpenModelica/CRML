@@ -8,15 +8,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import crml.compiler.CompileSettings;
-import crml.compiler.TestListener;
+import crml.compiler.test.util.TestListener;
+import crml.compiler.test.util.SharedParameter;
 
-@ExtendWith(TestListener.class) // a hook for catching succesful test results in the test report
+@ExtendWith({TestListener.class, SharedParameter.class}) // a hook for catching succesful test results in the test report
 public class ParameterizedSuite {
 
     public static CompileSettings cs = new CompileSettings();
+
+	private ExtensionContext.Store context;
+
+	@BeforeEach
+	public void beforeEach(ExtensionContext.Store context){
+		this.context = context;
+	}
+
+	public void emit(Object message, String key){
+		SharedParameter.registerKey(key, context);
+
+		System.out.println("Emit: "+key);
+		context.put(key, message);
+	}
+
 
     /**
 	 * Method for feeding the list of files into the parametrized test
