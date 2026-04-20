@@ -1,5 +1,4 @@
 within CRML.Requirements;
-
 block Ensure
     protected
       parameter Integer N = CRML.ETL.Types.nMaxOverlap;
@@ -14,11 +13,13 @@ block Ensure
         Placement(transformation(extent = {{-10, -10}, {10, 10}})));
       CheckAnytime checkAnyTime annotation(
         Placement(transformation(extent = {{-50, -40}, {-30, -20}})));
-      Blocks.Logical4.And4 and4_1 annotation(
+      Blocks.Logical4.bAnd4 and4_1
+                                  annotation(
         Placement(transformation(extent = {{60, -10}, {80, 10}})));
-      Blocks.Logical4.Not4 not4_1 annotation(
+      Blocks.Logical4.bNot4 not4_1
+                                  annotation(
         Placement(transformation(extent = {{-68, -10}, {-48, 10}})));
-    equation
+equation
       connect(tl, checkCountEqual.tl) annotation(
         Line(points = {{0, 100}, {0, 10}}, color = {0, 0, 255}));
       connect(u, checkAnyTime.u) annotation(
@@ -57,4 +58,4 @@ block Ensure
 <p><br><b><span style=\"font-family: MS Shell Dlg 2;\">Example</span></b> </p>
 <p><span style=\"font-family: MS Shell Dlg 2;\">This block is demonstrated with the following <a href=\"modelica://ReqSysPro.Examples.TimeLocators.Continuous.After\">example</a>:</span></p>
 </html>"));
-    end Ensure;
+end Ensure;

@@ -1,5 +1,4 @@
 within CRML.TimeLocators.Continuous;
-
 block During
         import CRML.ETL.Types.Boolean4;
         parameter Boolean leftBoundaryIncluded = true "If true, the left boundaries of the time periods are included";
@@ -17,9 +16,10 @@ block During
           Placement(transformation(extent = {{-10, -10}, {10, 10}}, rotation = -90, origin = {0, -100}), iconTransformation(extent = {{-10, -10}, {10, 10}}, rotation = -90, origin = {0, -100})));
         ETL.TimeLocators.Periods periods(durationSpecified = false, leftBoundaryIncluded = leftBoundaryIncluded, rightBoundaryIncluded = rightBoundaryIncluded) annotation(
           Placement(transformation(extent = {{-10, -10}, {10, 10}})));
-        Blocks.Logical4.Not4 not4_1 annotation(
+        Blocks.Logical4.bNot4 not4_1
+                                    annotation(
           Placement(transformation(extent = {{-60, -40}, {-40, -20}})));
-      equation
+equation
         if (cardinality(tl) == 0) then
           tl.timePeriod = true;
           tl.clock = Boolean4.true4;
@@ -47,4 +47,4 @@ block During
 <p><span style=\"font-family: MS Shell Dlg 2;\">For more information, refer to the <a href=\"modelica://CRML.ETL.TimeLocators.Periods\">Periods</a> block.</span></p>
 <p><span style=\"font-family: MS Shell Dlg 2;\">The <a href=\"modelica://CRML.TimeLocators.Continuous.Master\">Master</a> block can be used to specify the same master period to all time periods of the same model.</span></p>
 </html>"));
-      end During;
+end During;
