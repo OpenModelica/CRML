@@ -3,6 +3,7 @@ package crml.compiler.test.util;
 import static j2html.TagCreator.a;
 import static j2html.TagCreator.br;
 import static j2html.TagCreator.code;
+import static j2html.TagCreator.rawHtml;
 import static j2html.TagCreator.details;
 import static j2html.TagCreator.join;
 import static j2html.TagCreator.p;
@@ -205,7 +206,13 @@ public class TestListener implements TestExecutionListener, AfterEachCallback, A
                     summary(entry.getKey()),
                     pre(code(ast))
                 ).render());
-            } else {
+            } else if (entry.getValue() instanceof String && "files".equals(entry.getKey())) {
+                String ast = (String) entry.getValue();
+                node.info(details(
+                    summary(entry.getKey()),
+                    pre(rawHtml(ast))
+                ).render());
+            }else {
                 node.info(join(p(join(entry.getKey(), br())),
                         p(entry.getValue().toString())).render());
             }
