@@ -1,4 +1,4 @@
-package crml.language.specification.util;
+package crml.test;
 
 import static j2html.TagCreator.a;
 import static j2html.TagCreator.br;
@@ -36,7 +36,8 @@ import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
-import crml.language.util.ErrorListener.CRMLSyntaxResults;
+//import crml.language.util.ErrorListener.CRMLSyntaxResults;
+import crml.util.NaturalCompare;
 
 import static com.aventstack.extentreports.Status.FAIL;
 
@@ -201,10 +202,11 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 }     
-            } else if (entry.getValue() instanceof CRMLSyntaxResults syntax) {
+            } else if (entry.getValue() instanceof CustomHtmlReporter syntax) {
                 node.info(join(
                     p(join(entry.getKey(), br())),
-                    join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
+                    syntax.report()
+                    //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
                 ).render());
             } else if (entry.getValue() instanceof String ast && "AST".equals(entry.getKey())) {
                     node.info(details(

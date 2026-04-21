@@ -1,4 +1,4 @@
-package crml.language.specification.util;
+package crml.test;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -10,6 +10,8 @@
 rootProject.name = "crml-compiler"
 
 include(
+        "util",
+        "util-test",
         "language",
         "compiler"
 )

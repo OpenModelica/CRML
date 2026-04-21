@@ -10,17 +10,16 @@ dependencies {
     antlr("org.antlr:antlr4:4.9.2")
     implementation("org.antlr:antlr4:4.9.2")
 
-    testImplementation(project(":util"))
-    testImplementation(project(":util-test"))
+    implementation(project(":util"))
 
-    testImplementation("com.j2html:j2html:1.6.0")
+    implementation("com.j2html:j2html:1.6.0")
     
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    implementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("org.junit.platform:junit-platform-reporting:1.10.1")
-    testImplementation("org.junit.platform:junit-platform-launcher")
+    implementation("org.junit.platform:junit-platform-launcher")
 
-    testImplementation("com.aventstack:extentreports:5.0.9")
+    implementation("com.aventstack:extentreports:5.0.9")
     
 }
 

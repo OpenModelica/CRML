@@ -1,4 +1,4 @@
-package crml.language.specification.util;
+package crml.test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -16,13 +16,10 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.junit.jupiter.params.provider.Arguments;
 
-import crml.language.util.Parser;
+import crml.util.NaturalCompare;
 
 @ExtendWith({SpecificationTestListener.class, SharedParameter.class})
 public class BaseSpecificationTest {
-	public static final Path RESOURCES;
-	public static final Path OUT;
-
 	private ExtensionContext.Store context;
 
 	@BeforeEach
@@ -36,24 +33,7 @@ public class BaseSpecificationTest {
 		System.out.println("Emit: "+key);
 		context.put(key, message);
 	}
-
-	static {
-		try {
-			RESOURCES = Paths.get(Thread.currentThread().getContextClassLoader().getResource("specs/specRoot.txt").toURI()).getParent();
-			System.out.println("Resources: "+RESOURCES);
-			OUT = Path.of("build","testSuiteGenerated");
-			System.out.println("Output:"+OUT);
-		} catch (URISyntaxException e) {
-			// Test configuration is expected to be correct, 
-			// therefore, we just wrap potential errors in a runtime exception to hide it in code.
-			throw new RuntimeException("Incorrect project setup. Resources not found.");
-		}
-	}
-
-    protected Parser.ParserResult parse(Path model) throws IOException {
-        return new Parser().parse(model);
-    }
-
+	
 	public static List<Arguments> fileNameSourceHelper2(Path source) {
 		try (Stream<Path> list = Files.list(source)) {
 			return list

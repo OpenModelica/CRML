@@ -10,8 +10,7 @@ dependencies {
     antlr("org.antlr:antlr4:4.9.2")
     implementation("org.antlr:antlr4:4.9.2")
 
-    testImplementation(project(":util"))
-    testImplementation(project(":util-test"))
+
 
     testImplementation("com.j2html:j2html:1.6.0")
     
