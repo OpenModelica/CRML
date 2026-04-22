@@ -1,0 +1,29 @@
+grammar crml.language.xtext.CrmlXtext hidden(WS, ML_COMMENT, SL_COMMENT)
+
+/*
+ * Imports the shared EMF model from the :model subproject so the parse tree
+ * maps directly to crml.model.language.* instances instead of generating a
+ * separate XText-owned EMF model.
+ */
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+import "crml.model.language" as crml
+
+// ── Entry rule ───────────────────────────────────────────────────────────────
+
+Definition returns crml::Definition:
+    kind=DefinitionType name=ID 'is' '{' '}' ';'
+;
+
+// ── Enumerations ─────────────────────────────────────────────────────────────
+
+enum DefinitionType returns crml::DefinitionType:
+    MODEL='model' | PACKAGE='package' | LIBRARY='library'
+;
+
+// ── Terminal rules ────────────────────────────────────────────────────────────
+
+terminal WS:         (' ' | '\t' | '\r' | '\n')+;
+terminal ML_COMMENT: '/*' -> '*/';
+terminal SL_COMMENT: '//' !('\n' | '\r')* ('\r'? '\n')?;
+terminal ID:         '^'? ('a'..'z' | 'A'..'Z' | '_') ('a'..'z' | 'A'..'Z' | '_' | '0'..'9')*;
+terminal ANY_OTHER:  .;

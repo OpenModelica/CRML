@@ -1,0 +1,63 @@
+module crml.language.xtext.GenerateCrmlXtext
+
+import org.eclipse.xtext.xtext.generator.*
+import org.eclipse.xtext.xtext.generator.model.project.*
+import org.eclipse.emf.mwe.utils.*
+
+// Overridden from Gradle via: -p rootPath=<projectDir>
+var rootPath = "."
+var genmodelPath = "."
+
+Workflow {
+
+    // Register the shared EMF model so MWE2 can resolve the
+    // "crml.model.language" URI imported by CrmlXtext.xtext.
+    bean = StandaloneSetup {
+        registerGeneratedEPackage = "crml.model.language.LanguagePackage"
+        registerGenModelFile = genmodelPath
+    }
+
+    component = XtextGenerator {
+        configuration = {
+            project = StandardProjectConfig {
+                baseName = "crml.language"
+                rootPath = rootPath
+                runtime = {
+                    root    = rootPath
+                    // src is where the .xtext grammar file lives and where
+                    // one-time stubs (e.g. CrmlXtextStandaloneSetup) are placed.
+                    src     = "${rootPath}/src/main/java"
+                    srcGen  = "${rootPath}/build/xtext-gen/main"
+                }
+                genericIde = {
+                    enabled = false
+                }
+                runtimeTest = {
+                    enabled = false
+                }
+                eclipsePlugin = {
+                    enabled = false
+                }
+                createEclipseMetaData = false
+            }
+            code = {
+                encoding        = "UTF-8"
+                lineDelimiter   = "\n"
+                fileHeader      = ""
+                preferXtendStubs = false
+            }
+        }
+
+        language = StandardLanguage {
+            name           = "crml.language.xtext.CrmlXtext"
+            fileExtensions = "crmlx"
+
+            serializer = {
+                generateStub = false
+            }
+            validator = {
+                generateDeprecationValidation = false
+            }
+        }
+    }
+}

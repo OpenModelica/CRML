@@ -17,6 +17,8 @@ include(
         "compiler",
         "test-resources",
         "web"
+        "language-xtext",
+        "compiler"
 )
 for (project in rootProject.children) {
     val projectName = project.name

@@ -49,7 +49,8 @@ val emfCommonVersion = "2.28.0"
 //  Dependencies
 // ─────────────────────────────────────────────
 dependencies {
-
+    implementation("org.eclipse.emf:org.eclipse.emf.codegen.ecore:2.45.0")
+    
     // ── Xcore language support (build-time only) ──────────────────────────
     // These go on the classpath used by the Xtext builder to process .xcore
     // files and drive the EMF code generator.
@@ -113,3 +114,21 @@ sourceSets {
         }
     }
 }
+
+tasks.register<JavaExec>("generateGenModel") {
+    group = "code generation"
+    description = "Generates EMF GenModel"
+    
+    val outputFile = layout.buildDirectory.file("generated/model.genmodel")
+
+    outputs.file(outputFile)
+
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("crml.model.GenmodelMain")     
+    
+    args = listOf(
+        "crml.model",
+        outputFile.get().asFile.absolutePath
+    )
+}
+
