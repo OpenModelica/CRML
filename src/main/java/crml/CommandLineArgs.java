@@ -1,4 +1,4 @@
-package crml.compiler;
+package crml;
 
 import java.util.ArrayList;
 import java.util.List;

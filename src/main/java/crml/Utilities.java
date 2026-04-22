@@ -1,4 +1,4 @@
-package crml.compiler;
+package crml;
 
 import java.io.File;
 import java.util.List;

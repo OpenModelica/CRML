@@ -1,7 +1,9 @@
-package crml.compiler;
+package crml.omc;
 
 import java.io.File;
 import java.net.URL;
+
+import crml.Utilities;
 
 public class CompileSettings {
     

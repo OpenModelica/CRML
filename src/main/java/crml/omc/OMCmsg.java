@@ -1,4 +1,4 @@
-package crml.compiler;
+package crml.omc;
 
 public class OMCmsg {
         public String files;

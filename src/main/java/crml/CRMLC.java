@@ -1,21 +1,13 @@
-package crml.compiler;
+package crml;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.antlr.v4.runtime.tree.ParseTree;
-
-import grammar.crmlLexer;
-import grammar.crmlParser;
 
 import org.apache.logging.log4j.Logger;
 import org.junit.platform.launcher.Launcher;
@@ -28,6 +20,16 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import com.beust.jcommander.JCommander;
+
+import crml.compiler.Value;
+import crml.compiler.crmlVisitorImpl;
+import crml.language.Parser;
+import crml.language.Parser.ParserResult;
+import crml.omc.CompileSettings;
+import crml.omc.ModelicaSimulationException;
+import crml.omc.OMCUtil;
+import crml.omc.OMCmsg;
+import crml.test.TestListener;
 
 import org.apache.logging.log4j.LogManager;
 import org.junit.platform.engine.discovery.ClassNameFilter;
@@ -155,19 +157,13 @@ public class CRMLC {
       String fullName = dir + java.io.File.separator + file;
       File in_file = new File(fullName);
     
-      CharStream code = CharStreams.fromFileName(in_file.getAbsolutePath());
-    
-      crmlLexer lexer = new crmlLexer(code);
-      CommonTokenStream tokens = new CommonTokenStream( lexer );
-      crmlParser parser = new crmlParser( tokens );
-      List<String> ruleNamesList = Arrays.asList(parser.getRuleNames());
-      ParseTree tree = parser.definition();
+      ParserResult parsed = Parser.parse(in_file);
       
-      if (tree == null)
+      if (parsed.ast() == null)
         logger.error("Unable to parse: " + file);
 
       if (printAST){
-            String prettyTree = Utilities.toPrettyTree(tree, ruleNamesList);
+            String prettyTree = Utilities.toPrettyTree(parsed.ast(), parsed.ruleNames());
             logger.trace("\nThe AST for the program: \n" + prettyTree);
           }
        
@@ -176,12 +172,12 @@ public class CRMLC {
      
 
       if (generateExternal)
-        visitor = new crmlVisitorImpl(parser, external_var, causal);
+        visitor = new crmlVisitorImpl(parsed.parser(), external_var, causal);
       else
-        visitor = new crmlVisitorImpl(parser, causal);
+        visitor = new crmlVisitorImpl(parsed.parser(), causal);
 
       try {
-        Value result = visitor.visit(tree);
+        Value result = visitor.visit(parsed.parser().definition());
   
         if (result != null) {  	
         
@@ -214,7 +210,7 @@ public class CRMLC {
         else {
           logger.error("Unable to translate: " + file + "\n");
           if (printAST){
-            String prettyTree = Utilities.toPrettyTree(tree, ruleNamesList);
+            String prettyTree = Utilities.toPrettyTree(parsed.ast(), parsed.ruleNames());
             logger.trace("\nThe AST for the program: \n" + prettyTree);
           }
           if(testMode)
@@ -226,7 +222,7 @@ public class CRMLC {
         
         logger.error("Translation error: "+ e, e);
         if (printAST){
-            String prettyTree = Utilities.toPrettyTree(tree, ruleNamesList);
+            String prettyTree = Utilities.toPrettyTree(parsed.ast(), parsed.ruleNames());
             logger.trace("\nThe AST for the program: \n" + prettyTree);
           }
         
@@ -235,7 +231,7 @@ public class CRMLC {
       catch(Exception e) {
         logger.error("Uncaught error: " + e, e);
         if (printAST){
-            String prettyTree = Utilities.toPrettyTree(tree, ruleNamesList);
+            String prettyTree = Utilities.toPrettyTree(parsed.ast(), parsed.ruleNames());
             logger.trace("\nThe AST for the program: \n" + prettyTree);
           }
         if (testMode) throw e;
