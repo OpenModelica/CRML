@@ -1,0 +1,7 @@
+IntegerCondition
+IntegerGreater
+IntegerGreaterEqual
+IntegerLower
+IntegerLowerEqual
+IntegerEqual
+IntegerNotEqual
