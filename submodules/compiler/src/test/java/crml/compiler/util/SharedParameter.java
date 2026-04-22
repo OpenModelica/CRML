@@ -7,8 +7,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
-import lombok.val;
-
 public class SharedParameter implements ParameterResolver {
     public static final ExtensionContext.Namespace MESSAGE_NAMESPACE =
             ExtensionContext.Namespace.create("OMC", "message");
