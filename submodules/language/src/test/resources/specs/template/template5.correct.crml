@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.14 Type Template - template composition
+// mission change: switches from R2 to R1
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Template b1 'implies' b2 = not b1 or b2;
+    Template 'missionChange' R1 R2 = not R1 'implies' R2;
+};

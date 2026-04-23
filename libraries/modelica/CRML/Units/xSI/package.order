@@ -1,0 +1,16 @@
+PressureLossCoefficient
+DerDensityByEnthalpy
+DerDensityByEntropy
+DerEnergyByTemperature
+DerEnergyByPressure
+DerEntropyByTemperature
+DerEntropyByPressure
+DerPressureByDensity
+DerPressureBySpecificVolume
+DerPressureByTemperature
+DerVolumeByTemperature
+DerVolumeByPressure
+Cv
+SonicConductance
+IdealGasConstant
+ViscousFriction

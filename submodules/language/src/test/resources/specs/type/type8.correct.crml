@@ -1,0 +1,15 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - alias with special characters using bracket notation
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    type Acceleration is Quantity (SIUnit = "m/s2", userUnit = "m/s2", rate = 1, offset = 0) alias [m/s2];
+};

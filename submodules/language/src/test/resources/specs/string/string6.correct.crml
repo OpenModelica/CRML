@@ -1,0 +1,3 @@
+model Foo is {
+    String s6 is new String 10.5E7;
+};

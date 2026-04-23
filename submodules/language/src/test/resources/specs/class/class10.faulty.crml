@@ -1,0 +1,10 @@
+// -------------------------------------------------------------------------
+// Faulty - missing semicolon after class declaration
+// -------------------------------------------------------------------------
+
+model Foo is {
+    class Pump is {
+        Real c is external;
+        Real efficiency is external;
+    }
+};

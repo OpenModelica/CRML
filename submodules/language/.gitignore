@@ -1,0 +1,4 @@
+# ingore gradle stuff
+
+bin/
+build/

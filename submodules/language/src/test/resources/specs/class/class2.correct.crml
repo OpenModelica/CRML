@@ -1,0 +1,6 @@
+model Foo is {
+    partial class Equipment is { 
+        String id; // Equipment identification 
+        Boolean inOperation is external; // Indicates whether the equipment is in operation or not 
+    }; 
+};

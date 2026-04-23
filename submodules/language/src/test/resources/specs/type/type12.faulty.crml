@@ -1,0 +1,12 @@
+// -------------------------------------------------------------------------
+// Faulty - missing 'type' keyword in type declaration
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        Real rate;
+        Real offset;
+        Real u;
+    };
+};

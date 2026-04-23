@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.12.2 Operators - and (Periods and Periods = Boolean)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Periods PS1 is external;
+    Periods PS2 is external;
+    Boolean b is PS1 and PS2;
+};

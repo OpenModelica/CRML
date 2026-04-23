@@ -1,0 +1,32 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - redeclare with new attribute name (CoolingSystemRefined from spec)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment is {
+        String id;
+        Boolean inOperation is external;
+    };
+
+    class Pump is {
+        Real c is external;
+        Real efficiency is external;
+        Boolean cav is external;
+        Boolean nocav = during inOperation ensure not cav;
+    } extends Equipment;
+
+    class CoolingSystem is {
+        Pump pump1;
+        Pump pump2;
+        Pump pump3;
+    } extends Equipment;
+
+    class CoolingSystemRefined is {
+        redeclare Pump pump1 = p1;
+        redeclare Pump pump2 = p2;
+        redeclare Pump pump3 = p3;
+        Pump p1;
+        Pump p2;
+        Pump p3;
+    } extends CoolingSystem;
+};

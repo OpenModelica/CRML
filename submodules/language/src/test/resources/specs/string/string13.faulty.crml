@@ -1,0 +1,3 @@
+model Foo is {
+    String s13 is This is a string";
+};

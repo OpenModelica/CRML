@@ -1,0 +1,16 @@
+model TypeForbid is {
+    // Base quantity type
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    // Absolute temperature forbids addition and multiplication
+    partial type AbsoluteTemperature is Quantity (SIUnit = "K") forbid { +, * };
+
+    type AbsoluteTemperatureKelvin is AbsoluteTemperature (userUnit = "K", rate = 1, offset = 0) alias K;
+    type AbsoluteTemperatureCelsius is AbsoluteTemperature (userUnit = "Celsius", rate = 1, offset = 273.15) alias Celsius;
+};

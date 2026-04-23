@@ -1,0 +1,17 @@
+model TypeQuantityHierarchy is {
+    // Base partial type with constructor expression
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;    // SI unit for quantity q
+        String userUnit;  // User unit for quantity q
+        Real u;           // Quantity q expressed in user units
+        Real rate;        // Conversion rate between user units and SI units
+        Real offset;      // Offset between user units and SI units
+    };
+
+    // Pressure specialization fixing the SI unit
+    partial type Pressure is Quantity (SIUnit = "Pa");
+
+    // Concrete types for pressure in different units
+    type PressurePa is Pressure (userUnit = "Pa", rate = 1, offset = 0) alias Pa;
+    type PressureBar is Pressure (userUnit = "bar", rate = 1.e5, offset = 0) alias bar;
+};

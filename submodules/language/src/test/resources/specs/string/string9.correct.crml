@@ -1,0 +1,3 @@
+model Foo is {
+    String s9 is new String undecided;
+};

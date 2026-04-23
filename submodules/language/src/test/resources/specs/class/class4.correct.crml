@@ -1,0 +1,24 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - class with typed attributes that are instances of another class
+// (CoolingSystem from spec Section 4.21)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment is {
+        String id;
+        Boolean inOperation is external;
+    };
+
+    class Pump is {
+        Real c is external;
+        Real efficiency is external;
+        Boolean cav is external;
+        Boolean nocav = during inOperation ensure not cav;
+    } extends Equipment;
+
+    class CoolingSystem is {
+        Pump pump1;
+        Pump pump2;
+        Pump pump3;
+    } extends Equipment;
+};
