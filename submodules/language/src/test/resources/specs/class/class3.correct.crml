@@ -1,0 +1,14 @@
+model Foo is {
+    partial class Equipment is { 
+        String id; // Equipment identification 
+        Boolean inOperation is external; // Indicates whether the equipment is in operation or not 
+    }; 
+
+    class Pump is {
+        Real c is external; // Pump characteristic 
+        Real efficiency is external; // Pump efficiency 
+        Boolean cav is external; // Indicates whether the pump cavitates or not 
+        /* Requirement that states that the pump must not cavitate while in operation */ 
+        Boolean nocav = during inOperation ensure not cav;  
+    } extends Equipment; 
+};

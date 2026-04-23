@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - delay (Clock + Integer = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Clock c1 is external;
+    Integer d is external;
+    Clock c2 is c1 + d;
+};

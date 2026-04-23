@@ -1,0 +1,15 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - partial type specialization with fixed attribute value
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    partial type Pressure is Quantity (SIUnit = "Pa");
+};

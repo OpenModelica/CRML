@@ -1,0 +1,18 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - alias operator associating a string alias with a type
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    partial type Pressure is Quantity (SIUnit = "Pa");
+
+    type PressurePa is Pressure (userUnit = "Pa", rate = 1, offset = 0) alias Pa;
+    type PressureBar is Pressure (userUnit = "bar", rate = 1.e5, offset = 0) alias bar;
+};

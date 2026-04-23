@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - conjunction Event and Clock (Event and Clock = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Event e is external;
+    Clock c1 is external;
+    Clock c2 is e and c1;
+};

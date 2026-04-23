@@ -1,0 +1,21 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - class extending multiple parent classes
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment is {
+        String id;
+        Boolean inOperation is external;
+    };
+
+    partial class Monitored is {
+        Boolean alarmed is external;
+    };
+
+    class Pump is {
+        Real c is external;
+        Real efficiency is external;
+        Boolean cav is external;
+        Boolean nocav = during inOperation ensure not cav;
+    } extends Equipment, Monitored;
+};

@@ -1,0 +1,10 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - filter (Clock filter Boolean tick = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Clock c1 is external;
+    Boolean cond is external;
+    Operator [ Boolean ] 'cond' Integer i = i > 0;
+    Clock c2 is c1 filter 'cond' tick; // 4.10.2 Filter, Natural language syntax example. (?)
+};

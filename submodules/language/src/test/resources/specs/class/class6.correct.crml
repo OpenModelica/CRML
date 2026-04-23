@@ -1,0 +1,16 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - mathematical notation using '=' instead of 'is'
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial class Equipment = {
+        String id;
+        Boolean inOperation = external;
+    };
+
+    class Pump = {
+        Real c = external;
+        Real efficiency = external;
+        Boolean cav = external;
+    } extends Equipment;
+};
