@@ -1,5 +1,0 @@
-model EventConstructors is {
-	// Constructors
-	Boolean b is external;
-	Event e is new Event b;
-};

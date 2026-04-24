@@ -1,0 +1,53 @@
+cd();
+if not loadFile("[(${crml2ModelicaPath})]") then
+  print(getErrorString());
+  exit(1);
+end if;
+getErrorString();
+if not loadFile("package.mo") then
+  print(getErrorString());
+  exit(1);
+end if;
+getErrorString();
+checkModel([(${stripped_file_name})].[(${stripped_file_name})]);
+getErrorString();
+[# th:if="${verifModelExists}"]
+if not loadFile("[(${crmlLibPath})]") then
+  print(getErrorString());
+  exit(1);
+end if;
+getErrorString();
+
+/** 
+if not existClass([(${stripped_file_name})].[(${stripped_file_name})]_verif) then
+  print(getErrorString());
+  exit(1);
+end if; 
+getErrorString();
+if not existClass([(${stripped_file_name})].[(${stripped_file_name})]_externals) then
+  print(getErrorString());
+  exit(1);
+end if; 
+getErrorString();
+*/
+
+res := simulate([(${stripped_file_name})].[(${stripped_file_name})]_verif);
+error := getErrorString();
+resultFile := res.resultFile;
+messages := res.messages;
+if resultFile == "" then
+  print("Error: Simulation of: [(${stripped_file_name})]_verif did not produce a result-file\n");
+  print("Errors: " + messages + error + "\n");
+  exit(1);
+end if;
+[/][# th:unless="${verifModelExists}"]
+res := simulate([(${stripped_file_name})].[(${stripped_file_name})]);
+error := getErrorString();
+resultFile := res.resultFile;
+messages := res.messages;
+if resultFile == "" then
+  print("Error: Simulation of: [(${stripped_file_name})].[(${stripped_file_name})] did not produce a result-file\n");
+  print("Errors: " + messages + error + "\n");
+  exit(1);
+end if;
+[/]

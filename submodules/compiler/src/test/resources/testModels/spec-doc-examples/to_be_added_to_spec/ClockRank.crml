@@ -1,4 +1,0 @@
-model ClockRank is {
-	Clock c1 is external;
-	Integer r is rank tick c1;
-};

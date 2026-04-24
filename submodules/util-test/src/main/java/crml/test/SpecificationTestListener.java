@@ -11,7 +11,9 @@ import static j2html.TagCreator.summary;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -126,7 +128,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
         TestExecutionResult.Status status;
         Throwable throwable = null;
-        if (context.getExecutionException().isEmpty()) {
+        if (!context.getExecutionException().isPresent()) {
             status = TestExecutionResult.Status.SUCCESSFUL;
         } else {
             throwable = context.getExecutionException().get();
@@ -148,7 +150,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         initReport();
 
         String className = context.getRequiredTestClass().getName();
-        List<String> testNames = RESULTS_BY_CLASS.getOrDefault(className, List.of());
+        List<String> testNames = RESULTS_BY_CLASS.getOrDefault(className, Collections.emptyList());
         if (testNames.isEmpty())
             return;
 
@@ -188,9 +190,10 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
-            if (entry.getValue() instanceof Path path) {
+            if (entry.getValue() instanceof Path) {
+                Path path = (Path) entry.getValue();
                 try { 
-                    String fileContent = Files.readString(path); 
+                    String fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
                     node.info(join(
                         p(join(entry.getKey(), br())),
                         pre(code(fileContent)),
@@ -202,13 +205,15 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 }     
-            } else if (entry.getValue() instanceof CustomHtmlReporter syntax) {
+            } else if (entry.getValue() instanceof CustomHtmlReporter) {
+                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
                 node.info(join(
                     p(join(entry.getKey(), br())),
                     syntax.report()
                     //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
                 ).render());
-            } else if (entry.getValue() instanceof String ast && "AST".equals(entry.getKey())) {
+            } else if (entry.getValue() instanceof String && "AST".equals(entry.getKey())) {
+                    String ast = (String) entry.getValue();
                     node.info(details(
                         summary(entry.getKey()),
                         pre(code(ast))
@@ -220,13 +225,17 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         }
 
         switch (status) {
-            case SUCCESSFUL -> node.pass(status.toString());
-            case FAILED -> {
+            case SUCCESSFUL:
+                node.pass(status.toString());
+                break;
+            case FAILED:
                 node.fail(status.toString());
                 if (throwable != null)
                     node.log(FAIL, throwable);
-            }
-            case ABORTED -> node.skip(status.toString());
+                break;
+            case ABORTED:
+                node.skip(status.toString());
+                break;
         }
     }
 

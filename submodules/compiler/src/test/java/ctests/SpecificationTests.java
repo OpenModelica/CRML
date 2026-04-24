@@ -12,7 +12,8 @@ import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
 import crml.compiler.omc.OMCmsg;
-import crml.compiler.util.SharedParameter;
+import crml.compiler.util.CompilerRoot;
+import crml.test.ReportedTest;
 
 /**
  * 
@@ -22,28 +23,31 @@ import crml.compiler.util.SharedParameter;
  *
  */
 //@Disabled("temporarily disabled to speed up ETL testing")
-public class SpecificationTests extends ParameterizedSuite {
-	public static CompileSettings cs;
-
-        static List<Path> fileNameSource() {
-        return ParameterizedSuite.fileNameSourceHelper(RESOURCES.resolve("testModels").resolve("spec-doc-examples"));
+public class SpecificationTests extends ReportedTest {
+    public static CompileSettings cs;
+    
+    static List<Path> fileNameSource() {
+        System.out.println(CompilerRoot.RESOURCES.toString());
+        return CompilerRoot.fileNameSourceHelper(CompilerRoot.RESOURCES.resolve("testModels").resolve("spec-doc-examples"));
     }
 
  	@BeforeAll
     public static void setupTestSuite() {
+        System.out.println(CompilerRoot.RESOURCES.toString());
 		cs = new CompileSettings(
-                RESOURCES.resolve("testModels").resolve("spec-doc-examples"),
-                RESOURCES.resolve("verificationModels").resolve("spec-doc-examples"),
-                RESOURCES.resolve("refResults").resolve("spec-doc-examples"));
+                CompilerRoot.RESOURCES.resolve("testModels").resolve("spec-doc-examples"),
+                CompilerRoot.RESOURCES.resolve("verificationModels").resolve("spec-doc-examples"),
+                CompilerRoot.RESOURCES.resolve("refResults").resolve("spec-doc-examples"));
         cs.processBuilder = new ProcessBuilder();
-        cs.outputFolder = OUT.resolve("spec-doc-examples");
+        cs.outputFolder = CompilerRoot.OUT.resolve("spec-doc-examples");
 	}
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
 	public void simulateTestFile(final Path fileName) throws InterruptedException, IOException, ModelicaSimulationException {
-	    emit(fileName, SharedParameter.CRML_FILE_KEY);
+	    emit(fileName, "CRML model");
                 OMCmsg ret = Util.runTest(fileName, cs, CompileStage.VERIFY);
-        emit(ret.files);
+        emit(ret.files, "Files");
+        emit(ret.msg, "OMC message");
 	}
 }

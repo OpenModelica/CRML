@@ -1,4 +1,0 @@
-model BooleanIsFalse is {
-	// Constructors
-	Boolean b2 is false;
-};

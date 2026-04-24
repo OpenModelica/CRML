@@ -2,14 +2,15 @@ package crml.compiler.omc;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class CompileSettings {
     
     public Path testFolderIn;
 	public Path verifModelFolder;
     public Path referenceResFolder;
-    public Path outputFolder = Path.of("build/testSuiteGenerated"); // if not set explicitly
-    public String within = ""; //Used in OMCUtil
+    public Path outputFolder = Paths.get("build/testSuiteGenerated"); // if not set explicitly
+    public String within = null; //Used in OMCUtil
 
     //static final String defaultOutputRoot = "build/testSuiteGenerated";
 	//static final String CRMLtoModelicaLibrary = "libraries/modelica/CRMLtoModelica.mo";
@@ -44,7 +45,7 @@ public class CompileSettings {
      * Puts the tests in a sub-folder in the default putput directory
      */
     /*public void setOutputSubFolder(String subFolder){
-        outputFolder = Path.of(defaultOutputRoot, subFolder);
+        outputFolder = Paths.get(defaultOutputRoot, subFolder);
     }*/
 
     private static Path getResourcePath(String dirName){
@@ -52,9 +53,9 @@ public class CompileSettings {
 
         URL url = Thread.currentThread().getContextClassLoader().getResource(dirName);
         if(url != null) {
-            return Path.of(url.getPath());
+            return Paths.get(url.getPath());
         } else {
-            return Path.of("src/test/resources/", dirName);
+            return Paths.get("src/test/resources/", dirName);
         }            
 	}
 }

@@ -9,10 +9,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
+
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import crml.compiler.Utilities;
 
@@ -22,56 +28,38 @@ import crml.compiler.Utilities;
 public class OMCUtil {
     public enum CompileStage {TRANSLATE, SIMULATE, VERIFY};
 
-    public static record OMCFilesLog(Path... files){};
+    private static final TemplateEngine TEMPLATE_ENGINE;
+
+    static {
+        ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
+        resolver.setPrefix("templates/");
+        resolver.setSuffix(".mos");
+        resolver.setTemplateMode(TemplateMode.TEXT);
+        resolver.setCharacterEncoding("UTF-8");
+        TEMPLATE_ENGINE = new TemplateEngine();
+        TEMPLATE_ENGINE.setTemplateResolver(resolver);
+    }
+
+    public static final class OMCFilesLog {
+        private final Path[] files;
+
+        public OMCFilesLog(Path... files) {
+            this.files = files;
+        }
+
+        public Path[] files() { return files; }
+    }
     /**
    * Method for comparing omc simulation results to reference files
    * @param res_file simulation result file
    * @param ref_file reference result file
    * @return code for comparison script
    */
-  public static String compareSimulationResults(String res_file, String ref_file){
-
-    String loadRes =
-      "arrActual := readSimulationResultVars(\"" + Utilities.toUnixPath(res_file) + "\"); getErrorString();\n" +
-      "arrExpect := readSimulationResultVars(\"" + Utilities.toUnixPath(ref_file) + "\"); getErrorString();\n";
-
-    String helper_functions =
-    "loadString(\" \n" +
-    "function stringIntersection \n" +
-    "  input String[:] a1; \n" +
-    "  input String[:] a2; \n" + 
-    "  output Integer last = 0; \n" +
-    "  output String[size(a2, 1)] o = fill(\\\"\\\", size(a2, 1)); \n"  +
-    "protected \n" +
-    "Integer i, j, k = 0; \n" +
-    "algorithm \n" +
-      "for i in 1:size(a1, 1) loop\n" +
-      "for j in 1:size(a2, 1) loop\n" +
-         "if a1[i] == a2[j] then\n" +
-         "k := k + 1;\n" +
-         "o[k] := a1[i];\n" +
-         "end if;\n" +
-       "end for;\n" +
-      "end for;\n" +
-      "last := k;\n" +
-    "end stringIntersection;\n" +
-    "function trimArray\n" +
-      "input Integer sz;\n" +
-      "input String[:] a1;\n" +
-      "output String[sz] o = a1[1:sz];\n" +
-    "end trimArray;\n" +
-    "\"); getErrorString();\n";
-
-    String compare = 
-    "(sz, set) := stringIntersection(arrActual, arrExpect);\n" +
-    "sz; \n" +
-    "set; \n" +
-    "intersect := trimArray(sz, set); \n" +
-    "diffSimulationResults(\n\"" + Utilities.toUnixPath(res_file) + "\", \"" + Utilities.toUnixPath(ref_file) + "\" \n, \"diff\", \n" +
-        "vars = intersect); getErrorString();\n";
-
-    return loadRes + helper_functions + compare;
-    
+  public static String compareSimulationResults(String res_file, Path ref_file) {
+    Context ctx = new Context();
+    ctx.setVariable("res_file", Utilities.toUnixPath(res_file));
+    ctx.setVariable("ref_file", ref_file.toAbsolutePath().toString());// Was: Utilities.toUnixPath(ref_file)
+    return TEMPLATE_ENGINE.process("compare_simulation_results", ctx);
   }
 
   public static Path getCRMLToModelicaFile() {
@@ -97,85 +85,38 @@ public class OMCUtil {
   }
 
   public static String generateSimulationScript(String stripped_file_name, Path verifModelFolder, Path out_dir) throws IOException {
-    File crml2Modelica = getCRMLToModelicaFile().toFile();
-    File crmlLib = getCRMLLibrary().toFile();
+    Path crml2Modelica = out_dir.resolve("crml2modelica.mo");
+    Files.copy(getCRMLToModelicaFile(), crml2Modelica, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
+    Path crmlLib = out_dir.resolve("CRML.mo");
+    Files.copy(getCRMLLibrary(), crmlLib, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
 
-    if (!crml2Modelica.exists()) 
-      throw new IOException("Could not find: " + Utilities.toUnixPath(crml2Modelica.getAbsolutePath()));
-   
-    if (!crmlLib.exists()) 
-      throw new IOException("Could not find: " + Utilities.toUnixPath(crmlLib.getAbsolutePath()));
-      
+    //File crml2Modelica = getCRMLToModelicaFile().toFile();
+    //File crmlLib = getCRMLLibrary().toFile();
 
-    // .mos file for running the generated Modelica file
-    String mos_text = 
-      "cd();\n" +
-      "if not loadFile(\""+ Utilities.toUnixPath(crml2Modelica.getAbsolutePath()) + "\") then\n" +
-      "  print(getErrorString());\n" +
-      "  exit(1);\n" +
-      "end if;\n" + 
-      "getErrorString();\n" +
-     // "if not loadFile(\"" + stripped_file_name + ".mo"+ "\") then\n" +
-      "if not loadFile(\"" + "package" + ".mo"+ "\") then\n" +
-      "  print(getErrorString());\n" +
-      "  exit(1);\n" +
-      "end if;\n" +
-      "getErrorString();\n" +
-      "checkModel("+ stripped_file_name + "." + stripped_file_name +");\n" +
-      "getErrorString();\n";
-   
-    // check if there is a simulation example to run the test-case
-    File verif_model = verifModelFolder.resolve(stripped_file_name).toFile();
     
-    if(verif_model.exists()) {
-      // copy files 
-      File [] fnames = verif_model.listFiles();
-      
-      for (File f : fnames) {
-        Files.copy(f.toPath(), out_dir.resolve(f.getName()), StandardCopyOption.REPLACE_EXISTING);
-        //System.err.println(f.getName());
-      }
-      mos_text += "if not loadFile(\""+ Utilities.toUnixPath(crmlLib.getAbsolutePath()) + "\") then\n" +
-                  "  print(getErrorString());\n" +
-                  "  exit(1);\n" +
-                  "end if;\n" + 
-                  "getErrorString();\n";
-      /** 
-      mos_text += "if not existClass(" + stripped_file_name  + "." + stripped_file_name + "_verif"+ ") then\n" +
-                  "  print(getErrorString());\n" +
-                  "  exit(1);\n" +
-                  "end if;\n" + 
-                 "getErrorString();\n";
-      mos_text += "if not existClass(" + stripped_file_name  + "." + stripped_file_name + "_externals"+ ") then\n" +
-                  "  print(getErrorString());\n" +
-                  "  exit(1);\n" +
-                  "end if;\n" + 
-                  "getErrorString();\n";*/
-      mos_text += "res := simulate("+ stripped_file_name  + "." + stripped_file_name + "_verif" +");\n" + 
-                  "error := getErrorString();\n" + 
-                  "resultFile := res.resultFile;\n" +
-                  "messages := res.messages;\n" +
-                  "if resultFile == \"\" then\n" + 
-                  "  print(\"Error: Simulation of: " + stripped_file_name + "_verif" + " did not produce a result-file\n\");\n" +
-                  "  print(\"Errors: \" + messages + error + \"\\n\");\n" +
-                  "  exit(1);\n" +
-                  "end if;\n";
-    } else { // try simulating the model on its own (the non_external ones)
-      mos_text += "res := simulate("+ stripped_file_name  + "." + stripped_file_name+");" + 
-                  "error := getErrorString();\n" + 
-                  "resultFile := res.resultFile;\n" +
-                  "messages := res.messages;\n" +
-                  "if resultFile == \"\" then\n" + 
-                  "  print(\"Error: Simulation of: " + stripped_file_name  + "." + stripped_file_name + " did not produce a result-file\n\");\n" +
-                  "  print(\"Errors: \" + messages + error + \"\\n\");\n" +
-                  "  exit(1);\n" +
-                  "end if;\n";
+    if (!Files.exists(crml2Modelica)) // Export failed, this check is legacy only
+      throw new IOException("Could not find: " + crml2Modelica.toAbsolutePath().toString());
+
+    if (!Files.exists(crmlLib)) // Export failed, this check is legacy only
+      throw new IOException("Could not find: " + crmlLib.toAbsolutePath().toString());
+
+    Path verif_model = verifModelFolder.resolve(stripped_file_name);
+    boolean verifModelExists = Files.exists(verif_model);
+    if (verifModelExists) {
+      for (Path f : Files.list(verif_model).collect(java.util.stream.Collectors.toList()))
+        Files.copy(f, out_dir.resolve(f.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    return mos_text;
+    
+    Context ctx = new Context();
+    ctx.setVariable("crml2ModelicaPath", crml2Modelica.toAbsolutePath().toString()); //Was: Utilities.toUnixPath(crml2Modelica.getAbsolutePath())
+    ctx.setVariable("stripped_file_name", stripped_file_name);
+    ctx.setVariable("crmlLibPath", crmlLib.toAbsolutePath().toString()); // Was: Utilities.toUnixPath(crmlLib.getAbsolutePath())
+    ctx.setVariable("verifModelExists", verifModelExists);
+    return TEMPLATE_ENGINE.process("generate_simulation_script", ctx);
   }
 
-    public static OMCmsg compile(String stripped_file_name, Path out_dir, CompileSettings cs) throws ModelicaSimulationException, IOException, InterruptedException {
+  public static OMCmsg compile(String stripped_file_name, Path out_dir, CompileSettings cs) throws ModelicaSimulationException, IOException, InterruptedException {
     
     String filePrefix = out_dir + java.io.File.separator + stripped_file_name;
     String script_file_name =  filePrefix + ".mos";
@@ -184,10 +125,11 @@ public class OMCUtil {
     
     // check if a reference file to compare to is available
 
-    File ref_file = cs.referenceResFolder.resolve(stripped_file_name + "_verif_ref.mat").toFile();
-    
-    if(ref_file.exists()){
-      mos_text +=  OMCUtil.compareSimulationResults(stripped_file_name + "." + stripped_file_name + "_verif_res.mat", ref_file.getPath());
+    Path ref_file = cs.referenceResFolder.resolve(stripped_file_name + "_verif_ref.mat");
+    Path out_ref_file = out_dir.resolve(stripped_file_name + "_verif_ref.mat");
+    if(Files.exists(ref_file)){
+      Files.copy(ref_file, out_ref_file, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
+      mos_text +=  OMCUtil.compareSimulationResults(stripped_file_name + "." + stripped_file_name + "_verif_res.mat", out_ref_file);
     }
    
     
@@ -197,7 +139,10 @@ public class OMCUtil {
 
     // add package support
     writer = new BufferedWriter(new FileWriter(new File(out_dir + java.io.File.separator + "package.mo")));
-    writer.write("within " + cs.within + ";\n");
+    
+    //writer.write("within " + cs.within + ";\n");
+    //writer.write("within " + stripped_file_name + ";\n");
+    writer.write("within ;\n");
     writer.write("package " + stripped_file_name + "\n end " + stripped_file_name + "; \n");
     writer.close();
 

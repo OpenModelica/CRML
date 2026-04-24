@@ -11,16 +11,26 @@ import org.junit.jupiter.params.provider.MethodSource;
 import crml.language.util.CRMLSyntaxResultsWrapper;
 import crml.language.util.Parser;
 import crml.language.util.SpecsRoot;
-import crml.test.BaseSpecificationTest;
+import crml.test.ReportedTest;
+import crml.test.TestResourcesRoot;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 
-public class TypePeriod extends BaseSpecificationTest {
+public class TypePeriod extends ReportedTest {
     static List<Arguments> fileNameSource() {
         List<Arguments> tests = new ArrayList<>();
-        tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(SpecsRoot.RESOURCES.resolve("period")));
-        tests.addAll(BaseSpecificationTest.fileNameSourceHelper2(SpecsRoot.RESOURCES.resolve("period").resolve("docs")));
+        tests.addAll(ReportedTest.fileNameSourceHelper2(SpecsRoot.RESOURCES.resolve("period")));
+        tests.addAll(getDocExamples());
+        return tests;
+    }
+    static List<Arguments> getDocExamples() {
+        List<Arguments> tests = new ArrayList<>();
+        TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels/spec-doc-examples"),
+                f -> f.getFileName().toString().matches("Period[A-Z].*")
+        ).forEach(f -> {
+            tests.add(Arguments.of(f, true, false));
+        });
         return tests;
     }
 
@@ -29,7 +39,7 @@ public class TypePeriod extends BaseSpecificationTest {
     public void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
-        var parsed = new Parser().parse(fileName);
+        Parser.ParserResult parsed = new Parser().parse(fileName);
 
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");

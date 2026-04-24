@@ -15,6 +15,8 @@ dependencies {
 
     testImplementation("com.j2html:j2html:1.6.0")
     
+    testImplementation(project(":test-resources"))
+    
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("org.junit.platform:junit-platform-reporting:1.10.1")

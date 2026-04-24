@@ -1,4 +1,0 @@
-model BooleanIsUndecided is {
-	// Constructors
-	Boolean b3 is undecided;
-};

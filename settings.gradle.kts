@@ -13,7 +13,8 @@ include(
         "util",
         "util-test",
         "language",
-        "compiler"
+        "compiler",
+        "test-resources"
 )
 for (project in rootProject.children) {
     val projectName = project.name

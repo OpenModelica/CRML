@@ -1,4 +1,0 @@
-model BooleanNegation is {
-	Boolean b1 is external;
-	Boolean not_b1 is not b1;
-};

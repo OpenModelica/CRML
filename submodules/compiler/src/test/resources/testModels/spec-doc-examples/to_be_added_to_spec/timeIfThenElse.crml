@@ -1,3 +1,0 @@
-model timeIfThenElse is {
-	Boolean b is if 2.5 < time and time < 5 then true else false;
-};

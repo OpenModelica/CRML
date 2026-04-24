@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation(project(":language"))
+    implementation(project(":util"))
 
     implementation("org.apache.logging.log4j:log4j-api") {
         version {
@@ -22,14 +23,19 @@ dependencies {
         }
     }
 
+    implementation("org.thymeleaf:thymeleaf:3.1.3.RELEASE")
+    
     implementation("org.jcommander:jcommander:1.83")
     implementation("com.aventstack:extentreports:5.0.9")
     implementation("com.j2html:j2html:1.6.0")
 
-    implementation(platform("org.junit:junit-bom:5.10.1"))
-    implementation("org.junit.jupiter:junit-jupiter:5.10.1")
-    implementation("org.junit.platform:junit-platform-launcher")
-    implementation("org.junit.platform:junit-platform-reporting:1.10.1")
+
+    testImplementation(project(":util-test"))
+    testImplementation(project(":test-resources"))
+    testImplementation(platform("org.junit:junit-bom:5.10.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.junit.platform:junit-platform-reporting:1.10.1") 
 }
 
 /**

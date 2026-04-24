@@ -49,17 +49,31 @@ public class Parser {
         return new ParserResult(parser, tree, ruleNames, errors.getErrors());
     }
 
-    public static record ParserResult(crmlParser parser, ParseTree ast, List<String> ruleNames, CRMLSyntaxResults syntax) {
+    public static final class ParserResult {
         private static final String EOL = System.getProperty("line.separator");
         private static final String INDENTS = "  ";
-        /**
-         * Pretty print out a whole tree. {@link #getNodeText} is used on the node payloads to get the text
-         * for the nodes. (Derived from Trees.toStringTree(....))
-         */
+
+        private final crmlParser parser;
+        private final ParseTree ast;
+        private final List<String> ruleNames;
+        private final CRMLSyntaxResults syntax;
+
+        public ParserResult(crmlParser parser, ParseTree ast, List<String> ruleNames, CRMLSyntaxResults syntax) {
+            this.parser = parser;
+            this.ast = ast;
+            this.ruleNames = ruleNames;
+            this.syntax = syntax;
+        }
+
+        public crmlParser parser() { return parser; }
+        public ParseTree ast() { return ast; }
+        public List<String> ruleNames() { return ruleNames; }
+        public CRMLSyntaxResults syntax() { return syntax; }
+
         public String toPrettyTree() {
             return process(0, ast, ruleNames).replaceAll("(?m)^\\s+$", "").replaceAll("\\r?\\n\\r?\\n", EOL);
         }
-        
+
         private static String process(int level, final Tree t, final List<String> ruleNames) {
             if (t.getChildCount() == 0) return Utils.escapeWhitespace(Trees.getNodeText(t, ruleNames), false);
             StringBuilder sb = new StringBuilder();
@@ -76,14 +90,14 @@ public class Parser {
         }
 
         private static String lead(int level) {
-         StringBuilder sb = new StringBuilder();
-         if (level > 0) {
-             sb.append(EOL);
-             for (int cnt = 0; cnt < level; cnt++) {
-                 sb.append(INDENTS);
-             }
-         }
-         return sb.toString();
-     }
+            StringBuilder sb = new StringBuilder();
+            if (level > 0) {
+                sb.append(EOL);
+                for (int cnt = 0; cnt < level; cnt++) {
+                    sb.append(INDENTS);
+                }
+            }
+            return sb.toString();
+        }
     }
 }

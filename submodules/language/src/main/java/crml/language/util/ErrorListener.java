@@ -25,17 +25,38 @@ public class ErrorListener extends BaseErrorListener {
         return new CRMLSyntaxResults(errors);
     }
 
-    public static record CRMLSyntaxError(int line, int charPosition, String message) {
+    public static class CRMLSyntaxError {
+        private final int line;
+        private final int charPosition;
+        private final String message;
+
+        public CRMLSyntaxError(int line, int charPosition, String message) {
+            this.line = line;
+            this.charPosition = charPosition;
+            this.message = message;
+        }
+
+        public int line() { return line; }
+        public int charPosition() { return charPosition; }
+        public String message() { return message; }
+
         @Override
         public String toString() {
             return "ERROR (line " + line + ":" + charPosition + "): " + message;
         }
     }
 
-    public static record CRMLSyntaxResults(List<CRMLSyntaxError> errors) {
+    public static class CRMLSyntaxResults {
+        private final List<CRMLSyntaxError> errors;
+
+        public CRMLSyntaxResults(List<CRMLSyntaxError> errors) {
+            this.errors = errors;
+        }
+
+        public List<CRMLSyntaxError> errors() { return errors; }
+
         public boolean hasErrors() {
             return !errors.isEmpty();
         }
     }
-    
 }

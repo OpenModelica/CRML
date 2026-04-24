@@ -1,6 +1,7 @@
 package crml.compiler;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class CommandLineArgs {
     public Boolean junit = false;
 
     @Parameter(names = {"-o"}, description = "Provide an output directory via -o on where to write the .mo files. If no output directory via -o is given then the .mo files are generated in the current directory.")
-    public Path outputDir = Path.of("generated");
+    public Path outputDir = Paths.get("generated");
 
     @Parameter(names = "--help", help = true)
     public boolean help;
@@ -92,10 +93,10 @@ public class CommandLineArgs {
         CompileSettings settigns = new CompileSettings();
 
         if(simulate != null)
-            settigns.verifModelFolder = Path.of(simulate);
+            settigns.verifModelFolder = Paths.get(simulate);
     
         if(verify != null)
-            settigns.referenceResFolder = Path.of(verify);
+            settigns.referenceResFolder = Paths.get(verify);
 
         return settigns;
     }

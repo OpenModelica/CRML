@@ -1,1 +1,1 @@
-crml.compiler.util.TestListener
+crml.test.SpecificationTestListener

@@ -1,4 +1,0 @@
-model ClockCurrentTick is {
-	Clock c is external;
-	Event e_current_tick is tick c;
-};
