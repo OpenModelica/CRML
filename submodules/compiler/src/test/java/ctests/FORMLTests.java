@@ -13,6 +13,7 @@ import crml.compiler.omc.OMCmsg;
 import crml.compiler.Utilities;
 import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.util.CompilerRoot;
+import crml.compiler.util.FilesWrapper;
 import crml.test.ReportedTest;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
@@ -41,8 +42,9 @@ public class FORMLTests extends ReportedTest {
     @ParameterizedTest
     @MethodSource("fileNameSource")
     public void simulateTestFile(final Path fileName) throws InterruptedException, IOException, ModelicaSimulationException {
+        emit(fileName, "CRML model");
         OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
-        emit(ret.files, "Files");
+        emit(FilesWrapper.of(ret.files), "Files");
         emit(ret.msg, "OMC message");
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
 		    fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 

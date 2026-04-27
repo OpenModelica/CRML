@@ -1,7 +1,7 @@
 package crml.language.util;
 
-import crml.test.CustomHtmlReporter;
 import crml.language.util.ErrorListener.CRMLSyntaxResults;
+import crml.test.CustomHtmlReporter;
 
 import static j2html.TagCreator.p;
 import static j2html.TagCreator.join;

@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import crml.compiler.omc.OMCmsg;
 import crml.compiler.util.CompilerRoot;
+import crml.compiler.util.FilesWrapper;
 import crml.test.ReportedTest;
 import crml.test.SharedParameter;
 import crml.compiler.Utilities;
@@ -47,7 +48,7 @@ public class ETLTests extends ReportedTest {
         emit(fileName, "CRML model");
         OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
 
-        emit(ret.files, "files");
+        emit(FilesWrapper.of(ret.files), "files");
         emit(ret.msg, "OMC message");
         
         //files = ret.files;

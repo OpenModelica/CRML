@@ -13,6 +13,7 @@ import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
 import crml.compiler.omc.OMCmsg;
 import crml.compiler.util.CompilerRoot;
+import crml.compiler.util.FilesWrapper;
 import crml.test.ReportedTest;
 
 /**
@@ -47,7 +48,7 @@ public class SpecificationTests extends ReportedTest {
 	public void simulateTestFile(final Path fileName) throws InterruptedException, IOException, ModelicaSimulationException {
 	    emit(fileName, "CRML model");
                 OMCmsg ret = Util.runTest(fileName, cs, CompileStage.VERIFY);
-        emit(ret.files, "Files");
+        emit(FilesWrapper.of(ret.files), "Files");
         emit(ret.msg, "OMC message");
 	}
 }
