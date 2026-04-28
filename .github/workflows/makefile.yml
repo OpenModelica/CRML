@@ -62,7 +62,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: crml-compiler-all.jar
-        path: ${{github.workspace}}/build/libs/crml-compiler-all.jar
+        path: ${{github.workspace}}/submodules/compiler/build/libs/compiler-all.jar
     
     - name: upload the tests and results
       uses: actions/upload-artifact@v4
