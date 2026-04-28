@@ -86,9 +86,9 @@ public class OMCUtil {
   }
 
   public static String generateSimulationScript(String stripped_file_name, Path verifModelFolder, Path out_dir) throws IOException {
-    Path crml2Modelica = out_dir.resolve("crml2modelica.mo");
+    Path crml2Modelica = out_dir.resolve("../crml2modelica.mo");
     Files.copy(getCRMLToModelicaFile(), crml2Modelica, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
-    Path crmlLib = out_dir.resolve("CRML.mo");
+    Path crmlLib = out_dir.resolve("../CRML.mo");
     Files.copy(getCRMLLibrary(), crmlLib, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
 
     //File crml2Modelica = getCRMLToModelicaFile().toFile();
