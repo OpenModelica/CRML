@@ -1,0 +1,6 @@
+// Sample CRML file
+model HelloWorld is {};
+
+package MyPackage is {};
+
+library MyLibrary is {};

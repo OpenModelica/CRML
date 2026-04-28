@@ -30,7 +30,10 @@ Workflow {
                     srcGen  = "${rootPath}/build/xtext-gen/main"
                 }
                 genericIde = {
-                    enabled = false
+                    enabled = true
+                    root    = rootPath
+                    src     = "${rootPath}/src/main/java"
+                    srcGen  = "${rootPath}/build/xtext-gen/main"
                 }
                 runtimeTest = {
                     enabled = false

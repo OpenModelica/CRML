@@ -1,0 +1,51 @@
+{
+  "name": "crmlx",
+  "displayName": "CRML Language Support",
+  "description": "Syntax support and language server integration for CRML (.crmlx files)",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "crmlx",
+        "aliases": ["CRML", "crmlx"],
+        "extensions": [".crmlx"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "CRML",
+      "properties": {
+        "crmlx.languageServer.jar": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the language server jar. Leave empty to use the default path relative to this extension."
+        },
+        "crmlx.languageServer.javaArgs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Extra JVM arguments passed before -jar (e.g. [\"-Xmx512m\"])."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

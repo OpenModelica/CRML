@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("com.gradleup.shadow")
 }
 
 group = "crml"
@@ -42,6 +43,7 @@ dependencies {
 
     // ── XText runtime ─────────────────────────────────────────────────────────
     implementation("org.eclipse.xtext:org.eclipse.xtext:$xtextVersion")
+    implementation("org.eclipse.xtext:org.eclipse.xtext.ide:$xtextVersion")
     implementation("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
     implementation("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
 
@@ -136,5 +138,17 @@ tasks.test {
         events("passed", "skipped", "failed")
     }
     ignoreFailures = true
+}
+
+// ─────────────────────────────────────────────
+//  Language server fat-jar
+// ─────────────────────────────────────────────
+tasks.shadowJar {
+    manifest {
+        attributes("Main-Class" to "org.eclipse.xtext.ide.server.ServerLauncher")
+    }
+    // Merge META-INF/services so the Xtext ISetup service loader works
+    mergeServiceFiles()
+    archiveClassifier.set("ls")
 }
  
