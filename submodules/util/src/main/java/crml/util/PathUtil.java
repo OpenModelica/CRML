@@ -22,10 +22,6 @@ public class PathUtil {
     public static String toString(String path, Option... options) {
         String result = path;
 
-        if (has(options, Option.NORMALIZE)) {
-            result = Path.of(result).normalize().toString();
-        }
-
         if (has(options, Option.UNIX)) {
             result = result.replace('\\', '/');
         }
