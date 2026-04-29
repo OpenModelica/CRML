@@ -1,0 +1,12 @@
+// -------------------------------------------------------------------------
+// Faulty - missing semicolon after type declaration
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        Real rate;
+        Real offset;
+        Real u;
+    }
+};

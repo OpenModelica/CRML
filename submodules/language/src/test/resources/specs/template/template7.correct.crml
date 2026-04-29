@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.14 Type Template - multiple templates in one model
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Template b1 'implies' b2 = not b1 or b2;
+    Template b1 'xor' b2 = (b1 or b2) and not (b1 and b2);
+    Template b1 'iff' b2 = (b1 'implies' b2) and (b2 'implies' b1);
+};

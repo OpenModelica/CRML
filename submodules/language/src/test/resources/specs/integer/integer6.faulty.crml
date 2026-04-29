@@ -1,0 +1,3 @@
+model Foo is {
+    Integer x6 is -25.8; // Missing validation in the parser.
+};

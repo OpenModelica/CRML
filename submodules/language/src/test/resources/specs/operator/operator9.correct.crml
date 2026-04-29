@@ -1,0 +1,8 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - mixed syntax (count, variant 2)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator f is new Operator [ Clock ] ticks Clock c inside Period P = c filter (tick >= P start) and (tick <= P end); // 4.13.2, Example 4
+    Operator count = Operator [ Integer ] count [ Boolean ] b inside [ Period ] P = card ticks new Clock b inside P;  // 4.13.2, Example 8
+};

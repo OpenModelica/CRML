@@ -1,0 +1,3 @@
+model Foo is {
+    Boolean b2 is false;
+};

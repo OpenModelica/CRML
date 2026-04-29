@@ -1,0 +1,35 @@
+arrActual := readSimulationResultVars("[(${res_file})]"); getErrorString();
+arrExpect := readSimulationResultVars("[(${ref_file})]"); getErrorString();
+loadString("
+function stringIntersection
+  input String[:] a1;
+  input String[:] a2;
+  output Integer last = 0;
+  output String[size(a2, 1)] o = fill(\"\", size(a2, 1));
+protected
+Integer i, j, k = 0;
+algorithm
+  for i in 1:size(a1, 1) loop
+  for j in 1:size(a2, 1) loop
+     if a1[i] == a2[j] then
+     k := k + 1;
+     o[k] := a1[i];
+     end if;
+   end for;
+  end for;
+  last := k;
+end stringIntersection;
+function trimArray
+  input Integer sz;
+  input String[:] a1;
+  output String[sz] o = a1[1:sz];
+end trimArray;
+"); getErrorString();
+(sz, set) := stringIntersection(arrActual, arrExpect);
+sz;
+set;
+intersect := trimArray(sz, set);
+diffSimulationResults(
+"[(${res_file})]", "[(${ref_file})]"
+, "diff",
+vars = intersect); getErrorString();

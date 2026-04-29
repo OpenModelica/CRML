@@ -1,0 +1,3 @@
+model Foo is {
+    String s4 is "$PO1_ is the identifier of the pump";
+};

@@ -1,0 +1,10 @@
+// -------------------------------------------------------------------------
+// 4.9.2 Operators - bounded projection (Event proj(Real) Clock = Event)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Event e1 is external;
+    Real d is external;
+    Clock c is external;
+    Event e14 is e1 proj(d) c;
+};

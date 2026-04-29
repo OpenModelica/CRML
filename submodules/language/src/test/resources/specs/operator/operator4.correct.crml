@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.13 Type Operator - mathematical syntax
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Operator subClock = new Operator [ Clock ] (Clock c, Period P) = c filter (tick >= P start) and (tick <= P end); // 4.13.2, Example 4
+};

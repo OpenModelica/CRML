@@ -1,0 +1,4 @@
+model Foo is {
+    Clock c is external;
+    Boolean b5 is new Boolean c;
+};

@@ -1,0 +1,17 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - concrete type from partial type with all attributes set
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    partial type Pressure is Quantity (SIUnit = "Pa");
+
+    type PressureBar is Pressure (userUnit = "bar", rate = 1.e5, offset = 0);
+};

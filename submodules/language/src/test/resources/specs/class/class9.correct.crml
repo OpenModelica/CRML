@@ -1,0 +1,12 @@
+// -------------------------------------------------------------------------
+// 4.19 Class - class with attributes that have explicit default values
+// -------------------------------------------------------------------------
+
+model Foo is {
+    class Sensor is {
+        String unit is "m/s";
+        Real minValue is 0.0;
+        Real maxValue is 100.0;
+        Boolean active is true;
+    };
+};

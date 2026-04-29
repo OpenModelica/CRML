@@ -1,0 +1,1 @@
+model Foo is { Integer x5 is new Integer -25.8; };

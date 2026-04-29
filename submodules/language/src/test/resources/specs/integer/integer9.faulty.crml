@@ -1,0 +1,3 @@
+model Foo is { 
+    Integer x9 is -28E+3; // Specification: Sign after the decimal exponent (I think it should be fine, positives should be OK)
+};

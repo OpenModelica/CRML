@@ -1,0 +1,15 @@
+// -------------------------------------------------------------------------
+// Faulty - instantiating a partial type directly
+// -------------------------------------------------------------------------
+
+model Foo is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    Quantity x is Quantity (SIUnit = "Pa", userUnit = "Pa", rate = 1, offset = 0, u = 3);
+};

@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.10.2 Operators - conjunction of two Clocks (Clock and Clock = Clock)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Clock c1 is external;
+    Clock c2 is external;
+    Clock c3 is c1 and c2;
+};

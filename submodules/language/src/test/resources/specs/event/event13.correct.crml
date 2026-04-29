@@ -1,0 +1,9 @@
+// -------------------------------------------------------------------------
+// 4.9.2 Operators - projection (Event proj Clock = Event)
+// -------------------------------------------------------------------------
+
+model Foo is {
+    Event e1 is external;
+    Clock c is external;
+    Event e13 is e1 proj c;
+};

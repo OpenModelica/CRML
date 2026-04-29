@@ -1,0 +1,7 @@
+// -------------------------------------------------------------------------
+// 4.17 Type - type derived from Boolean with forbid
+// -------------------------------------------------------------------------
+
+model Foo is {
+    type Requirement is Boolean forbid { *, +, integrate };
+};

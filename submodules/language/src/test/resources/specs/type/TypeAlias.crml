@@ -1,0 +1,17 @@
+model TypeAlias is {
+    partial type Quantity is (Real q is rate*u + offset) {
+        String SIUnit;
+        String userUnit;
+        Real u;
+        Real rate;
+        Real offset;
+    };
+
+    // Time units with string aliases
+    partial type Time is Quantity (SIUnit = "s");
+    type TimeSecond is Time (userUnit = "s", rate = 1, offset = 0) alias s;
+    type Hour is Time (userUnit = "h", rate = 3600, offset = 0) alias h;
+
+    // Acceleration with special-character alias in brackets
+    type Acceleration is Quantity (SIUnit = "m/s2", userUnit = "m/s2", rate = 1, offset = 0) alias [m/s2];
+};
