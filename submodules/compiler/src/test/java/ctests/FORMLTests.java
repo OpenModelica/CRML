@@ -15,8 +15,11 @@ import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.util.CompilerRoot;
 import crml.compiler.util.FilesWrapper;
 import crml.test.ReportedTest;
+import crml.util.PathUtil;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
+
+import crml.util.PathUtil.Option;
 
 import org.junit.jupiter.params.ParameterizedTest;
 
@@ -47,7 +50,7 @@ public class FORMLTests extends ReportedTest {
         emit(FilesWrapper.of(ret.files), "Files");
         emit(ret.msg, "OMC message");
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
-		    fail("Unable to run Modelica script " + Utilities.getAbsolutePath(fileName) + ".mos", 
+		    fail("Unable to run Modelica script " + PathUtil.toString(fileName+ ".mos", Option.ABSOLUTE) , 
 		            new Throwable( "\n omc fails with the following message: \n" + ret.msg));
 	
     }

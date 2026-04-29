@@ -22,6 +22,8 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import crml.compiler.Utilities;
+import crml.util.PathUtil;
+import crml.util.PathUtil.Option;
 
 /**
  * Wrapper for OpenModelica compiler calls
@@ -58,8 +60,8 @@ public class OMCUtil {
    */
   public static String compareSimulationResults(String res_file, Path ref_file) {
     Context ctx = new Context();
-    ctx.setVariable("res_file", Utilities.toUnixPath(res_file));
-    ctx.setVariable("ref_file", ref_file.toAbsolutePath().toString());// Was: Utilities.toUnixPath(ref_file)
+    ctx.setVariable("res_file", PathUtil.toString(res_file, Option.UNIX)); // ABSOLUTE is not implemented for String
+    ctx.setVariable("ref_file", PathUtil.toString(ref_file, Option.UNIX, Option.ABSOLUTE));// Was: Utilities.toUnixPath(ref_file)
     return TEMPLATE_ENGINE.process("compare_simulation_results", ctx);
   }
 
@@ -110,9 +112,9 @@ public class OMCUtil {
 
     
     Context ctx = new Context();
-    ctx.setVariable("crml2ModelicaPath", crml2Modelica.toAbsolutePath().toString()); //Was: Utilities.toUnixPath(crml2Modelica.getAbsolutePath())
+    ctx.setVariable("crml2ModelicaPath", PathUtil.toString(crml2Modelica, Option.UNIX, Option.ABSOLUTE)); //Was: Utilities.toUnixPath(crml2Modelica.getAbsolutePath())
     ctx.setVariable("stripped_file_name", stripped_file_name);
-    ctx.setVariable("crmlLibPath", crmlLib.toAbsolutePath().toString()); // Was: Utilities.toUnixPath(crmlLib.getAbsolutePath())
+    ctx.setVariable("crmlLibPath", PathUtil.toString(crmlLib, Option.UNIX, Option.ABSOLUTE)); // Was: Utilities.toUnixPath(crmlLib.getAbsolutePath())
     ctx.setVariable("verifModelExists", verifModelExists);
     return TEMPLATE_ENGINE.process("generate_simulation_script", ctx);
   }

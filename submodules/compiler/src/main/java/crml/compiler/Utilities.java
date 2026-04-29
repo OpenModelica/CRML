@@ -52,20 +52,4 @@ public class Utilities {
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
-
-    public static String toUnixPath(String path) {
-        if (!isWindows())
-            return path;
-        return path.replace('\\', '/');
-    }
-
-    public static String getAbsolutePath(String path) {
-        File f = new File(path);
-        return f.getAbsolutePath();
-    }
-    public static String getAbsolutePath(Path path) {
-        return path.toString();
-    }
-
-    
 }

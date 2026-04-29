@@ -14,6 +14,8 @@ import crml.compiler.util.CompilerRoot;
 import crml.compiler.util.FilesWrapper;
 import crml.test.ReportedTest;
 import crml.test.SharedParameter;
+import crml.util.PathUtil;
+import crml.util.PathUtil.Option;
 import crml.compiler.Utilities;
 import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.omc.CompileSettings;
@@ -53,7 +55,7 @@ public class ETLTests extends ReportedTest {
         
         //files = ret.files;
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
-		    fail("Unable to run Modelica script " +  Utilities.getAbsolutePath(fileName) + ".mos", 
+		    fail("Unable to run Modelica script " +  PathUtil.toString(fileName, Option.ABSOLUTE) + ".mos", 
 		            new Throwable( "\n omc fails with the following message: \n" + ret.msg));
 	
     }
