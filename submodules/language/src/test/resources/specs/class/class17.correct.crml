@@ -1,0 +1,9 @@
+model PumpSystem is {
+    class Pump is {
+        String id;
+        Real c is external;
+        Boolean cav is external;
+    };
+    // This is (probably) not expected from the specification, but makes sense (at least as a test)
+    Pump pump1 is new Pump; 
+};
