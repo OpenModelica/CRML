@@ -1,0 +1,3 @@
+Req_Temp "La température du SRI doit être maintenue entre 16°C et 30°C."
+Req_Speed "Si la température dépasse ces limites, elle doit être revenue dans l'intervalle au bout d'une minute."
+Req_Flow "Afin de limiter les phénomènes d'érosion et de corrosion, la vitesse du fluide dans les échangeurs ne doit pas dépasser 6 m/s."

@@ -1,12 +1,14 @@
 within CRML_test.ETL.CountInside;
 model CountInside_verif
   extends CountInside;
+  Modelica.Clocked.BooleanSignals.NonPeriodic.ClockToBoolean c2b;
   CountInside_externals externals
     annotation (Placement(transformation(extent={{-200,0},{-140,60}})));
 equation
   // Bindings
-  P1 =externals.tl1;
-  C1 = externals.C1;
+  P1 = externals.P1;
+  c2b.u = externals.C1;
+  C1.b = CRMLtoModelica.Functions.cvBooleanToBoolean4(c2b.y);
     annotation (Placement(transformation(extent={{0,-20},{60,40}})),
               Icon(coordinateSystem(preserveAspectRatio=false,
         extent={{-200,-100},{100,100}},
