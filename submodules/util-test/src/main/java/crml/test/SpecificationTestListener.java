@@ -186,7 +186,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             name += matcher_path.group(1);
 
         if (name.isEmpty())
-            return;
+            name = displayName;
 
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
