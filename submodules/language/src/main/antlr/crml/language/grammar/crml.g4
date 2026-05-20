@@ -44,7 +44,7 @@ class_var_def : ( var_def )|'alias' id ';'| comment
 
 var_qualifier : 'fixed';
 	 
-arg_list : '(' exp (',' exp)* ')';
+arg_list : '(' (id ('='| 'is') (arg_list | exp) (',' id ('='| 'is') (arg_list | exp))*)? ')';
 
 crml_component_reference : '.'? id array_subscripts? ( '.' id array_subscripts? )* ;
 
@@ -95,7 +95,7 @@ iterator : name= ITERATOR;
 
 if_exp : 'if' if_e=exp 'then' then_e=exp ('else' else_e=exp);
 
-constructor : 'new' type exp;
+constructor : 'new' type (arg_list | exp)?;
 	
 period_op : lb=('['| ']') exp ',' exp rb=('['| ']') ; 
 
