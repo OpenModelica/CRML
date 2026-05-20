@@ -746,16 +746,19 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 		// Constructor with no expression - translates to nothing in Modelica
 
-		if (ctx.exp() == null)
+		if (ctx.exp() == null && ctx.arg_list()==null)
 			return new Value("", "new");
 
 		if(ctx.arg_list()!=null)
-			throw new CRMLTranslationException("Trranslation of constructor with argument list is not implemented.");
+			throw new CRMLTranslationException("Translation of constructor with argument list is not implemented.");
 		
-		// Constructor with expression - call corresponding function
-		Value exp_val = visit(ctx.exp());
-		Value result = apply_lunary_op(ctx.type().getText(), exp_val);
-		return result;
+		if(ctx.exp() != null){
+			// Constructor with expression - call corresponding function
+			Value exp_val = visit(ctx.exp());
+			Value result = apply_lunary_op(ctx.type().getText(), exp_val);
+			return result;
+		}
+		throw new IllegalStateException("Unreachable state. Function must return with with empty, exp, or arg_list.");
 	}
 
 	/**
