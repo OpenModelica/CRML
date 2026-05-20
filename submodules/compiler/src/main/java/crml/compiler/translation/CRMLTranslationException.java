@@ -1,6 +1,6 @@
 package crml.compiler.translation;
 
-public class CRMLTranslationException extends Exception{
+public class CRMLTranslationException extends RuntimeException{
 
 	/**
 	 *
