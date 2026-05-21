@@ -167,16 +167,13 @@ model ics_reqs is {
 	///////////////////////////////////////////////////////////////////////////////
 	// Finally, the SRI model
 	
-	// Always ??? Not sure operator without parameter is admitted.
-	Operator [ Periods ] 'always' = 'during' true; 
-
 	// Temperature requirements	
-	Real T is external;
-	
 	// NL : "La température du SRI doit être maintenue entre 16°C et 30°C."
 	// SNL: "En fonctionnement normal, le système SRI doit avoir une température entre 16°C et 30°C."
-    Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
-    Boolean R1_T is ('always') 'ensure' T_in_range ;
+    Boolean normal_operation is external;
+	Real T is external;
+	Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
+    Boolean R1_T is ('during' normal_operation) 'ensure' T_in_range ;
 	
 	// NL : "Si la température dépasse ces limites, elle doit être revenue dans l'intervalle au bout d'une minute."
 	// SNL : "Lorsque le système SRI a une température qui dépasse les limites du fonctionnement normal, 
