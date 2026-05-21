@@ -184,6 +184,11 @@ model ics_reqs is {
     
     // Speed requirements for heat exchangers
 	// NL : "Afin de limiter les phénomènes d'érosion et de corrosion, la vitesse du fluide dans les échangeurs ne doit pas dépasser 6 m/s."
+	// SNL1 : "En fonctionnement normal, chaque échangeur de chaleur doit avoir une vitesse de fluide inférieure ou égale à 6m/s"
+	// SNL2 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que la durée cumulée pendant laquelle la vitesse reste supérieure à 6 m/s 
+	// n’excède pas 10 secondes sur les 3600 secondes suivant cet événement."
+	// SNL3 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que le nombre d’occurrences distinctes de dépassement de 6 m/s
+	// n’excède pas 2 sur les 3600 secondes suivant cet événement."
 	class Req_speed is {
 		Real v is external;
 		Boolean v_too_high is (v > 6.0) ; // m/s
