@@ -167,16 +167,13 @@ model ics_reqs is {
 	///////////////////////////////////////////////////////////////////////////////
 	// Finally, the SRI model
 	
-	// Always ??? Not sure operator without parameter is admitted.
-	Operator [ Periods ] 'always' = 'during' true; 
-
 	// Temperature requirements	
-	Real T is external;
-	
 	// NL : "La température du SRI doit être maintenue entre 16°C et 30°C."
 	// SNL: "En fonctionnement normal, le système SRI doit avoir une température entre 16°C et 30°C."
-    Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
-    Boolean R1_T is ('always') 'ensure' T_in_range ;
+    Boolean normal_operation is external;
+	Real T is external;
+	Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
+    Boolean R1_T is ('during' normal_operation) 'ensure' T_in_range ;
 	
 	// NL : "Si la température dépasse ces limites, elle doit être revenue dans l'intervalle au bout d'une minute."
 	// SNL : "Lorsque le système SRI a une température qui dépasse les limites du fonctionnement normal, 
@@ -187,6 +184,11 @@ model ics_reqs is {
     
     // Speed requirements for heat exchangers
 	// NL : "Afin de limiter les phénomènes d'érosion et de corrosion, la vitesse du fluide dans les échangeurs ne doit pas dépasser 6 m/s."
+	// SNL1 : "En fonctionnement normal, chaque échangeur de chaleur doit avoir une vitesse de fluide inférieure ou égale à 6m/s"
+	// SNL2 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que la durée cumulée pendant laquelle la vitesse reste supérieure à 6 m/s 
+	// n’excède pas 10 secondes sur les 3600 secondes suivant cet événement."
+	// SNL3 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que le nombre d’occurrences distinctes de dépassement de 6 m/s
+	// n’excède pas 2 sur les 3600 secondes suivant cet événement."
 	class Req_speed is {
 		Real v is external;
 		Boolean v_too_high is (v > 6.0) ; // m/s
@@ -201,8 +203,11 @@ model ics_reqs is {
 	Boolean R_speed_all is Req_speed1.R_v and Req_speed2.R_v ;
     
     // Flow requirements for pumps
+	// NL : Les pompes du système ne doivent pas caviter.
+	// SNL : Lorsque une pompe du SRI est en service, le système SRI doit garantir que le débit associée à cette pompe
+	// est supérieur ou égal à 70 tonnes par heure.
 	class Req_flow is {
-		Real f is external ;
+		Real flow is external ;
 		Boolean pump_in_service is external ;
 		Boolean f_over_fmin is (f >= 700) ; // t/h
 		Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
@@ -214,8 +219,8 @@ model ics_reqs is {
 	Real flow2 is external;
 	Real flow3 is external;
 	Req_flow Req_flow1(pump_in_service=pump_in_service1,flow=flow1);
-	Req_flow Req_flow1(pump_in_service=pump_in_service2,flow=flow2);
-	Req_flow Req_flow1(pump_in_service=pump_in_service3,flow=flow3);
+	Req_flow Req_flow2(pump_in_service=pump_in_service2,flow=flow2);
+	Req_flow Req_flow3(pump_in_service=pump_in_service3,flow=flow3);
 	Boolean R_flow_all is Req_flow1.R_f and Req_flow2.R_f and Req_flow3.R_f;
 	
 };
