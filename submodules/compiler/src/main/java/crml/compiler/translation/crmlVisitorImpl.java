@@ -936,96 +936,96 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	private Value apply_iterator_op(Signature sig, String v_name, int arg_index, List<ExpContext> args) {
 
-		// translates to block instantiation
+			// translates to block instantiation
+		
+			String name = sig.function_name +"_iteraor"+counter++;
+			String res = "model " + name + "\n";
+			res+= sig.return_type + "[:] out;\n  algorithm \n";
 
-		String name = sig.function_name + "_iteraor" + counter++;
-		String res = name + "\n algorithm \n";
-		res += sig.return_type + "[:] out";
-		res += "for " + v_name + ".size()" + "\n";
-
-		String args_modelica = "";
-		for (int i = 0; i < args.size(); i++) {
-
-		}
-
-		res += "out[i]=" + sig.function_name + "(" + args + ")";
-
-		res += "end " + name + ";\n";
-
-		localFunctionCalls.append(res);
-		counter++;
-		return new Value("res", sig.return_type, true);
-	}
-
-	private Value apply_binary_op(String op, Value left, Value right) {
-		// check if predefined operator maps to Modelica operator
-
-		Signature op_t = OperatorMapping.is_defined(operators_map, op, left.type, right.type, left.isSet, right.isSet);
-
-		if (op_t == null)
-			throw new ParseCancellationException(
-					"Built in operator undefined : " + op + " on " + left.type + " and " + right.type + '\n');
-
-		if (op_t.mtype == Signature.Type.OPERATOR) { // check if predefined operator maps to Modelica operator
-
-			// special case if the return is boolean and needs to be wrapped in a CRML
-			// boolean
-			if (op_t.return_type.equals("Boolean"))
-				return new Value("CRMLtoModelica.Functions.cvBooleanToBoolean4(" + left.toModelica() + " " + op + " "
-						+ right.toModelica() + ")", "Boolean");
-
-			return new Value(left.toModelica() + " " + op_t.function_name + " " + right.toModelica(), op_t.return_type,
-					op_t.is_return_set);
-		} else if (op_t.mtype == Signature.Type.FUNCTION) {
-			return new Value(op_t.function_name + "(" + right.toModelica() + ", " + left.toModelica() + ")",
-					op_t.return_type, op_t.is_return_set);
-
-		} else if (op_t.mtype == Signature.Type.SET_OP) { // generate a set operator
-
-			String block_name = op_t.function_name + "int" + counter;
-			String block_type = op_t.function_name.replace(".", "_") + counter++;
-			StringBuffer set_block = new StringBuffer("model " + block_type + "\n ");
-			StringBuffer for_loops = new StringBuffer("");
-			StringBuffer for_loop_exp = new StringBuffer("");
-
-			Signature singular_op = OperatorMapping.is_defined(operators_map, op, left.type, right.type, false, false);
-			if (singular_op == null)
-				throw new ParseCancellationException("Cannot apply operator to set elements : " + op + " on "
-						+ left.type + " and " + right.type + '\n');
-
-			if (left.isSet && right.isSet) {
-
-			} else if (left.isSet) {
-
-				for (int i = 0; i < left.setPath.size() - 1; i++) {
-					for_loops.append("for i" + i + " in " + left.setPath + "loop");
-					// for_loop_exp.append(left.setPath[i] + "[i"+i+"]");
-				}
-			} else {
-
+			res += "for i in 1:" +  v_name + ".size()" +"\n";
+			
+			String args_modelica = "";
+			for(int i=0; i< args.size(); i++){
+				
+			 args_modelica = args.get(i).getText();
+			 if(i<args.size()-1)  args_modelica += ", ";
 			}
 
-			set_block.append("end " + block_type + ";\n");
+			res += "out[i]=" + sig.function_name + "(" + args_modelica + ");";
+			
+			res += "end " + name + ";\n";
 
-			localFunctionCalls.append(set_block);
-
-			return new Value(block_name + ".out", op_t.return_type, op_t.is_return_set);
+			localFunctionCalls.append(res);
+			counter++; 
+			return new Value(name+".out", sig.return_type, true);
 		}
-
-		// operator translates to block instantiation
-		String name = op_t.temp_var_name.replace('.', '_') + counter;
-		System.out.println("VALUES: " + op_t.variable_names.get(0) + " " + op_t.function_name);
-
-		String res = op_t.function_name + " " + name + "(" + op_t.variable_names.get(0) + " = " + left.toModelica()
-				+ ","
-				+ op_t.variable_names.get(1) + " = " + right.toModelica() + ");\n";
-
-		localFunctionCalls.append(res);
-		counter++;
-
-		return new Value(name + ".out", op_t.return_type, op_t.is_return_set);
-
-	}
+		
+		private Value apply_binary_op(String op, Value left, Value right) {
+			// check if predefined operator maps to Modelica operator
+			
+			Signature op_t = OperatorMapping.is_defined(operators_map, op, left.type, right.type, left.isSet, right.isSet);
+			
+			if (op_t== null) 
+				throw new ParseCancellationException("Built in operator undefined : " + op + " on " + left.type + " and " + right.type +'\n');
+			
+			if (op_t.mtype == Signature.Type.OPERATOR) { // check if predefined operator maps to Modelica operator
+				
+				// special case if the return is boolean and needs to be wrapped in a CRML boolean
+				if (op_t.return_type.equals("Boolean"))
+					return new Value ("CRMLtoModelica.Functions.cvBooleanToBoolean4(" + left.toModelica() + " " + op + " " + right.toModelica() + ")", "Boolean");
+				
+				return new Value (left.toModelica() + " " + op_t.function_name + " " + right.toModelica(), op_t.return_type, op_t.is_return_set);
+			} else if (op_t.mtype == Signature.Type.FUNCTION) {
+				return new Value (op_t.function_name +"(" + right.toModelica() + ", " + left.toModelica() + ")", op_t.return_type, op_t.is_return_set);
+				
+			} else if (op_t.mtype == Signature.Type.SET_OP) { // generate a set operator
+				
+				
+				
+				String block_name = op_t.function_name + "int" + counter;
+				String block_type = op_t.function_name.replace(".", "_") + counter++;
+				StringBuffer set_block = new StringBuffer("model " + block_type + "\n ") ;
+				StringBuffer for_loops = new StringBuffer("") ;
+				StringBuffer for_loop_exp = new StringBuffer("") ;
+				
+				Signature singular_op = OperatorMapping.is_defined(operators_map, op, left.type, right.type, false, false);
+				if (singular_op== null) 
+					throw new ParseCancellationException("Cannot apply operator to set elements : " + op + " on " + left.type + " and " + right.type +'\n');
+				
+				if (left.isSet && right.isSet) {
+					
+					
+				}else if (left.isSet) {
+					
+					for (int i=0; i< left.setPath.size()-1; i++) {
+						for_loops.append("for i" +i+ " in " + left.setPath + "loop");
+						//for_loop_exp.append(left.setPath[i] + "[i"+i+"]");
+					}
+				}
+				else {
+					
+				}
+				
+				set_block.append("end " + block_type + ";\n");
+				
+				localFunctionCalls.append(set_block);
+				
+				return new Value (block_name + ".out", op_t.return_type, op_t.is_return_set);
+			}
+			
+			// operator translates to block instantiation
+			String name=op_t.temp_var_name.replace('.', '_')+counter;
+			System.out.println("VALUES: " + op_t.variable_names.get(0) + " " + op_t.function_name);
+			
+			String res = op_t.function_name+ " " + name+ "("+ op_t.variable_names.get(0) + " = "+left.toModelica()+","
+					+ op_t.variable_names.get(1) + " = "+right.toModelica()+");\n";
+			
+			localFunctionCalls.append(res);
+			counter++;
+			
+			return new Value (name + ".out", op_t.return_type, op_t.is_return_set);
+				
+		}
 
 	@Override
 	public Value visitConstant(crmlParser.ConstantContext ctx) {
