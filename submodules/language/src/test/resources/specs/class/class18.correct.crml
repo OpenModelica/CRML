@@ -1,0 +1,9 @@
+model PumpSystem is {
+    class Pump is {
+        String id;
+        Real c;
+        Boolean cav;
+    };
+
+    Pump pump1 is new Pump (c = 1.0, cav = false);
+};

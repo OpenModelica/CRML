@@ -69,9 +69,12 @@ jobs:
       with:
         name: tests-and-results
         path: |
+          ${{github.workspace}}/submodules/compiler/build/test_report.html
+          ${{github.workspace}}/submodules/compiler/build/test-results
           ${{github.workspace}}/submodules/compiler/build/testSuiteGenerated
           ${{github.workspace}}/submodules/language/build/test-results
-          ${{github.workspace}}/submodules/compiler/build/test-results
+          ${{github.workspace}}/submodules/language/build/test_report.html
+          
         if-no-files-found: warn
   
     - name: publish the test report

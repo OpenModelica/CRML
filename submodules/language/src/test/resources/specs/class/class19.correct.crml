@@ -1,0 +1,23 @@
+model CoolingSystem is {
+    class Pump is {
+        Boolean inOperation is external;
+        Boolean cav is external;
+        Clock c_on  is new Clock inOperation;
+        Clock c_off is new Clock not inOperation;
+        Periods s   is [ c_on, c_off [;
+        Boolean nocav is integrate not cav on s;
+    };
+
+    class CoolingSystemClass is {
+        Pump {} pumps;
+        //Boolean nocav is P1.nocav and P2.nocav and P3.nocav;
+    };
+
+    Pump pump1;
+    Pump pump2;
+    Pump pump3;
+
+    // Instantiate the cooling system, binding the three pumps
+    CoolingSystemClass coolingSystem is new CoolingSystemClass(pumps is { pump1, pump2, pump3 }) ;
+
+};

@@ -1,0 +1,17 @@
+model PumpingSystem is flatten {Units, FORM_L}
+
+	union {
+        // type Requirement is Boolean forbid { *, +, integrate };
+        class Pump is {
+            String ident;
+            Boolean isStarted is external;
+            Real temperature is external;
+        };
+
+        class System is {
+            Pump {} pumps;
+            Boolean inOperation is external;
+        };
+        
+        System system is new System(pumps = { new Pump (ident = "PO1"),  new Pump (ident = "PO2"), new Pump (ident = "PO3") });
+};

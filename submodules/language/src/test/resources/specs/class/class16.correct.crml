@@ -1,0 +1,8 @@
+model PumpSystem is {
+    class Pump is {
+        String id;
+        Real c is external;
+        Boolean cav is external;
+    };
+    Pump pump1 is new Pump ();
+};

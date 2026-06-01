@@ -66,7 +66,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
     private static synchronized void initReport() {
         if (!reportInitialized) {
-            reporter = new ExtentSparkReporter("build" + java.io.File.separator + "specification_test_report.html");
+            reporter = new ExtentSparkReporter("build" + java.io.File.separator + "test_report.html");
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
             extentReport.setAnalysisStrategy(AnalysisStrategy.SUITE);
@@ -180,13 +180,13 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         if (matcher_idx.find())
             name += matcher_idx.group(1) + " ";
 
-        Pattern pattern_path = Pattern.compile("([^\\\\\\/]+\\.crml(?:\\.disabled)?), ");
+        Pattern pattern_path = Pattern.compile("([^\\\\\\/]+\\.crml(?:\\.disabled)?)");
         Matcher matcher_path = pattern_path.matcher(displayName);
         if (matcher_path.find())
             name += matcher_path.group(1);
 
         if (name.isEmpty())
-            return;
+            name = displayName;
 
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
