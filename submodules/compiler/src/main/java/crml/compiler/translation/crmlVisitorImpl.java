@@ -583,7 +583,8 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 					System.out.println("FOUND iterator " + e.getText().replace(".element", ""));
 
-					v = apply_iterator_op(sig, e.getText().replace(".element", ""), i, args);
+
+					v = apply_period_iterator_op(sig, e.getText().replace(".element", ""), i, uc.args);
 
 				}
 				i++;
@@ -710,7 +711,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		// if the constructor is for Periods
 		if (ctx.type().getText().equals("Periods")) {
 			String periodsType = types_mapping.get("Periods");
-			String varName = "ps" + counter++;
+			String varName = "P" + counter++;
 			crmlParser.Period_opContext period = ctx.exp().period_op();
 			Value left = visit(period.exp(0));
 			Value right = visit(period.exp(1));
@@ -726,7 +727,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 			localFunctionCalls.append(code);
 			localFunctionCalls
-					.append("CRMLtoModelica.Types.CRMLPeriods_build " + varName + "_init(ps =" + varName + ");\n");
+					.append("CRMLtoModelica.Types.CRMLPeriods_build " + varName + "_init(P =" + varName + ");\n");
 
 			return new Value(varName, "Periods");
 		}
@@ -828,45 +829,6 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	}
 
-	private Value apply_user_operator_element(String op, List<ExpContext> exp, String val, int index) {
-		String previous_category = null;
-		// check if the operator is defined
-		// System.out.println("APPLYING OPERATOR " + op + "\n");
-		Signature sign = user_operators.get(op);
-		if (sign == null)
-			throw new ParseCancellationException("User operator undefined : " + op + "\n");
-
-		if (sign.getCategory() != null) {
-			previous_category = current_category;
-			current_category = sign.getCategory();
-		}
-		String name = op.substring(0, op.length() - 1).replace(".", "_") + counter + '\'';
-
-		String res = "";
-
-		for (int i = 0; i < exp.size(); i++) {
-			String v = "";
-			if (i == index)
-				v = val;
-			else {
-				ExpContext e = exp.get(i);
-				Value operand = visit(e);
-				v = operand.toModelica();
-			}
-			res += sign.variable_names.get(exp.size() - i - 1) + "=" + v;
-			if (i < exp.size() - 1)
-				res += ", ";
-		}
-		res = sign.function_name + " " + name + "(" + res + ");\n";
-
-		localFunctionCalls.append(res);
-		counter++;
-
-		current_category = previous_category; // restore
-		return new Value(name + ".out", sign.return_type);
-
-	}
-
 	private Value apply_runary_op(String op, Value right) {
 
 		Signature op_t = OperatorMapping.is_defined(operators_map, op, right.type, right.isSet);
@@ -934,30 +896,60 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		return new Value(name + ".out", op_t.return_type, op_t.is_return_set);
 	}
 
-	private Value apply_iterator_op(Signature sig, String v_name, int arg_index, List<ExpContext> args) {
+	private Value apply_period_iterator_op(Signature sig, String v_name, int arg_index, List<ExpContext> args) {
 
 			// translates to block instantiation
 		
-			String name = sig.function_name +"_iteraor"+counter++;
+			String name = sig.function_name.replace("\'", "") +"_iteraor"+counter++;
 			String res = "model " + name + "\n";
-			res+= sig.return_type + "[:] out;\n  algorithm \n";
 
-			res += "for i in 1:" +  v_name + ".size()" +"\n";
+			String f_name = sig.function_name+counter++;
+			res += "CRMLtoModelica.Types.CRMLPeriods ps;\n";
+			res+= types_mapping.get(sig.return_type)  + "[:] out;\n  ";
+			res+= sig.function_name + "[50]" + f_name + ";\n algorithm \n"; 
+			res += "for i in 1:" +  "size(ps.period_times)" +" loop\n";
 			
-			String args_modelica = "";
-			for(int i=0; i< args.size(); i++){
-				
-			 args_modelica = args.get(i).getText();
-			 if(i<args.size()-1)  args_modelica += ", ";
+			// APPLY operator
+			String previous_category = null;
+		
+			// check if the operator is defined
+			// System.out.println("APPLYING OPERATOR " + op + "\n");
+			Signature sign = user_operators.get(sig.function_name);
+		
+			if (sign == null)
+				throw new ParseCancellationException("User operator undefined : " + sig.function_name + "\n");
+
+			if (sign.getCategory() != null) {
+				previous_category = current_category;
+				current_category = sign.getCategory();
 			}
 
-			res += "out[i]=" + sig.function_name + "(" + args_modelica + ");";
+			String val ="";
+			for (int i = 0; i < args.size(); i++) {
+				if(i==arg_index)
+					val += "connect(" + f_name +"."+ sign.variable_names.get(args.size() - i - 1)  + "," + v_name +".period_times[i]);\n";
+				else{
+				ExpContext e = args.get(i);
+				Value operand = visit(e);
+				val += "connect(" + f_name +"."+ sign.variable_names.get(args.size() - i - 1) + "," + operand.toModelica() + ");\n";
+			}}
+			current_category = previous_category; // restore
+
+			res+=val;
 			
+			//res += "out[i]:=" + sig.function_name + "(" + args_modelica + ");\n";
+
+			res += "end for;\n";
+
 			res += "end " + name + ";\n";
+
+			String var_n =  name +counter++;
+
+			res += name + " " + var_n + "(ps="+ v_name + ");\n";
 
 			localFunctionCalls.append(res);
 			counter++; 
-			return new Value(name+".out", sig.return_type, true);
+			return new Value(var_n+".out", sig.return_type, true);
 		}
 		
 		private Value apply_binary_op(String op, Value left, Value right) {
