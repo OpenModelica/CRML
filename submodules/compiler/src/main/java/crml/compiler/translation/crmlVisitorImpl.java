@@ -903,11 +903,13 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			String name = sig.function_name.replace("\'", "") +"_iteraor"+counter++;
 			String res = "model " + name + "\n";
 
-			String f_name = sig.function_name+counter++;
+			String f_name = sig.function_name.replace("'", "")+counter++;
 			res += "CRMLtoModelica.Types.CRMLPeriods ps;\n";
-			res+= types_mapping.get(sig.return_type)  + "[:] out;\n  ";
-			res+= sig.function_name + "[50]" + f_name + ";\n algorithm \n"; 
-			res += "for i in 1:" +  "size(ps.period_times)" +" loop\n";
+			res+= types_mapping.get(sig.return_type)  + "[50] out;\n  ";
+			res+= sig.function_name + "[50]" + f_name + ";\n"; 
+
+			String val = " equation\n";
+			val += "for i in 1:" +  "size(ps.period, 1)" +" loop\n";
 			
 			// APPLY operator
 			String previous_category = null;
@@ -924,14 +926,17 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 				current_category = sign.getCategory();
 			}
 
-			String val ="";
+			String pass_args = "";
+
 			for (int i = 0; i < args.size(); i++) {
 				if(i==arg_index)
-					val += "connect(" + f_name +"."+ sign.variable_names.get(args.size() - i - 1)  + "," + v_name +".period_times[i]);\n";
+					val += f_name +"[i]."+ sign.variable_names.get(args.size() - i - 1)  + " = ps.period[i];\n";
 				else{
 				ExpContext e = args.get(i);
 				Value operand = visit(e);
-				val += "connect(" + f_name +"."+ sign.variable_names.get(args.size() - i - 1) + "," + operand.toModelica() + ");\n";
+				res += types_mapping.get(operand.type) + " " + operand.toModelica() + ";\n";
+				pass_args += sign.variable_names.get(args.size() - i - 1) + " =" + operand.toModelica() + ", ";
+				val += f_name +"[i]."+ sign.variable_names.get(args.size() - i - 1) + " =" + operand.toModelica() + ";\n";
 			}}
 			current_category = previous_category; // restore
 
@@ -945,7 +950,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 			String var_n =  name +counter++;
 
-			res += name + " " + var_n + "(ps="+ v_name + ");\n";
+			res += name + " " + var_n + "(" + pass_args + "ps="+ v_name +  ");\n";
 
 			localFunctionCalls.append(res);
 			counter++; 
