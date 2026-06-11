@@ -1,7 +1,8 @@
 package ctests;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import crml.compiler.omc.OMCUtil.CompileStage;
 import crml.compiler.util.CompilerRoot;
+import crml.util.SafeResource;
 import crml.compiler.omc.CompileSettings;
 import crml.compiler.omc.ModelicaSimulationException;
 
@@ -29,8 +31,8 @@ public class UseCaseTests {
     @DisplayName("Traffic lights use-case test")
 	@Test
 	void testTraficLight () throws InterruptedException, IOException, ModelicaSimulationException{
-		String filePath = "traffic_light/";
-		Util.runTest(Paths.get(filePath), cs, CompileStage.TRANSLATE);
+		Path traffic_dir = SafeResource.get("testResourcesRoot").getParent().resolve("traffic_light").resolve("TrafficLightSpec_simplified.crml");
+		Util.runTest(traffic_dir, cs, CompileStage.TRANSLATE);
 	}
 
 	/** @DisplayName("Pumping System use-case test")
