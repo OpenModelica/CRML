@@ -45,7 +45,7 @@ library ETL is {
   
 	// Decide
 	// Operator 'decide' is 
-	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P = phi 'or' (P end));
+	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P = phi 'or' (new Boolean (P end));
   
 	Category c1 is Category increasing1 
 		= { (>, >), (>=, >=), (<, >=), (<=, >), (==, >), (<>, >) };
