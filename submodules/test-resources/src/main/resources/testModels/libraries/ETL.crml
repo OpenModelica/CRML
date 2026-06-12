@@ -37,7 +37,7 @@ library ETL is {
 	// Operators for the evaluation of requirements
 	// Check
 	Operator [ Boolean ] 'check' Boolean phi 'over' Periods P 
-		= and ('evaluate' phi 'over' P);
+		= and ('evaluate' phi 'over' P.element);
   
 	// Evaluate
 	Operator [ Boolean ] 'evaluate' Boolean phi 'over' Period P 
