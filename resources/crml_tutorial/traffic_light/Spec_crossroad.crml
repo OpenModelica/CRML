@@ -1,7 +1,7 @@
 model TrafficLight_Spec is
 	// Libraries import
-	{'ETL'} union
-	{'FORML'} union 
+	'ETL' union
+	'FORML' union 
 
 	{
 	// Requirement model for the traffic light example
