@@ -1,8 +1,11 @@
-
-
-model PumpingSystem is flatten {Units, FORM_L}
+model PumpingSystem is
+	// Libraries import
+	flatten 'Units' union
+	'ETL' union 
+	'FORML' union
 	
-	union {
+	// PumpingSystem model
+	{
 		// type Requirement is Boolean forbid { *, +, integrate };
 		
 		class Pump is {
@@ -32,4 +35,4 @@ model PumpingSystem is flatten {Units, FORM_L}
 		};
 		
 		System system is System{ Pump (ident = "PO1"),  Pump (ident = "PO2"), Pump (ident = "PO3") };
-};
+	};
