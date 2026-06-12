@@ -5,120 +5,121 @@
 )
 package crml.model.language
 
-// ─── Top-level definition ────────────────────────────────────────────────────
-
-class Definition {
-    DefinitionType kind
+abstract class NamedEntity {
     String name
-    contains Dependency[] dependencies
+}
+
+abstract class Domain extends NamedEntity {
+    Domain[] extends
+    Domain[] specializes
+    boolean partial
+    String[] aliases
+} // Everything should be a domain and a somain should be a set.
+
+abstract class Element extends NamedEntity {
+    // elements have names and values
+    // names are unique within a set
+}
+
+abstract class Variable extends Element{
+    Domain type
+    boolean constant
+}
+
+class Objects extends Element {
+    Domain type
     contains Element[] elements
 }
 
-enum DefinitionType {
-    MODEL = 0
-    PACKAGE = 1
-    LIBRARY = 2
-}
+abstract class Value { }
 
-class Dependency {
-    boolean flatten
-    String[] names
-}
+abstract class Definition { }
 
-// ─── Elements (top-level body items) ─────────────────────────────────────────
-
-abstract class Element {}
-
-class CommentElement extends Element {
-    String text
-}
-
-class TemplateDef extends Element {
-    String[] names          // sequence of id / user_keyword tokens
-    contains Expression body
-}
-
-class ClassDef extends Element {
-    String name
-    contains ClassMember[] members
-    contains TypeRef superType
-    contains ClassParams superParams
-    String superAlias        // optional trailing id after 'extends type params? id?'
-}
-
-class TypeDef extends Element {
-    String name
-    contains TypeRef superType
-    contains ArgList superArgs
-    String superAlias
-    contains ClassMember[] members
-}
-
-class OperatorDef extends Element {
-    contains TypeRef returnType
-    contains OperatorSignaturePart[] signature
-    contains ApplyCategory applyCategory
-    contains Expression body
-}
-
-class VarDef extends Element {
-    VarQualifier qualifier
-    contains TypeRef varType
-    String[] names
-    contains ArgList initArgs    // when definition uses call syntax: id(exp, ...)
-    contains Expression initExpr // when definition uses 'is exp'
+class ElementDefinition extends Definition {
+    Domain type
     boolean external
+    contains Value value
+
+}
+// ─── Operators ───────────────────────────────────────────────────────────────
+
+abstract class SetOperator { }
+
+class UnarySetOperator extends SetOperator { }
+
+class BinarySetOperator extends SetOperator { }
+
+class FilterSetOperator extends SetOperator { }
+
+// ─── Top-level definition ────────────────────────────────────────────────────
+
+class Model extends Domain {
+    contains Model[] models
+    contains Clazz[] classes
+    contains Operator[] Operators
+    contains Category[] categories
+    contains Object[] Objects
+    contains Variable[] variables
+    // contains Set[] sets // What is this?
+    // contains FramePeriod frame // What is this?
 }
 
-class ParameterDecl extends Element {
-    contains TypeRef paramType       // set when 'parameter type id+'
-    StructureTypeKind structureKind  // set when 'parameter class|type id+'
-    boolean isStructure
-    String[] names
+class Library extends NamedEntity { // Probably just be a set, not a domain
+    contains Library[] libraries
+    contains Domain[] domainExtensions
+    contains Domain[] domainSpecialization
+    contains Clazz[] classes
+    contains Operator[] Operators
+    contains Category[] categories
 }
 
-class CategoryDef extends Element {
+class Package extends NamedEntity {
+    contains Package[] packages
+    contains Library[] libraries
+    contains Model[] models
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
+abstract class SignatureElement {}
+
+class Keyword extends SignatureElement {
+    String keyword
+}
+
+class Parameter extends SignatureElement {
+    Domain type
     String name
-    contains CategoryPair[] pairs
 }
 
-// ─── Class / type members ────────────────────────────────────────────────────
+// ─── Operators and Templates ─────────────────────────────────────────────────
+abstract class Expression { }
 
-abstract class ClassMember {}
+//class RawExpression extends Expression { } // Implemented in java to hold/wrap the AST?
 
-class MemberVarDef extends ClassMember {
-    VarQualifier qualifier
-    contains TypeRef varType
-    String[] names
-    contains ArgList initArgs
-    contains Expression initExpr
-    boolean external
+class Category extends Domain { }
+
+abstract class Operator {
+    Domain returnType
+    SignatureElement[] parameters
+    contains Category category
 }
 
-class AliasDecl extends ClassMember {
-    String name
+abstract class Template extends Operator {}
+
+class CallArgument {
+    Parameter parameter
+    Expression expression
 }
 
-class ForbidDecl extends ClassMember {
-    contains Op[] forbidden
+class OperatorCall extends Expression {
+    Operator target
 }
 
-class MemberComment extends ClassMember {
-    String text
-}
-
-class MemberParameterDecl extends ClassMember {
-    contains TypeRef paramType
-    StructureTypeKind structureKind
-    boolean isStructure
-    String[] names
-}
 
 // ─── Operators ────────────────────────────────────────────────────────────────
 
-abstract class Op {}
-
-class BuiltinOp extends Op {
+class BuiltinOp extends Expression {
     BuiltinOpKind kind
 }
 
@@ -158,34 +159,6 @@ enum BuiltinOpKind {
     ASIN = 28
     START = 29   // right_op: exp 'start'
     END = 30     // right_op: exp 'end'
-}
-
-// ─── Operator definition helpers ─────────────────────────────────────────────
-
-class OperatorSignaturePart {
-    contains TypeRef paramType   // null when this part is a user_keyword token
-    String paramName             // null when this part is a user_keyword token
-    String userKeyword           // null when this part is a typed param
-}
-
-class ApplyCategory {
-    String associativity
-}
-
-class ClassParams {
-    contains NamedArg[] args
-}
-
-class NamedArg {
-    String name
-    contains Expression value
-}
-
-// ─── Category ────────────────────────────────────────────────────────────────
-
-class CategoryPair {
-    contains Op left
-    contains Op right
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -371,9 +344,7 @@ class NumberConstant extends Constant {
     double value
 }
 
-class TimeConstant extends Constant {}
-
-enum BooleanValue {
+enum BooleanConstant {
     TRUE = 0
     FALSE = 1
     UNDECIDED = 2
