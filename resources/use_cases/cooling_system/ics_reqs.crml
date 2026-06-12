@@ -1,67 +1,68 @@
 // ICS requirement model
 model ics_reqs is 
- /////////////////
- // Libraries import
- ///////////////////
- flatten {'ETL', 'FORML'} union
- {
-  ///////////////////////////////////////////////////////////////////////////////
-  // ICS (Intermediate Cooling System) model
-  ///////////////////////////////////////////////////////////////////////////////
+	/////////////////
+	// Libraries import
+	///////////////////
+	'ETL' union 
+	'FORML' union
+ 	{
+	///////////////////////////////////////////////////////////////////////////////
+	// ICS (Intermediate Cooling System) model
+	///////////////////////////////////////////////////////////////////////////////
 
-	// Temperature requirements	
-	// NL : "The ICS temperature should be maintained between 16°C and 30°C."
-	// SNL: "During normal normal operation, the ICS system shall have a temperature between 16°C and 30°C."
-    Boolean normal_operation is external;
-	Real T is external;
-	Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
-    Boolean R1_T is ('during' normal_operation) 'ensure' T_in_range ;
-	
-	// NL : "If the temperature exceed these limits, it must return to within the normal operating range within one minute."
-	// SNL : "When the ICS system's temperature exceeds the normal operating limits, 
-	//       the ICS system shall return to within the normal operating range
-	//       within one minute."
-    Boolean R2_T is ('from' (new Clock (not R1_T)) 'for' 60.0) 'check at end' T_in_range ; //remark: 'implies' could be used instead
-	Boolean R_T is R1_T and R2_T ;
-    
-    // Speed requirements for heat exchangers
-	// NL : "To limit erosion and corrosion, the fluid velocity in heat exchangers must not exceed 6 m/s."
-	// SNL1 : "During normal operation, the fluid velocity in each heat exchanger shall be less than or equal to 6 m/s"
-	// SNL2 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the cumulative duration during which the velocity remains above 6 m/s  
-	// does not exceed 10 seconds over the 3600 seconds following this event."
-	// SNL3 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the number of distinct occurrences where the velocity exceeds 6 m/s
-	// does not exceed 2 during the 3,600 seconds following this event."
-	class Req_speed is {
-		Real v is external;
-		Boolean v_too_high is (v > 6.0) ; // m/s
-		Clock v_too_high_clock is (new Clock v_too_high) ;
-		Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=_real' 10.0 ;
-		Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=_int' 2 ;
-		Boolean R_v is R1_v and R2_v ;
+		// Temperature requirements	
+		// NL : "The ICS temperature should be maintained between 16°C and 30°C."
+		// SNL: "During normal normal operation, the ICS system shall have a temperature between 16°C and 30°C."
+		Boolean normal_operation is external;
+		Real T is external;
+		Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
+		Boolean R1_T is ('during' normal_operation) 'ensure' T_in_range ;
+		
+		// NL : "If the temperature exceed these limits, it must return to within the normal operating range within one minute."
+		// SNL : "When the ICS system's temperature exceeds the normal operating limits, 
+		//       the ICS system shall return to within the normal operating range
+		//       within one minute."
+		Boolean R2_T is ('from' (new Clock (not R1_T)) 'for' 60.0) 'check at end' T_in_range ; //remark: 'implies' could be used instead
+		Boolean R_T is R1_T and R2_T ;
+		
+		// Speed requirements for heat exchangers
+		// NL : "To limit erosion and corrosion, the fluid velocity in heat exchangers must not exceed 6 m/s."
+		// SNL1 : "During normal operation, the fluid velocity in each heat exchanger shall be less than or equal to 6 m/s"
+		// SNL2 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the cumulative duration during which the velocity remains above 6 m/s  
+		// does not exceed 10 seconds over the 3600 seconds following this event."
+		// SNL3 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the number of distinct occurrences where the velocity exceeds 6 m/s
+		// does not exceed 2 during the 3,600 seconds following this event."
+		class Req_speed is {
+			Real v is external;
+			Boolean v_too_high is (v > 6.0) ; // m/s
+			Clock v_too_high_clock is (new Clock v_too_high) ;
+			Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=_real' 10.0 ;
+			Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=_int' 2 ;
+			Boolean R_v is R1_v and R2_v ;
+		};
+		Real v1 is external;
+		Real v2 is external;
+		Req_speed Req_speed1(v = v1), Req_speed2(v = v2);
+		Boolean R_speed_all is Req_speed1.R_v and Req_speed2.R_v ;
+		
+		// Flow requirements for pumps
+		// NL : The system's pumps must not cavitate.
+		// SNL : When an ICS pump is in operation, the ICS system shall ensure that the flow rate associated with that pump
+		// is greater than or equal to 70 tonnes per hour.
+		class Req_flow is {
+			Real flow is external ;
+			Boolean pump_in_service is external ;
+			Boolean f_over_fmin is (f >= 700) ; // t/h
+			Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
+		};
+		Boolean pump_in_service1 is external;
+		Boolean pump_in_service2 is external;
+		Boolean pump_in_service3 is external;
+		Real flow1 is external;
+		Real flow2 is external;
+		Real flow3 is external;
+		Req_flow Req_flow1(pump_in_service=pump_in_service1,flow=flow1);
+		Req_flow Req_flow2(pump_in_service=pump_in_service2,flow=flow2);
+		Req_flow Req_flow3(pump_in_service=pump_in_service3,flow=flow3);
+		Boolean R_flow_all is Req_flow1.R_f and Req_flow2.R_f and Req_flow3.R_f;	
 	};
-	Real v1 is external;
-	Real v2 is external;
-	Req_speed Req_speed1(v = v1), Req_speed2(v = v2);
-	Boolean R_speed_all is Req_speed1.R_v and Req_speed2.R_v ;
-    
-    // Flow requirements for pumps
-	// NL : The system's pumps must not cavitate.
-	// SNL : When an ICS pump is in operation, the ICS system shall ensure that the flow rate associated with that pump
-	// is greater than or equal to 70 tonnes per hour.
-	class Req_flow is {
-		Real flow is external ;
-		Boolean pump_in_service is external ;
-		Boolean f_over_fmin is (f >= 700) ; // t/h
-		Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
-	};
-	Boolean pump_in_service1 is external;
-	Boolean pump_in_service2 is external;
-	Boolean pump_in_service3 is external;
-	Real flow1 is external;
-	Real flow2 is external;
-	Real flow3 is external;
-	Req_flow Req_flow1(pump_in_service=pump_in_service1,flow=flow1);
-	Req_flow Req_flow2(pump_in_service=pump_in_service2,flow=flow2);
-	Req_flow Req_flow3(pump_in_service=pump_in_service3,flow=flow3);
-	Boolean R_flow_all is Req_flow1.R_f and Req_flow2.R_f and Req_flow3.R_f;	
- };
