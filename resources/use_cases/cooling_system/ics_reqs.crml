@@ -11,27 +11,27 @@ model ics_reqs is
   ///////////////////////////////////////////////////////////////////////////////
 
 	// Temperature requirements	
-	// NL : "La température du SRI doit être maintenue entre 16°C et 30°C."
-	// SNL: "En fonctionnement normal, le système SRI doit avoir une température entre 16°C et 30°C."
+	// NL : "The ICS temperature should be maintained between 16°C and 30°C."
+	// SNL: "During normal normal operation, the ICS system shall have a temperature between 16°C and 30°C."
     Boolean normal_operation is external;
 	Real T is external;
 	Boolean T_in_range is ((T >= 16) and (T <= 30)); //remark: not done yet but units should be specified
     Boolean R1_T is ('during' normal_operation) 'ensure' T_in_range ;
 	
-	// NL : "Si la température dépasse ces limites, elle doit être revenue dans l'intervalle au bout d'une minute."
-	// SNL : "Lorsque le système SRI a une température qui dépasse les limites du fonctionnement normal, 
-	//       le système SRI doit avoir une température à nouveau dans l'intervalle autorisé en fonctionnement normal
-	//       au bout d'une minute."
+	// NL : "If the temperature exceed these limits, it must return to within the normal operating range within one minute."
+	// SNL : "When the ICS system's temperature exceeds the normal operating limits, 
+	//       the ICS system shall return to within the normal operating range
+	//       within one minute."
     Boolean R2_T is ('from' (new Clock (not R1_T)) 'for' 60.0) 'check at end' T_in_range ; //remark: 'implies' could be used instead
 	Boolean R_T is R1_T and R2_T ;
     
     // Speed requirements for heat exchangers
-	// NL : "Afin de limiter les phénomènes d'érosion et de corrosion, la vitesse du fluide dans les échangeurs ne doit pas dépasser 6 m/s."
-	// SNL1 : "En fonctionnement normal, chaque échangeur de chaleur doit avoir une vitesse de fluide inférieure ou égale à 6m/s"
-	// SNL2 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que la durée cumulée pendant laquelle la vitesse reste supérieure à 6 m/s 
-	// n’excède pas 10 secondes sur les 3600 secondes suivant cet événement."
-	// SNL3 : "Lorsque l'échangeur a une vitesse de fluide supérieure à 6 m/s, le système SRI doit garantir que le nombre d’occurrences distinctes de dépassement de 6 m/s
-	// n’excède pas 2 sur les 3600 secondes suivant cet événement."
+	// NL : "To limit erosion and corrosion, the fluid velocity in heat exchangers must not exceed 6 m/s."
+	// SNL1 : "During normal operation, the fluid velocity in each heat exchanger shall be less than or equal to 6 m/s"
+	// SNL2 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the cumulative duration during which the velocity remains above 6 m/s  
+	// does not exceed 10 seconds over the 3600 seconds following this event."
+	// SNL3 : "When the heat exchanger has a fluid velocity greater than 6 m/s, the SRI system shall ensure that the number of distinct occurrences where the velocity exceeds 6 m/s
+	// does not exceed 2 during the 3,600 seconds following this event."
 	class Req_speed is {
 		Real v is external;
 		Boolean v_too_high is (v > 6.0) ; // m/s
@@ -46,9 +46,9 @@ model ics_reqs is
 	Boolean R_speed_all is Req_speed1.R_v and Req_speed2.R_v ;
     
     // Flow requirements for pumps
-	// NL : Les pompes du système ne doivent pas caviter.
-	// SNL : Lorsque une pompe du SRI est en service, le système SRI doit garantir que le débit associée à cette pompe
-	// est supérieur ou égal à 70 tonnes par heure.
+	// NL : The system's pumps must not cavitate.
+	// SNL : When an ICS pump is in operation, the ICS system shall ensure that the flow rate associated with that pump
+	// is greater than or equal to 70 tonnes per hour.
 	class Req_flow is {
 		Real flow is external ;
 		Boolean pump_in_service is external ;
