@@ -3,8 +3,7 @@ model ics_reqs is
  /////////////////
  // Libraries import
  ///////////////////
- 'ETL' union
- 'FORML' union
+ flatten {'ETL', 'FORML'} union
  {
   ///////////////////////////////////////////////////////////////////////////////
   // ICS (Intermediate Cooling System) model
