@@ -5,129 +5,76 @@
 )
 package crml.model.language
 
+import org.eclipse.emf.common.util.BasicEList
+
+
+
 abstract class NamedEntity {
     String name
 }
 
-abstract class Domain extends NamedEntity {
-    Domain[] extends
-    Domain[] specializes
-    boolean partial
-    String[] aliases
-} // Everything should be a domain and a somain should be a set.
+/////////////////////////////
+// ??????????????????????? //
+/////////////////////////////
 
-abstract class Element extends NamedEntity {
-    // elements have names and values
-    // names are unique within a set
+abstract class Element extends NamedEntity{
+    // TODO: must have a domain
+    // TODO: must have a name
+    // TODO: name must be unique in the class
+    contains Value definition
+    Boolean external // TODO mutually exclusive with definition
 }
 
-abstract class Variable extends Element{
-    Domain type
-    boolean constant
-}
-
-class Objects extends Element {
-    Domain type
-    contains Element[] elements
-}
-
-abstract class Value { }
-
-abstract class Definition { }
-
-class ElementDefinition extends Definition {
-    Domain type
-    boolean external
-    contains Value value
+abstract class Variable extends Element {
+    refers Domain domain
+    Boolean constant
 
 }
-// ─── Operators ───────────────────────────────────────────────────────────────
 
-abstract class SetOperator { }
-
-class UnarySetOperator extends SetOperator { }
-
-class BinarySetOperator extends SetOperator { }
-
-class FilterSetOperator extends SetOperator { }
-
-// ─── Top-level definition ────────────────────────────────────────────────────
-
-class Model extends Domain {
-    contains Model[] models
-    contains Clazz[] classes
-    contains Operator[] Operators
-    contains Category[] categories
-    contains Object[] Objects
+abstract class Object extends Element {
+    refers Class domain
     contains Variable[] variables
-    // contains Set[] sets // What is this?
-    // contains FramePeriod frame // What is this?
+    contains Object[] objects
+    contains Set<?>[] sets
+    contains Period frame //Optional to have
 }
 
-class Library extends NamedEntity { // Probably just be a set, not a domain
-    contains Library[] libraries
-    contains Domain[] domainExtensions
-    contains Domain[] domainSpecialization
-    contains Clazz[] classes
-    contains Operator[] Operators
-    contains Category[] categories
+class Binding {
+    refers Element element
+    contains Value value
 }
 
-class Package extends NamedEntity {
-    contains Package[] packages
-    contains Library[] libraries
-    contains Model[] models
+/////////////////////////////
+// Templates and Operators //
+/////////////////////////////
+class Input {
+
 }
-
-// ─── Utilities ───────────────────────────────────────────────────────────────
-
-abstract class SignatureElement {}
-
-class Keyword extends SignatureElement {
-    String keyword
-}
-
-class Parameter extends SignatureElement {
-    Domain type
-    String name
-}
-
-// ─── Operators and Templates ─────────────────────────────────────────────────
-abstract class Expression { }
-
-//class RawExpression extends Expression { } // Implemented in java to hold/wrap the AST?
-
-class Category extends Domain { }
 
 abstract class Operator {
-    Domain returnType
-    SignatureElement[] parameters
-    contains Category category
+    refers Domain domain
 }
 
-abstract class Template extends Operator {}
-
-class CallArgument {
-    Parameter parameter
-    Expression expression
+enum BuiltinUnaryOperatorKind {
+    PAR = 14
+    PRE = 16 //?? 
+    NOT = 17
+    CARD = 18
+    LOG10 = 24
+    COS = 25
+    ACOS = 26
+    SIN = 27
+    ASIN = 28
+    START = 29   // right_op: exp 'start'
+    END = 30     // right_op: exp 'end'
 }
 
-class OperatorCall extends Expression {
-    Operator target
+class UnaryOperator extends Operator {
+    BuiltinUnaryOperatorKind optype
+    refers Input rhs
 }
 
-
-// ─── Operators ────────────────────────────────────────────────────────────────
-
-class BuiltinOp extends Expression {
-    BuiltinOpKind kind
-}
-
-class UserKeywordOp extends Op {
-    String keyword
-}
-
-enum BuiltinOpKind {
+enum BuiltinBinaryOperatorKind {
     AND = 0
     MUL = 1
     ADD = 2
@@ -144,209 +91,189 @@ enum BuiltinOpKind {
     NEQ = 13
     PAR = 14
     EQ = 15
-    PRE = 16
-    NOT = 17
-    CARD = 18
     OR = 19
     POW = 20
     MOD = 21
     EXP_OP = 22
     LOG = 23
-    LOG10 = 24
-    COS = 25
-    ACOS = 26
-    SIN = 27
-    ASIN = 28
-    START = 29   // right_op: exp 'start'
-    END = 30     // right_op: exp 'end'
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-class TypeRef {
-    BuiltinType builtinKind   // NONE means the type is named via typeName
-    String typeName           // set when builtinKind == NONE
-    boolean isSett             // true when '{}' suffix is present // isSet is a reserved keyword? (causes parse error)
+class BinaryOperator extends Operator {
+    BuiltinBinaryOperatorKind optype
+    refers Input rhs
+    refers Input lhs
 }
 
-enum BuiltinType {
-    NONE = 0
-    INTEGER = 1
-    REAL = 2
-    BOOLEAN = 3
-    STRING = 4
-    CLOCK = 5
-    SET = 6
-    PERIOD = 7
-    PERIODS = 8
-    EVENT = 9
-    REQUIREMENT = 10
+class Template extends Operator {
+    refers Boolean4[] parameters
+    // TODO: Returns a boolean
+}
+///////////
+// Types //
+///////////
+abstract class Domain {
+    // TODO: A domain is a finite or infinite set of elements of the same kind. 
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    Boolean partial
+    // TODO: a domain can be aliased
 }
 
-enum VarQualifier {
-    NONE = 0
-    FIXED = 1
+class CRMLType {
+    // TODO: Therefore, the words ‘type’ and ‘domain’ are synonymous. (specs)
 }
 
-enum StructureTypeKind {
-    TYPE = 0
-    CLASS = 1
+class Clock {
+
 }
 
-class ArgList {
-    contains Expression[] args
+class DiscreteClock {
+
 }
 
-// ─── Expressions ─────────────────────────────────────────────────────────────
-
-abstract class Expression {}
-
-class ParenExpr extends Expression {
-    contains Expression inner
+class Period {
+    refers Event start
+    refers Event end
 }
 
-class IdentExpr extends Expression {
-    String name
+class Periods {
+    refers Period[] Periods
+    // TODO event based generator?
 }
 
-class ConstantExpr extends Expression {
-    contains Constant value
+class Boolean4 {
+    refers BooleanConstant value // TODO??
 }
 
-class ConstructorExpr extends Expression {
-    contains TypeRef constructedType
-    contains Expression argument
+class Requirement extends Boolean4 {
+    // TODO should this be implemented in CRML?
+}
+class Event {
+    refers Boolean4 boolean
 }
 
-class SumExpr extends Expression {
-    contains Expression[] operands   // grammar requires at least two
+//class Operator { implemented elsewhere
+//
+//}
+
+class Category extends Operator{
+    // Categories are operators on operators.
+    refers Operator f
 }
 
-class TrimExpr extends Expression {
-    contains Expression subject
-    contains Expression period
+class Set<D> extends Element {
+    refers D[] elements
 }
 
-class ProjExpr extends Expression {
-    String subject
-    String dimension      // optional; null if omitted
-    String target
+class Class extends Domain {
+    // Domain of all objects, have the same attributes but no devinition (is it really practical? default values?)
+    // TODO: A domain is a finite or infinite set of elements of the same kind. 
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    // Boolean partial // inherits from domain
+    // TODO: a domain can be aliased
+
+    refers Class[] superClasses
+
+    // TODO class specialization
 }
 
-class PeriodOpExpr extends Expression {
-    boolean leftClosed    // true = '[', false = ']'
-    contains Expression lower
-    contains Expression upper
-    boolean rightClosed   // true = ']', false = '['
+class PowerClass {
+    // sets of objects of Class c (from specs)
+    // TODO where it isu used? 
 }
 
-class IteratorExpr extends Expression {
-    String iteratorName   // text of ITERATOR token (includes trailing .element)
+class Library {
+    //contains Element[] elements // TODO derived maybe?
+    contains Library[] superlibs
+    // TODO: A library can contain domain extensions
+    // TODO: A library can contain domain specializations
+    contains Class[] classes
+    contains Operator[] operators
+    //contains Template[] templates // Not in specs, but might be good to have
+    // TODO: A library can contain categories
 }
 
-class RightUnaryOpExpr extends Expression {
-    contains Expression operand
-    BuiltinOpKind opkind     // START or END
+class Model extends Library{
+    contains Object[] objects
+    contains Variable[] varaibles
+    contains Set<?>[] sets
+    contains Period frame
 }
 
-class LeftUnaryOpExpr extends Expression {
-    BuiltinOpKind opkind
-    contains Expression operand
+class Package {
+    contains Package[] subpackages
+    contains Library[] libraries
+    contains Model[] models
 }
 
-class BinaryOpExpr extends Expression {
-    contains Expression left
-    BuiltinOpKind opkind
-    contains Expression right
-}
+/////////////////////
+// Primitive times //
+/////////////////////
 
-class UserKeywordPrefixExpr extends Expression {
-    String keyword
-    contains Expression operand
-}
-
-class UserKeywordInfixExpr extends Expression {
-    contains Expression left
-    String keyword
-    contains Expression right
-}
-
-class UserKeywordPostfixExpr extends Expression {
-    contains Expression operand
-    String keyword
-}
-
-class ElementExpr extends Expression {}
-
-class TerminateExpr extends Expression {}
-
-class WhenExpr extends Expression {
-    contains Expression condition
-    contains Expression thenExpr
-}
-
-class AtExpr extends Expression {
-    contains Expression subject
-    contains Expression atTime
-}
-
-class IntegrateExpr extends Expression {
-    contains Expression integrand
-    contains Expression period
-}
-
-class TickExpr extends Expression {
-    String clockId
-}
-
-class ComponentRefExpr extends Expression {
-    boolean relative           // true when leading '.' is present
-    contains ComponentStep[] steps
-}
-
-class ComponentStep {
-    String name
-    contains Subscript[] subscripts
-}
-
-class Subscript {
-    boolean slice              // true for ':', false for an index expression
-    contains Expression index  // null when slice == true
-}
-
-class IfExpr extends Expression {
-    contains Expression condition
-    contains Expression thenExpr
-    contains Expression elseExpr
-}
-
-class SetExpr extends Expression {
-    contains Expression[] elements  // empty list represents '{}'
-}
-
-class EvaluateExpr extends Expression {
-    contains Expression subject
-}
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-abstract class Constant {}
-
-class BooleanConstant extends Constant {
-    BooleanValue value
-}
-
-class StringConstant extends Constant {
-    String value
-}
-
-class NumberConstant extends Constant {
-    double value
-}
-
-enum BooleanConstant {
+enum BooleanLiteral {
     TRUE = 0
     FALSE = 1
     UNDECIDED = 2
     UNDEFINED = 3
+}
+
+class NaturalNumber {
+
+}
+
+// EInteger?
+//class Integer {
+//
+//}
+
+class Real {
+
+}
+
+class ComplexNumber {
+
+}
+
+// EString?
+//class String {
+//
+//}
+
+///////////////////////
+// Ideas for values and Expressions
+/////////////////////////
+
+abstract class Value {
+
+}
+
+class VaraibleReference extends Value {
+    refers Variable variable
+}
+
+class ComputedValue extends Value {
+    refers Operator operator
+}
+
+abstract class ConstantValue extends Value {
+
+}
+
+class BooleanConstant extends ConstantValue {
+    BooleanLiteral value
+}
+
+class IntegerConstant extends ConstantValue {
+    Integer value
+}
+
+class RealConstant extends ConstantValue {
+    Double value
+}
+
+class StringConstant extends ConstantValue {
+    String value
 }

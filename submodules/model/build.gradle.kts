@@ -12,8 +12,8 @@ group = "org.example"
 version = "1.0.0"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -65,6 +65,9 @@ dependencies {
     implementation("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
     implementation("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
     implementation("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
+
+    // ── Mermaid diagram generation ────────────────────────────────────────
+    implementation("io.github.folmate.ecore2mermaid:core:0.0.1")
 }
 
 // ─────────────────────────────────────────────
@@ -113,6 +116,20 @@ sourceSets {
             exclude("**/*.xcore")
         }
     }
+}
+
+tasks.register<JavaExec>("generateMermaid") {
+    group = "code generation"
+    description = "Generates a Mermaid class diagram from the CRML EPackage"
+
+    dependsOn(tasks.compileJava)
+
+    val outputFile = layout.buildDirectory.file("generated/crml-diagram.mmd")
+    outputs.file(outputFile)
+
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("crml.model.MermaidMain")
+    args = listOf(outputFile.get().asFile.absolutePath)
 }
 
 tasks.register<JavaExec>("generateGenModel") {

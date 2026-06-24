@@ -1,10 +1,10 @@
 package crml.model;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EPackage;
@@ -24,11 +24,11 @@ public class GenmodelMain {
         String basepackage = args[0];
         String target = args[1];
 
-        var resourceSet = new ResourceSetImpl();
+        ResourceSetImpl resourceSet = new ResourceSetImpl();
         resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap().put(
                 "genmodel", new XMIResourceFactoryImpl());
-                
-        List<EPackage> list = List.of(LanguagePackage.eINSTANCE);
+
+        List<EPackage> list = Arrays.asList(LanguagePackage.eINSTANCE);
 
         GenModel genModel = GenModelFactory.eINSTANCE.createGenModel();
         genModel.setComplianceLevel(GenJDKLevel.JDK60_LITERAL);

@@ -1,5 +1,6 @@
 package crml.model;
 
+/*
 import crml.model.language.BinaryOpExpr;
 import crml.model.language.BuiltinOpKind;
 import crml.model.language.BuiltinType;
@@ -14,7 +15,7 @@ import crml.model.language.OperatorDef;
 import crml.model.language.OperatorSignaturePart;
 import crml.model.language.TypeDef;
 import crml.model.language.TypeRef;
-import crml.model.language.VarDef;
+import crml.model.language.VarDef;*/
 
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 public class Main {
 
     public static void main(String[] args) {
-
+/*
         LanguageFactory f = LanguageFactory.eINSTANCE;
 
         // ── Top-level definition ──────────────────────────────────────────
@@ -133,5 +134,5 @@ public class Main {
             return "Operator [" + op.getReturnType().getBuiltinKind() + "] " + sig;
         }
         return el.getClass().getSimpleName();
-    }
+    */}
 }
