@@ -25,7 +25,7 @@ abstract class Element extends NamedEntity{
     Boolean external // TODO mutually exclusive with definition
 }
 
-abstract class Variable extends Element {
+class Variable extends Element {
     refers Domain domain
     Boolean constant
 
@@ -166,7 +166,7 @@ class Set<D> extends Element {
     refers D[] elements
 }
 
-class Class extends Domain {
+class Class extends Domain, NamedEntity {
     // Domain of all objects, have the same attributes but no devinition (is it really practical? default values?)
     // TODO: A domain is a finite or infinite set of elements of the same kind. 
     // TODO: a domain can be extended
@@ -175,9 +175,13 @@ class Class extends Domain {
     // Boolean partial // inherits from domain
     // TODO: a domain can be aliased
 
-    refers Class[] superClasses
+    refers ClassDependency[] superClasses
 
     // TODO class specialization
+}
+
+class ClassDependency extends ProxyElement {
+
 }
 
 class PowerClass {
@@ -187,7 +191,7 @@ class PowerClass {
 
 class Library {
     //contains Element[] elements // TODO derived maybe?
-    contains Library[] superlibs
+    contains Dependency[] superlibs
     // TODO: A library can contain domain extensions
     // TODO: A library can contain domain specializations
     contains Class[] classes
@@ -276,4 +280,50 @@ class RealConstant extends ConstantValue {
 
 class StringConstant extends ConstantValue {
     String value
+}
+
+///////////
+// Types //
+///////////
+
+abstract class TypeReference {
+
+}
+
+class BuiltinTypeReference extends TypeReference {
+    BuiltinType builtinType
+}
+
+enum BuiltinType { // TODO: Change string literal to modelica connector names
+    STRING = 0,
+    BOOLEAN = 1,
+    REAL = 2
+}
+
+class UserTypereference extends TypeReference {
+    String typeName // TODO: it has to be resolved to a Class or Type.
+}
+
+//////////////////
+// Dependencies //
+//////////////////
+
+abstract class Dependency {
+
+}
+
+class ModelDependency extends Dependency {
+    refers Model referedModel
+}
+
+class ProxyDependency extends Dependency, ProxyElement {
+
+}
+
+/////////////
+// Proxies //
+/////////////
+
+class ProxyElement {
+    String name
 }
