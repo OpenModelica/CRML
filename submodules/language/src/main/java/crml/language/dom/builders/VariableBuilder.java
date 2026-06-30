@@ -9,13 +9,13 @@ import crml.model.language.LanguageFactory;
 import crml.model.language.LanguagePackage;
 import crml.model.language.Variable;
 
-public class Variablebuilder {
+public class VariableBuilder {
     private final BuildContext builder;
     private final LanguageFactory factory;
     private final LanguagePackage metamodel;
     private final EClass vtype;
     
-    public Variablebuilder(BuildContext builder) { 
+    public VariableBuilder(BuildContext builder) { 
         this.builder = builder; 
         this.metamodel = builder.metamodel(); 
         this.factory = builder.factory();

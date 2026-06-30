@@ -1,5 +1,5 @@
 plugins {
-    id("java")
+    id("java-library")
     id("application")
     id("org.xtext.builder") version "4.0.0"
 }
@@ -37,20 +37,21 @@ configurations.all {
 }
 
 // ─────────────────────────────────────────────
-//  Version catalogue
+//  Version catalogue (defined in root build.gradle.kts)
 // ─────────────────────────────────────────────
-val xtextVersion     = "2.33.0"
-val xcoreVersion     = "1.21.0"
-val xcoreLibVersion  = "1.6.0"
-val emfCoreVersion   = "2.33.0"
-val emfCommonVersion = "2.28.0"
+val emfCoreVersion:    String by rootProject.extra
+val emfCommonVersion:  String by rootProject.extra
+val emfCodegenVersion: String by rootProject.extra
+val xcoreVersion:      String by rootProject.extra
+val xcoreLibVersion:   String by rootProject.extra
+val xtextVersion:      String by rootProject.extra
 
 // ─────────────────────────────────────────────
 //  Dependencies
 // ─────────────────────────────────────────────
 dependencies {
-    implementation("org.eclipse.emf:org.eclipse.emf.codegen.ecore:2.45.0")
-    
+    implementation("org.eclipse.emf:org.eclipse.emf.codegen.ecore:$emfCodegenVersion")
+
     // ── Xcore language support (build-time only) ──────────────────────────
     // These go on the classpath used by the Xtext builder to process .xcore
     // files and drive the EMF code generator.
@@ -61,10 +62,12 @@ dependencies {
     xtextLanguages("org.eclipse.xtext:org.eclipse.xtext.common.types:$xtextVersion")
     xtextLanguages("org.eclipse.xtext:org.eclipse.xtext.ecore:$xtextVersion")
 
-    // ── Runtime dependencies needed by the generated Java code ────────────
-    implementation("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
-    implementation("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
-    implementation("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
+    // ── Runtime dependencies exposed as api ───────────────────────────────
+    // Declared api so dependents (e.g. :language) get EObject, EList, etc.
+    // on their compile classpath without re-declaring these artifacts.
+    api("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
+    api("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
+    api("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
 
     // ── Mermaid diagram generation ────────────────────────────────────────
     implementation("io.github.folmate.ecore2mermaid:core:0.0.1")

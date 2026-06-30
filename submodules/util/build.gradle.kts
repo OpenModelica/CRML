@@ -6,9 +6,11 @@ plugins {
 group = "crml"
 version = "1.0-SNAPSHOT"
 
+val antlr4Version: String by rootProject.extra
+
 dependencies {
-    antlr("org.antlr:antlr4:4.9.2")
-    implementation("org.antlr:antlr4:4.9.2")
+    antlr("org.antlr:antlr4:$antlr4Version")
+    implementation("org.antlr:antlr4:$antlr4Version")
 
 
 

@@ -6,16 +6,19 @@ plugins {
 group = "crml"
 version = "1.0-SNAPSHOT"
 
+val antlr4Version: String by rootProject.extra
+
 // ─────────────────────────────────────────────
 //  Dependencies
 // ─────────────────────────────────────────────
 dependencies {
-    // Model submodule – language depends on the EMF model definition
+    // Model submodule – language depends on the EMF model definition.
+    // EMF (EObject, EList, etc.) reaches this module transitively via model's api deps.
     implementation(project(":model"))
 
     // ── ANTLR4 ───────────────────────────────────────────────────────────────
-    antlr("org.antlr:antlr4:4.9.2")
-    implementation("org.antlr:antlr4:4.9.2")
+    antlr("org.antlr:antlr4:$antlr4Version")
+    implementation("org.antlr:antlr4:$antlr4Version")
 
     testImplementation(project(":util"))
     testImplementation(project(":util-test"))

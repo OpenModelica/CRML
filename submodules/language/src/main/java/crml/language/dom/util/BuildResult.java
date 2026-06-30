@@ -36,7 +36,7 @@ public abstract class BuildResult {
             return null;
         }
         if(result.length == 1){
-            return new SingleBuildResult<T>(result[1]);
+            return new SingleBuildResult<T>(result[0]);
         }
         return new MultiBuildResult<T>(result);
     }

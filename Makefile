@@ -19,6 +19,9 @@ test: tests
 tests:
 	$(GRADLE_CMD) test
 
+test-dom:
+	$(GRADLE_CMD) :language:test --tests "crml.language.dom.specification.*"
+
 test-etl:
 	$(GRADLE_CMD) test --tests "ctests.ETLTests*"
 

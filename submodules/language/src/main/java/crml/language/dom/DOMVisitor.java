@@ -5,15 +5,17 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
+import crml.language.dom.builders.ClassBuilder;
 import crml.language.dom.builders.RootBuilder;
+import crml.language.dom.builders.VariableBuilder;
 import crml.language.dom.util.BuildResult;
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser.DefinitionContext;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final RootBuilder root = new RootBuilder(this);
-    //private final StatementBuilder  statements  = new StatementBuilder(this);
-    //private final DeclarationBuilder decls      = new DeclarationBuilder(this);
+    private final ClassBuilder cls = new ClassBuilder(this);
+    private final VariableBuilder vars = new VariableBuilder(this);
 
     // recursion funnels through here, so dispatch stays in one place
     @Override public BuildResult build(ParseTree n) { return visit(n); }
@@ -26,6 +28,6 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override
     public void link(EObject host, EStructuralFeature reference, String id, EClass targetType) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'link'");
+        System.err.println("Linking skipped");
     }
 }

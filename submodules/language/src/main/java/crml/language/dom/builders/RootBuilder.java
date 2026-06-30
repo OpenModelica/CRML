@@ -35,16 +35,16 @@ public class RootBuilder {
         switch (type) {
             case "model":
                 return processModel(context);
-                //break;
             case "library":
-                throw new UnsupportedOperationException("Loading a library is not implemented yet");
-                //break;
+                builder.reportImplementationError("Loading a library is not implemented yet");
+                break;
             case "package":
-                throw new UnsupportedOperationException("Loading a package is not implemented yet");
-                //break;
+                builder.reportImplementationError("Loading a package is not implemented yet");
+                break;
             default:
-                throw new RuntimeException("Unknown definition type: "+type);
+                builder.reportError("Unknown definition type: "+type);
         }
+        return null;
     }
 
     private Model processModel(DefinitionContext context){
@@ -55,13 +55,19 @@ public class RootBuilder {
         }
 
         for(Element_defContext elemets : context.element_def()){
-            EObject res = builder.build(elemets, SingleBuildResult.class).result();
+            SingleBuildResult<?> buildres = builder.build(elemets, SingleBuildResult.class);
+            if(buildres == null) {
+                continue;
+            }
+                
+
+            EObject res = buildres.result();
             if(res instanceof Variable){
                 model.getVaraibles().add((Variable) res);
             } else if (res instanceof crml.model.language.Object) {
                 model.getObjects().add((crml.model.language.Object)res);
             } 
-            throw new IllegalStateException("Element type was not recognized: "+ elemets.getClass().getSimpleName());
+            builder.reportError("Element type was not recognized: "+ elemets.getClass().getSimpleName());
         }
         return model;
     }
@@ -86,6 +92,7 @@ public class RootBuilder {
             }
             return dependencies;
         }
-        throw new IllegalStateException("Unknown dependency type: "+context.getClass().getSimpleName());
+        builder.reportError("Unknown dependency type: "+context.getClass().getSimpleName());
+        return null;
     }
 }

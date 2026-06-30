@@ -27,26 +27,30 @@ public interface BuildContext {
     default void link(EObject host, EStructuralFeature reference, String id) {
         link(host, reference, id, null);
     };
-    // shared services live here too: factory, symbol table, ParseTreeProperty, error reporter
+    
+    default void reportImplementationError(String text){
+        throw new RuntimeException(text);
+    }
+
+    default void reportError(String text){
+        throw new RuntimeException(text);
+    }
 
     public static class Link {
-        private final EObject host;
+        private final EObject source;
         private final EStructuralFeature reference;
         private final String id;
         private final EClass targetType;
 
         public Link(EObject host, EReference reference, String id, EClass targetType){
-            this.host = host;
+            this.source = host;
             this.reference = reference;
             this.id = id;
             this.targetType = targetType;
         }
 
         public Link(EObject host, EReference reference, String id){
-            this.host = host;
-            this.reference = reference;
-            this.id = id;
-            this.targetType = null;
+            this(host, reference, id, null);
         }
     }
 }
