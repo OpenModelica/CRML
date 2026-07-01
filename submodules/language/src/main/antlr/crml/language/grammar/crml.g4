@@ -25,7 +25,7 @@ element_def
 	| category # CategoryElement
 	;
 	
-class_def : 'class' id 'is' ('{' class_var_def+ '}' extension? )';' ;
+class_def : partial='partial'? 'class' id 'is' ('{' class_var_def+ '}' extension? )';' ;
 
 extension 
 	: 'extends' type class_params? id?
@@ -55,8 +55,13 @@ apply_category : 'apply' assoc=id 'on';
 	 
 type_def : 'type' id ('extends' type  arg_list? id?)?  ('{' class_var_def * '}' )? ;
 	 
-class_var_def : ( var_def )|'alias' id ';'| comment
-			| 'forbid' (op| op) (',' (op| op))* ';' | uninstantiated_def ;
+class_var_def 
+	: var_def 
+	|'alias' id ';'
+	| comment
+	| 'forbid' (op| op) (',' (op| op))* ';' 
+	| uninstantiated_def 
+	;
 
 var_qualifier : 'fixed';
 	 

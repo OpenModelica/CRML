@@ -26,7 +26,7 @@ abstract class Element extends NamedEntity{
 }
 
 class Variable extends Element {
-    refers Domain domain
+    contains TypeReference domain
     Boolean constant
 
 }
@@ -177,6 +177,8 @@ class Class extends Domain, NamedEntity {
 
     refers ClassDependency[] superClasses
 
+    contains Variable[] varaibles
+    
     // TODO class specialization
 }
 
@@ -297,11 +299,18 @@ class BuiltinTypeReference extends TypeReference {
 enum BuiltinType { // TODO: Change string literal to modelica connector names
     STRING = 0,
     BOOLEAN = 1,
-    REAL = 2
+    INTEGER = 2,
+    REAL = 3,
+    EVENT = 4,
+    CLOCK = 5,
+    PERIOD = 6,
+    PERIODS = 7,
+    REQUIREMENT = 8
 }
 
 class UserTypereference extends TypeReference {
-    String typeName // TODO: it has to be resolved to a Class or Type.
+    //String typeName // TODO: it has to be resolved to a Class or Type.
+    refers Domain domain
 }
 
 //////////////////

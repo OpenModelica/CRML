@@ -207,9 +207,16 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                 }     
             } else if (entry.getValue() instanceof CustomHtmlReporter) {
                 CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
+                Object report;
+                try {
+                    report = syntax.report();
+                } catch (Exception e) {
+                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
                 node.info(join(
                     p(join(entry.getKey(), br())),
-                    syntax.report()
+                    report
                     //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
                 ).render());
             } else if (entry.getValue() instanceof String && "AST".equals(entry.getKey())) {
@@ -219,8 +226,15 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         pre(code(ast))
                     ).render());
             } else {
+                String value;
+                try {
+                    value = entry.getValue().toString();
+                } catch (Exception e) {
+                    value = "<" + e.getClass().getSimpleName() + " while rendering value: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
                 node.info(join(p(join(entry.getKey(), br())),
-                        p(entry.getValue().toString())).render());
+                        p(value)).render());
             }
         }
 

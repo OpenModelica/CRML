@@ -16,6 +16,7 @@ import crml.language.grammar.crmlParser.DependencySetContext;
 import crml.language.grammar.crmlParser.Element_defContext;
 import crml.language.grammar.crmlParser.IdContext;
 import crml.language.grammar.crmlParser.SingleDependencyContext;
+import crml.model.language.Class;
 import crml.model.language.Dependency;
 import crml.model.language.LanguageFactory;
 import crml.model.language.Model;
@@ -64,10 +65,13 @@ public class RootBuilder {
             EObject res = buildres.result();
             if(res instanceof Variable){
                 model.getVaraibles().add((Variable) res);
+            } else if(res instanceof crml.model.language.Class) {
+                model.getClasses().add((Class) res);
             } else if (res instanceof crml.model.language.Object) {
                 model.getObjects().add((crml.model.language.Object)res);
-            } 
-            builder.reportError("Element type was not recognized: "+ elemets.getClass().getSimpleName());
+            } else {
+                builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
+            }
         }
         return model;
     }

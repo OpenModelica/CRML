@@ -59,6 +59,7 @@ public class TypePeriod extends ReportedTest {
             if (result instanceof BuildResult.SingleBuildResult) {
                 dom = ((BuildResult.SingleBuildResult<?>) result).result();
             }
+            visitor.linker();
         } catch (Throwable e) {
             error = e;
         }

@@ -3,10 +3,12 @@ package crml.language.dom.builders;
 import org.eclipse.emf.ecore.EClass;
 
 import crml.language.dom.BuildContext;
+import crml.language.dom.util.BuildResult.SingleBuildResult;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
 import crml.model.language.LanguageFactory;
 import crml.model.language.LanguagePackage;
+import crml.model.language.TypeReference;
 import crml.model.language.Variable;
 
 public class VariableBuilder {
@@ -25,12 +27,15 @@ public class VariableBuilder {
     public Variable variable(Var_defContext context){
         //TODO: what is fixed qualifier?
         Variable var = factory.createVariable();
-        builder.link(
-                var, 
-                vtype.getEStructuralFeature("domain"), 
-                resolveType(context.type())
-        );
+        
         var.setName(context.id().getText());
+
+        var.setConstant(false);
+
+        var.setExternal(context.is_external!=null);
+
+        TypeReference typeref = (TypeReference) builder.build(context.type(), SingleBuildResult.class).<TypeReference>result();
+        var.setDomain(typeref);
         //TODO: Arglist
         //TODO: Value
         

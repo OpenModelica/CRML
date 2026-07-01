@@ -1,5 +1,7 @@
 package crml.language.pretty;
 
+import java.util.Objects;
+
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EObject;
@@ -16,7 +18,7 @@ public class PrettyPrint {
         builder.append(indent).append(root.hashCode()).append(" (").append(root.eClass().getName()).append(")");
         builder.append(System.lineSeparator());
         for(EAttribute attr: root.eClass().getEAllAttributes()){
-            builder.append(indent2).append("attr: ").append(attr.getName()).append(": ").append(root.eGet(attr).toString());
+            builder.append(indent2).append("attr: ").append(attr.getName()).append(": ").append(Objects.toString(root.eGet(attr)));
             builder.append(System.lineSeparator());
         }
 
@@ -40,7 +42,13 @@ public class PrettyPrint {
                         builder.append(indent2).append("ref: ").append(ref.getName()).append(": ").append(obj.hashCode());
                     }
                 } else {
-                    builder.append(indent2).append("ref: ").append(ref.getName()).append(": ").append(root.eGet(ref).hashCode());
+                    EObject target = (EObject) root.eGet(ref);
+                    builder.append(indent2).append("ref: ").append(ref.getName()).append(": ");
+                    if(target==null){
+                        builder.append("null");
+                    } else {
+                        builder.append(target.hashCode());
+                    }
                 }
                 
             }
