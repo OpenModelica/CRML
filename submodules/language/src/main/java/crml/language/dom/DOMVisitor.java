@@ -10,14 +10,20 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure0;
 
 import crml.language.dom.builders.ClassBuilder;
+import crml.language.dom.builders.ConstantBuilder;
+import crml.language.dom.builders.ExpressionBuilder;
 import crml.language.dom.builders.RootBuilder;
 import crml.language.dom.builders.TypeReferenceBuilder;
 import crml.language.dom.builders.VariableBuilder;
 import crml.language.dom.util.BuildResult;
 import crml.language.dom.util.ScopeResolver;
 import crml.language.grammar.crmlBaseVisitor;
+import crml.language.grammar.crmlParser;
 import crml.language.grammar.crmlParser.Class_defContext;
+import crml.language.grammar.crmlParser.ConstantContext;
+import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
+import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
 
@@ -29,6 +35,9 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final ClassBuilder cls = new ClassBuilder(this);
     private final VariableBuilder vars = new VariableBuilder(this);
     private final TypeReferenceBuilder typeref = new TypeReferenceBuilder(this);
+    private final ExpressionBuilder exp = new ExpressionBuilder(this);
+    private final ConstantBuilder cnst = new ConstantBuilder(this);
+    private final ConstructorBuilder consr = new ConstructorBuilder(this);
 
     // recursion funnels through here, so dispatch stays in one place
     @Override public BuildResult build(ParseTree n) { return visit(n); }
@@ -41,6 +50,12 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitVar_def(Var_defContext c) { return BuildResult.wrap(vars.variable(c)); }
     @Override public BuildResult visitType(TypeContext c) { return BuildResult.wrap(typeref.reference(c)); }
     @Override public BuildResult visitClass_def(Class_defContext c) { return BuildResult.wrap(cls.buildClass(c)); }
+    @Override public BuildResult visitExp(ExpContext c) { return BuildResult.wrap(exp.value(c)); }
+    @Override public BuildResult visitConstant(ConstantContext c) { return BuildResult.wrap(cnst.constant(c)); }
+    @Override public BuildResult visitConstructor(ConstructorContext c) { return BuildResult.wrap(consr.get(c)); }
+    
+    
+    
     @Override
     public void link(EObject host, EStructuralFeature reference, String id, EClass targetType) {
         tasks.add(() -> {

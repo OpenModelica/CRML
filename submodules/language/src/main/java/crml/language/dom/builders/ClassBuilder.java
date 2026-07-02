@@ -1,7 +1,5 @@
 package crml.language.dom.builders;
 
-import java.util.List;
-
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 
@@ -9,7 +7,6 @@ import crml.language.dom.BuildContext;
 import crml.language.dom.util.BuildResult.SingleBuildResult;
 import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.Class_var_defContext;
-import crml.language.grammar.crmlParser.ExtensionContext;
 import crml.model.language.Class;
 import crml.model.language.LanguageFactory;
 import crml.model.language.Variable;

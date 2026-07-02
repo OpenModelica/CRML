@@ -47,9 +47,6 @@ class Binding {
 /////////////////////////////
 // Templates and Operators //
 /////////////////////////////
-class Input {
-
-}
 
 abstract class Operator extends NamedEntity{
     refers Domain domain
@@ -70,11 +67,12 @@ enum BuiltinUnaryOperatorKind {
     ASIN = 28
     START = 29   // right_op: exp 'start'
     END = 30     // right_op: exp 'end'
+    SUBEXPRESSION = 31
 }
 
-class UnaryOperator extends Operator {
+class UnaryOperator extends Operator, Value {
     BuiltinUnaryOperatorKind optype
-    refers Input rhs
+    contains Value rhs
 }
 
 enum BuiltinBinaryOperatorKind {
@@ -99,12 +97,13 @@ enum BuiltinBinaryOperatorKind {
     MOD = 21
     EXP_OP = 22
     LOG = 23
+    AT = 101
 }
 
-class BinaryOperator extends Operator {
+class BinaryOperator extends Operator, Value {
     BuiltinBinaryOperatorKind optype
-    refers Input rhs
-    refers Input lhs
+    contains Value rhs
+    contains Value lhs
 }
 
 class Template extends Operator {
@@ -263,6 +262,15 @@ class ComputedValue extends Value {
     refers Operator operator
 }
 
+class ConstructorValue extends Value {
+    refers TypeReference domain
+
+    //TODO: (validation) bindings and value should be mutually exclusive
+    contains Binding[] bindings
+    contains Value value
+
+}
+
 abstract class ConstantValue extends Value {
 
 }
@@ -277,6 +285,10 @@ class IntegerConstant extends ConstantValue {
 
 class RealConstant extends ConstantValue {
     Double value
+}
+
+class TimeValue extends ConstantValue{
+    // in the grammar this is handled as a constant. not sure why
 }
 
 class StringConstant extends ConstantValue {

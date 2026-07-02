@@ -70,7 +70,9 @@ public class ScopeResolver {
         }
 
         for(Variable v : model.getVaraibles()){
+            System.err.println("Test variable (Model): "+ v.getName());
             if(v.getName().equals(id) && isReadCompatible(v.getDomain(), targetType)){
+                System.err.println("Test class (Model): MATCHES");
                 return v;
             }
         }

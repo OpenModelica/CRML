@@ -9,6 +9,7 @@ import crml.language.grammar.crmlParser.Var_defContext;
 import crml.model.language.LanguageFactory;
 import crml.model.language.LanguagePackage;
 import crml.model.language.TypeReference;
+import crml.model.language.Value;
 import crml.model.language.Variable;
 
 public class VariableBuilder {
@@ -36,6 +37,12 @@ public class VariableBuilder {
 
         TypeReference typeref = (TypeReference) builder.build(context.type(), SingleBuildResult.class).<TypeReference>result();
         var.setDomain(typeref);
+
+        if(context.exp()!=null){
+            Value value = (Value) builder.build(context.exp(), SingleBuildResult.class).<Value>result();
+            var.setDefinition(value);
+        }
+        
         //TODO: Arglist
         //TODO: Value
         
