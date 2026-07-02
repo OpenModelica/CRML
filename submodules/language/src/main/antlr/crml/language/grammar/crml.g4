@@ -41,7 +41,7 @@ category_pair : '(' op ',' op ')'; //TODO
 
 //association : 'Category' empty_set c_set=id 'is' 'associate' c_name=id 'with' c_op_name=user_keyword ';';
  
-var_def : var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
+var_def : cnst='constant'? var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
 
 operator : 'Operator' '[' type ']' operator_def ';' ; //TODO
 
@@ -63,7 +63,7 @@ class_var_def
 	| uninstantiated_def  //TODO
 	;
 
-var_qualifier : 'fixed';
+var_qualifier : 'fixed'; //TODO: is this something that is now the constant?
 
 // Change: at some point, it allowed exp and arg_list, now it is just expt, to make the processing simpler
 // WARNING: note that if a single value is provided in parenthesis, it may look like an arg_list, but it is a sub-expression

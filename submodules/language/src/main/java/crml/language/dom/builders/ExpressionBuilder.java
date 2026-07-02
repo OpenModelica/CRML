@@ -126,6 +126,12 @@ public class ExpressionBuilder {
     private static BuiltinUnaryOperatorKind resolveUnaryOpCode(String text){
         switch (text) {
             case "sin": return BuiltinUnaryOperatorKind.SIN;
+            case "asin": return BuiltinUnaryOperatorKind.ASIN;
+            case "cos": return BuiltinUnaryOperatorKind.COS;
+            case "acos": return BuiltinUnaryOperatorKind.ACOS;
+            case "log10": return BuiltinUnaryOperatorKind.LOG10;
+            case "log": return BuiltinUnaryOperatorKind.LOG;
+            case "exp": return BuiltinUnaryOperatorKind.EXP_OP;
             case "not": return BuiltinUnaryOperatorKind.NOT;
             case "-": return BuiltinUnaryOperatorKind.SUB;
             case "+": return BuiltinUnaryOperatorKind.ADD;

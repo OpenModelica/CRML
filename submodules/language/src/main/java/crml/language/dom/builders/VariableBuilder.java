@@ -31,7 +31,7 @@ public class VariableBuilder {
         
         var.setName(context.id().getText());
 
-        var.setConstant(false);
+        var.setConstant(context.cnst!=null);
 
         var.setExternal(context.is_external!=null);
 
