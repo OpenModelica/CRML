@@ -127,6 +127,7 @@ public class ExpressionBuilder {
         switch (text) {
             case "sin": return BuiltinUnaryOperatorKind.SIN;
             case "not": return BuiltinUnaryOperatorKind.NOT;
+            case "-": return BuiltinUnaryOperatorKind.SUB;
             default:
                 throw new IllegalStateException("Unary operator is not recognized: "+text);
         }
