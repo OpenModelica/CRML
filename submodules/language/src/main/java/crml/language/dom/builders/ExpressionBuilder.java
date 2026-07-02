@@ -4,11 +4,19 @@ import org.eclipse.emf.ecore.EClass;
 
 import crml.language.dom.BuildContext;
 import crml.language.dom.util.BuildResult.SingleBuildResult;
+import crml.language.grammar.crmlParser.DurationContext;
 import crml.language.grammar.crmlParser.ExpContext;
+import crml.language.grammar.crmlParser.If_expContext;
+import crml.language.grammar.crmlParser.IntegrateContext;
+import crml.language.grammar.crmlParser.Period_opContext;
 import crml.model.language.BinaryOperator;
 import crml.model.language.BuiltinBinaryOperatorKind;
 import crml.model.language.BuiltinUnaryOperatorKind;
+import crml.model.language.DurationValue;
+import crml.model.language.IfValue;
+import crml.model.language.IntegrateValue;
 import crml.model.language.LanguageFactory;
+import crml.model.language.PeriodsValue;
 import crml.model.language.UnaryOperator;
 import crml.model.language.Value;
 import crml.model.language.VaraibleReference;
@@ -37,6 +45,20 @@ public class ExpressionBuilder {
             return buildres.<Value>result();
         } else if(context.constructor() != null) {
             return (Value) builder.build(context.constructor(), SingleBuildResult.class).<Value>result();
+        } else if(context.period_op() != null) {
+            Period_opContext percontext = context.period_op();
+            PeriodsValue periods = factory.createPeriodsValue();
+
+            periods.setIsStartInclusive(percontext.lb.getText().equals("["));
+
+            SingleBuildResult<?> start = builder.build(percontext.exp(0), SingleBuildResult.class);
+            periods.setStartValue(start.<Value>result());
+
+            SingleBuildResult<?> end = builder.build(percontext.exp(1), SingleBuildResult.class);
+            periods.setEndValue(end.<Value>result());
+
+            periods.setIsEndInclusive(percontext.rb.getText().equals("]"));
+            return periods;
         } else if (context.lunary != null && context.left != null ) {
             UnaryOperator unop = factory.createUnaryOperator();
             unop.setOptype(resolveUnaryOpCode(context.lunary.getText()));
@@ -59,6 +81,42 @@ public class ExpressionBuilder {
             VaraibleReference ref = factory.createVaraibleReference();
             builder.link(ref, varref.getEStructuralFeature("variable"), context.id().getText());
             return ref;
+        } else if(context.integrate() != null) {
+            IntegrateContext intcontext = context.integrate();
+            IntegrateValue integrate = factory.createIntegrateValue();
+
+            SingleBuildResult<?> inedgrand = builder.build(intcontext.exp(0), SingleBuildResult.class);
+            integrate.setIntegrand(inedgrand.<Value>result());
+
+            SingleBuildResult<?> interval = builder.build(intcontext.exp(1), SingleBuildResult.class);
+            integrate.setInterval(interval.<Value>result());
+
+            return integrate;
+        } else if(context.if_exp() != null) {
+            If_expContext ifexp = context.if_exp();
+            IfValue ifvalue = factory.createIfValue();
+
+            SingleBuildResult<?> condexp = builder.build(ifexp.if_e, SingleBuildResult.class);
+            ifvalue.setCondition(condexp.<Value>result());
+
+            SingleBuildResult<?> thenexp = builder.build(ifexp.then_e, SingleBuildResult.class);
+            ifvalue.setThen(thenexp.<Value>result());
+            if(ifexp.else_e!=null){
+                SingleBuildResult<?> elseexp = builder.build(ifexp.else_e, SingleBuildResult.class);
+                ifvalue.setOthervise(elseexp.<Value>result());
+            }
+            return ifvalue;
+        } else if(context.duration() != null) {
+            DurationContext durcontext = context.duration();
+            DurationValue duration = factory.createDurationValue();
+
+            SingleBuildResult<?> exp1 = builder.build(durcontext.exp(0), SingleBuildResult.class);
+            duration.setExp1(exp1.<Value>result());
+
+            SingleBuildResult<?> exp2 = builder.build(durcontext.exp(1), SingleBuildResult.class);
+            duration.setExp2(exp2.<Value>result());
+
+            return duration;
         } else {
             builder.reportError("Unable to process value: "+context.getText());
             return null;
@@ -77,9 +135,16 @@ public class ExpressionBuilder {
     private static BuiltinBinaryOperatorKind resolveBinaryOpCode(String text){
         switch (text) {
             case "<": return BuiltinBinaryOperatorKind.LT;
+            case "<=": return BuiltinBinaryOperatorKind.LE;
             case ">": return BuiltinBinaryOperatorKind.GT;
+            case ">=": return BuiltinBinaryOperatorKind.GE;
             case "at": return BuiltinBinaryOperatorKind.AT;
             case "==": return BuiltinBinaryOperatorKind.EQ;
+            case "and": return BuiltinBinaryOperatorKind.AND;
+            case "*": return BuiltinBinaryOperatorKind.MUL;
+            case "+": return BuiltinBinaryOperatorKind.ADD;
+            case "-": return BuiltinBinaryOperatorKind.SUB;
+            case "or": return BuiltinBinaryOperatorKind.OR;
         
             default:
                 throw new IllegalStateException("Binary operator is not recognized: "+text);

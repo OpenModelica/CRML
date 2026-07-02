@@ -155,7 +155,8 @@ op : builtin_op|user_keyword
 ;
 
 right_op : 'start' | 'end';
-		
+
+//TODO: Check operator precendence. (BooleanIntegration_no_ext.crml)
 builtin_op : 'and' | '*' | '+' | '-' | '/' | 'with' | 'master' | 'on' | 'filter'
 				| '<=' | '<' | '>=' | '>' | '<>' | 'par' | '==' |
 				'pre' | 'not'| '-' | 'card' | 'or' | '^' |

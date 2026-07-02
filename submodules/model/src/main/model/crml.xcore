@@ -262,6 +262,29 @@ class ComputedValue extends Value {
     refers Operator operator
 }
 
+class PeriodsValue extends Value {
+    Boolean isStartInclusive
+    Boolean isEndInclusive
+    contains Value startValue
+    contains Value endValue
+}
+
+class IntegrateValue extends Value {
+    contains Value integrand
+    contains Value interval
+}
+
+class DurationValue extends Value {
+    contains Value exp1
+    contains Value exp2
+}
+
+class IfValue extends Value {
+    contains Value condition
+    contains Value then
+    contains Value othervise
+}
+
 class ConstructorValue extends Value {
     refers TypeReference domain
 
