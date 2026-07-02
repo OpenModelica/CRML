@@ -10,7 +10,7 @@ import org.eclipse.emf.common.util.BasicEList
 
 
 abstract class NamedEntity {
-    String name
+    id String name
 }
 
 /////////////////////////////
@@ -51,8 +51,11 @@ class Input {
 
 }
 
-abstract class Operator {
+abstract class Operator extends NamedEntity{
     refers Domain domain
+    //override getName() {
+    //    return "Placeholder operator name";
+    //}
 }
 
 enum BuiltinUnaryOperatorKind {
@@ -175,15 +178,11 @@ class Class extends Domain, NamedEntity {
     // Boolean partial // inherits from domain
     // TODO: a domain can be aliased
 
-    refers ClassDependency[] superClasses
+    refers Class[] superClasses
 
     contains Variable[] varaibles
     
     // TODO class specialization
-}
-
-class ClassDependency extends ProxyElement {
-
 }
 
 class PowerClass {
@@ -191,7 +190,7 @@ class PowerClass {
     // TODO where it isu used? 
 }
 
-class Library {
+class Library extends NamedEntity {
     //contains Element[] elements // TODO derived maybe?
     contains Dependency[] superlibs
     // TODO: A library can contain domain extensions
@@ -202,7 +201,7 @@ class Library {
     // TODO: A library can contain categories
 }
 
-class Model extends Library{
+class Model extends Library {
     contains Object[] objects
     contains Variable[] varaibles
     contains Set<?>[] sets

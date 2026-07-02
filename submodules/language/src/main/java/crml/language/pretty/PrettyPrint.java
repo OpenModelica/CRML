@@ -22,8 +22,7 @@ public class PrettyPrint {
             builder.append("null");
             return builder.toString();
         }
-        builder.append(root.hashCode()).append(" (").append(root.eClass().getName()).append(")")
-                .append(System.lineSeparator());
+        builder.append(identify(root)).append(System.lineSeparator());
         printChildren(root, "", builder);
         return builder.toString();
     }
@@ -57,15 +56,18 @@ public class PrettyPrint {
             builder.append(prefix).append(connector).append("null").append(System.lineSeparator());
             return;
         }
-        builder.append(prefix).append(connector).append(member.hashCode()).append(" (")
-                .append(member.eClass().getName()).append(")").append(System.lineSeparator());
+        builder.append(prefix).append(connector).append(identify(member)).append(System.lineSeparator());
         printChildren(member, prefix + (isLast ? BLANK : PIPE), builder);
     }
 
     private static List<Entry> collectEntries(EObject host) {
         List<Entry> entries = new ArrayList<>();
 
+        EAttribute idAttr = host.eClass().getEIDAttribute();
         for (EAttribute attr : host.eClass().getEAllAttributes()) {
+            if (attr == idAttr) {
+                continue;
+            }
             entries.add(new Leaf("attr: " + attr.getName() + ": " + Objects.toString(host.eGet(attr))));
         }
 
@@ -96,7 +98,18 @@ public class PrettyPrint {
     }
 
     private static String refLabel(Object obj) {
-        return obj == null ? "null" : String.valueOf(obj.hashCode());
+        if (obj == null) {
+            return "null";
+        }
+        return obj instanceof EObject ? identify((EObject) obj) : String.valueOf(obj.hashCode());
+    }
+
+    private static String identify(EObject obj) {
+        EAttribute idAttr = obj.eClass().getEIDAttribute();
+        Object idValue = idAttr != null ? obj.eGet(idAttr) : null;
+        String identity = idValue != null ? Objects.toString(idValue) : String.valueOf(obj.hashCode());
+        String type = idAttr != null ? obj.eClass().getName() + "::" + idAttr.getName() : obj.eClass().getName();
+        return identity + " (" + type + ")";
     }
 
     private static abstract class Entry {

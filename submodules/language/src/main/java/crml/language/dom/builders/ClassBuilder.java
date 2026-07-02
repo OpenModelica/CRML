@@ -11,9 +11,10 @@ import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.Class_var_defContext;
 import crml.language.grammar.crmlParser.ExtensionContext;
 import crml.model.language.Class;
-import crml.model.language.ClassDependency;
 import crml.model.language.LanguageFactory;
 import crml.model.language.Variable;
+
+import static crml.language.dom.builders.util.DomUtils.text;
 
 public class ClassBuilder {
     private final BuildContext builder;
@@ -28,7 +29,7 @@ public class ClassBuilder {
 
     public Class buildClass(Class_defContext context){
         Class cls = factory.createClass();
-        cls.setName(context.id().getText());
+        cls.setName(text(context.id()));
 
         cls.setPartial(context.partial!=null);
 
@@ -37,7 +38,7 @@ public class ClassBuilder {
             builder.link(
                 cls, 
                 crmlclass.getEStructuralFeature("superClasses"), 
-                context.extension().type().toString()
+                context.extension().type().getText()
             );
             //TODO: extension properties are missing
         }
@@ -58,13 +59,7 @@ public class ClassBuilder {
                 builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }
         }
+
         return cls;
     }
-
-    private ClassDependency processDependencies(ExtensionContext context){
-        ClassDependency dep = factory.createClassDependency();
-        dep.setName(context.type().getText()); //TODO: Absolutely incorrect but good for a placeholder
-        return dep;
-    }
-
 }

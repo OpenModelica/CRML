@@ -53,7 +53,7 @@ operator_def :  (type id | user_keyword)+ '=' apply_category? exp ;
 
 apply_category : 'apply' assoc=id 'on';
 	 
-type_def : 'type' id ('extends' type  arg_list? id?)?  ('{' class_var_def * '}' )? ;
+type_def : partial='partial'? 'type' id ('extends' type  arg_list? id?)?  ('{' class_var_def * '}' )? ;
 	 
 class_var_def 
 	: var_def 

@@ -1,5 +1,7 @@
 package crml.language.dom.builders;
 
+import static crml.language.dom.builders.util.DomUtils.text;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +53,8 @@ public class RootBuilder {
     private Model processModel(DefinitionContext context){
         Model model = factory.createModel();
         
+        model.setName(text(context.id()));
+
         for(DependencyContext depcontext : context.dependency()){
             model.getSuperlibs().addAll(parse(depcontext));
         }

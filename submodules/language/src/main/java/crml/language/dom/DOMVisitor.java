@@ -45,7 +45,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     public void link(EObject host, EStructuralFeature reference, String id, EClass targetType) {
         tasks.add(() -> {
             if(!resolver.link(host, reference, id, targetType)){
-                reportError("Unable to resolve refernce: "+ id+ "@"+host.hashCode());
+                reportError("Unable to resolve refernce '"+reference.getName()+"' to '"+ id+ "' in "+host);
             }
         });
     }
