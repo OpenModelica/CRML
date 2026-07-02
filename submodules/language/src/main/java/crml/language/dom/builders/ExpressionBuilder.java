@@ -128,6 +128,7 @@ public class ExpressionBuilder {
             case "sin": return BuiltinUnaryOperatorKind.SIN;
             case "not": return BuiltinUnaryOperatorKind.NOT;
             case "-": return BuiltinUnaryOperatorKind.SUB;
+            case "+": return BuiltinUnaryOperatorKind.ADD;
             default:
                 throw new IllegalStateException("Unary operator is not recognized: "+text);
         }
@@ -141,11 +142,15 @@ public class ExpressionBuilder {
             case ">=": return BuiltinBinaryOperatorKind.GE;
             case "at": return BuiltinBinaryOperatorKind.AT;
             case "==": return BuiltinBinaryOperatorKind.EQ;
+            case "<>": return BuiltinBinaryOperatorKind.NEQ;
             case "and": return BuiltinBinaryOperatorKind.AND;
             case "*": return BuiltinBinaryOperatorKind.MUL;
+            case "/": return BuiltinBinaryOperatorKind.DIV;
             case "+": return BuiltinBinaryOperatorKind.ADD;
             case "-": return BuiltinBinaryOperatorKind.SUB;
             case "or": return BuiltinBinaryOperatorKind.OR;
+            case "mod": return BuiltinBinaryOperatorKind.MOD;
+            case "^": return BuiltinBinaryOperatorKind.POW; //TODO: check if this is correct
         
             default:
                 throw new IllegalStateException("Binary operator is not recognized: "+text);
