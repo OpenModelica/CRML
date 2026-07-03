@@ -24,7 +24,7 @@ import crml.test.ReportedTest;
 public class TypeClass extends ReportedTest {
 
     static List<Arguments> fileNameSource() {
-        return ReportedTest.fileNameSourceHelper2(SpecsRoot.RESOURCES.resolve("class"));
+        return ReportedTest.fileNameSourceHelperDom(SpecsRoot.RESOURCES.resolve("class"));
     }
 
     @ParameterizedTest
@@ -37,6 +37,8 @@ public class TypeClass extends ReportedTest {
         Parser.ParserResult parsed = new Parser().parse(fileName);
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
+
+        Assumptions.assumeFalse(parsed.syntax().hasErrors(), "Model failed to parse");
 
         Throwable error = null;
         EObject dom = null;

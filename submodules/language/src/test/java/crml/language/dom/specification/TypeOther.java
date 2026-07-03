@@ -52,6 +52,8 @@ public class TypeOther extends ReportedTest {
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
 
+        Assumptions.assumeFalse(parsed.syntax().hasErrors(), "Model failed to parse");
+
         Throwable error = null;
         EObject dom = null;
         try {

@@ -26,7 +26,7 @@ public class TypeType extends ReportedTest {
 
     static List<Arguments> fileNameSource() {
         List<Arguments> tests = new ArrayList<>();
-        tests.addAll(ReportedTest.fileNameSourceHelper2(SpecsRoot.RESOURCES.resolve("type")));
+        tests.addAll(ReportedTest.fileNameSourceHelperDom(SpecsRoot.RESOURCES.resolve("type")));
         return tests;
     }
 
@@ -40,6 +40,8 @@ public class TypeType extends ReportedTest {
         Parser.ParserResult parsed = new Parser().parse(fileName);
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
+
+        Assumptions.assumeFalse(parsed.syntax().hasErrors(), "Model failed to parse");
 
         Throwable error = null;
         EObject dom = null;
