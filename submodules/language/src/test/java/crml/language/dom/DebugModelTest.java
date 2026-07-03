@@ -19,6 +19,7 @@ import crml.util.SafeResource;
  * Point it at any file by editing MODEL_RESOURCE, or drop your own model
  * into src/test/resources/debug/debug.crml.
  */
+//  ./gradlew :language:clean :language:test --tests "crml.language.dom.DebugModelTest" -i 
 public class DebugModelTest {
 
     private static final String MODEL_RESOURCE = "debug/debug.crml";

@@ -71,6 +71,8 @@ public class UnaryExpressionBuilder {
             case "+": return BuiltinUnaryOperatorKind.ADD;
             case "start": return BuiltinUnaryOperatorKind.START;
             case "end": return BuiltinUnaryOperatorKind.END;
+            case "tick": return BuiltinUnaryOperatorKind.TICK;
+            case "card": return BuiltinUnaryOperatorKind.CARD;
             default:
                 throw new IllegalStateException("Unary operator is not recognized: "+text);
         }

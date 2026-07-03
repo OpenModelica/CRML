@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.xtext.xbase.lib.Functions.Function0;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure0;
 
 import crml.language.dom.builders.ClassBuilder;
@@ -15,7 +16,9 @@ import crml.language.dom.builders.ExpressionBuilder;
 import crml.language.dom.builders.RootBuilder;
 import crml.language.dom.builders.TypeReferenceBuilder;
 import crml.language.dom.builders.VariableBuilder;
+import crml.language.dom.builders.ConstructorBuilder;
 import crml.language.dom.util.BuildResult;
+import crml.language.dom.util.ScopeResolutionOptions;
 import crml.language.dom.util.ScopeResolver;
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser;
@@ -29,7 +32,8 @@ import crml.language.grammar.crmlParser.Var_defContext;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
-    private final List<Procedure0> tasks = new ArrayList<>();
+    //private final List<Procedure0> tasks = new ArrayList<>();
+    private final List<Function0<Boolean>> tasks = new ArrayList<>();
 
     private final RootBuilder root = new RootBuilder(this);
     private final ClassBuilder cls = new ClassBuilder(this);
@@ -57,16 +61,50 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     
     
     @Override
-    public void link(EObject host, EStructuralFeature reference, String id, EClass targetType) {
-        tasks.add(() -> {
-            if(!resolver.link(host, reference, id, targetType)){
-                reportError("Unable to resolve refernce '"+reference.getName()+"' to '"+ id+ "' in "+host);
-            }
-        });
+    public void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options) {
+        tasks.add(new LinkerTask(host, reference, id, options));
     }
 
     public void linker(){
-        tasks.forEach(it -> it.apply());
-        tasks.clear();
+        while(tasks.removeIf(task -> task.apply())){}
+
+        if(tasks.size()>0){
+            StringBuilder b = new StringBuilder();
+            tasks.forEach(task -> {
+                b.append(System.lineSeparator());
+                b.append(task.toString());
+                
+            });
+            throw new RuntimeException("Unable to resolve tasks:"+b.toString());
+        }
+    }
+
+    private class LinkerTask implements Function0<Boolean>{
+        private final EObject source;
+        private final EStructuralFeature feature;
+        private final String id;
+        private final ScopeResolutionOptions options;
+
+        private LinkerTask(EObject host, EStructuralFeature feature, String id, ScopeResolutionOptions options){
+            this.source = host;
+            this.feature = feature;
+            this.id = id;
+            this.options = options;
+        }
+
+        private LinkerTask(EObject host, EStructuralFeature feature, String id){
+            this(host, feature, id, null );
+        }
+
+        @Override
+        public Boolean apply() {
+            return resolver.link(source, feature, id, options);
+        }
+
+        @Override
+        public String toString() {
+            return "Linker task: '"+ feature.getName() + "' to '" + id + "' in " + source.toString();
+        }
+
     }
 }

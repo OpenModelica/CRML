@@ -108,8 +108,6 @@ integrate : 'integrate' exp 'on' exp;
 
 duration : 'duration' exp 'on' exp;
 
-tick : 'tick' id;
-
 // Can't use named contexts as then no visitExp is generated and processing becomes unnecessary complicated.
 // TODO: Operator precendence has to be cleaned up
 exp 
@@ -128,7 +126,7 @@ exp
 	| uop1=('-' | '+' | 'par' ) rhs=exp //TODO do we need '+'?
 	| uop2=('cos' | 'acos' | 'sin' | 'asin' ) rhs=exp
 	| uop3=('exp' | 'log' | 'log10' | 'card') rhs=exp
-	| uop4='not' rhs=exp
+	| uop4=('not' | 'tick' ) rhs=exp
 // Binary operations
 	| <assoc=right> lhs=exp bop0='^' rhs=exp
 	| lhs=exp bop1=('*'|'/'|'mod') rhs=exp
@@ -147,7 +145,7 @@ exp
 	| when_exp //# WhenExpression
 //	| exp 'at' at=exp // Moved to binary operator. Why was it separate?
  	| integrate //# IntegrateExpression
-	| tick //# TickExpression
+//	| 'tick' tick=exp // Moved to unary expression level 4
 	| crml_component_reference //# ComponentReferenceExpression
 	| if_exp //# IfExpression
 	| set_def //# SetDefinitionExpression

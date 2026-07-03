@@ -7,6 +7,7 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 
 import crml.language.dom.util.BuildResult;
+import crml.language.dom.util.ScopeResolutionOptions;
 import crml.model.language.LanguageFactory;
 import crml.model.language.LanguagePackage;
 
@@ -22,7 +23,7 @@ public interface BuildContext {
         return LanguagePackage.eINSTANCE;
     }
 
-    void link(EObject host, EStructuralFeature reference, String id, EClass targetType);
+    void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options);
 
     default void link(EObject host, EStructuralFeature reference, String id) {
         link(host, reference, id, null);
@@ -36,7 +37,7 @@ public interface BuildContext {
         throw new RuntimeException(text);
     }
 
-    public static class Link {
+    /*public static class Link {
         private final EObject source;
         private final EStructuralFeature reference;
         private final String id;
@@ -52,5 +53,5 @@ public interface BuildContext {
         public Link(EObject host, EReference reference, String id){
             this(host, reference, id, null);
         }
-    }
+    }*/
 }

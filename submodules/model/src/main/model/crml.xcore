@@ -72,6 +72,7 @@ enum BuiltinUnaryOperatorKind {
     SUB = 102 // has both unary and binary form
     ADD = 103 // has both unary and binary form
     LOG = 104 // has both unary and binary form
+    TICK = 51
 }
 
 class UnaryOperator extends Operator, Value {
@@ -297,7 +298,7 @@ class IfValue extends Value {
 }
 
 class ConstructorValue extends Value {
-    refers TypeReference domain
+    contains TypeReference domain
 
     //TODO: (validation) bindings and value should be mutually exclusive
     contains Binding[] bindings
