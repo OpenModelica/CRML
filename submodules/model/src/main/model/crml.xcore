@@ -76,7 +76,8 @@ enum BuiltinUnaryOperatorKind {
 
 class UnaryOperator extends Operator, Value {
     BuiltinUnaryOperatorKind optype
-    contains Value rhs
+    contains Value value
+
 }
 
 enum BuiltinBinaryOperatorKind {
@@ -318,7 +319,7 @@ class TimeValue extends ConstantValue{
 }
 
 class StringConstant extends ConstantValue {
-    String value
+    String rawString
 }
 
 ///////////

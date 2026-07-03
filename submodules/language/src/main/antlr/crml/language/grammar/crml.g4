@@ -123,9 +123,22 @@ exp
 	| period_op //# PoeriodOperationExpression
 	| iterator //# IteratorExpression
 	//| 'apply' cat=id 'on' '(' exp ')'
-	| right=exp runary=right_op  //# RightUnaryExpression
-	| lunary=builtin_op left=exp //# LeftUnaryExpression
-	| left=exp binary=builtin_op right=exp //# BuiltinExpression
+//TODO: with mater on filter pre 
+// Unary operations
+	| lhs=exp uop0=('start' | 'end')
+	| uop1=('-' | '+' | 'par' ) rhs=exp //TODO do we need '+'?
+	| uop2=('cos' | 'acos' | 'sin' | 'asin' ) rhs=exp
+	| uop3=('exp' | 'log' | 'log10' | 'card') rhs=exp
+	| uop4='not' rhs=exp
+// Binary operations
+	| <assoc=right> lhs=exp bop0='^' rhs=exp
+	| lhs=exp bop1=('*'|'/'|'mod') rhs=exp
+	| lhs=exp bop2=('+'|'-') rhs=exp
+	| lhs=exp bop3=('+'|'-') rhs=exp
+	| lhs=exp bop4=('<'|'<='|'>='|'>'|'=='|'<>') rhs=exp
+	| lhs=exp bop5=('and'|'or') rhs=exp
+	| lhs=exp bop6='at' rhs=exp
+//
  	| uright=user_keyword right=exp //# UserRightExpression
 	| left=exp ubinary=user_keyword right=exp //# UserLeftBinaryExpression
 	| left=exp uleft=user_keyword  //# UserLeftExpression
@@ -151,12 +164,15 @@ constructor : 'new' type (arg_list | exp)?;
 	
 period_op : lb=('['| ']') exp ',' exp rb=('['| ']') ; 
 
-op : builtin_op|user_keyword
-;
+//right_op : 'start' | 'end';
+//
 
-right_op : 'start' | 'end';
+// Needed for forbid and category
+op : builtin_op|user_keyword ;
 
 //TODO: Check operator precendence. (BooleanIntegration_no_ext.crml)
+// Note: expressions DO NOT use this rule due to operator priority
+// ALWAYS sync this with exp_un and exp_bin
 builtin_op : 'and' | '*' | '+' | '-' | '/' | 'with' | 'master' | 'on' | 'filter'
 				| '<=' | '<' | '>=' | '>' | '<>' | 'par' | '==' |
 				'pre' | 'not'| '-' | 'card' | 'or' | '^' |
@@ -164,6 +180,10 @@ builtin_op : 'and' | '*' | '+' | '-' | '/' | 'with' | 'master' | 'on' | 'filter'
 				'exp' | 'log' | 'log10' |
 				'cos' |'acos' | 'sin' | 'asin' |
 				'at' ;
+
+
+
+
 
 array_subscripts :
   '[' subscript ( ',' subscript )* ']'

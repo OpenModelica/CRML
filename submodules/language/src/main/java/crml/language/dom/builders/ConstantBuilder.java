@@ -10,10 +10,12 @@ import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.Class_var_defContext;
 import crml.language.grammar.crmlParser.ConstantContext;
 import crml.language.grammar.crmlParser.NumberContext;
+import crml.language.grammar.crmlParser.StringContext;
 import crml.model.language.Class;
 import crml.model.language.ConstantValue;
 import crml.model.language.LanguageFactory;
 import crml.model.language.RealConstant;
+import crml.model.language.StringConstant;
 import crml.model.language.Variable;
 import crml.model.language.BooleanConstant;
 import crml.model.language.BooleanLiteral;
@@ -51,6 +53,11 @@ public class ConstantBuilder {
                 default:
                     throw new IllegalStateException("Unable to process boolean constant value: "+ctx.getText());
             }
+        } else if (context.string() != null) {
+            String text = context.string().STRING().getText().replaceFirst("\"$", "").replaceFirst("^\"", "");
+            StringConstant str = factory.createStringConstant();
+            str.setRawString(text);
+            return str;
         } else if (context.time() != null) {
             return factory.createTimeValue();
         } else if (context.number() != null) {

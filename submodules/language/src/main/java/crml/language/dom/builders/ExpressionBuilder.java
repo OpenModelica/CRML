@@ -25,11 +25,16 @@ public class ExpressionBuilder {
     private final BuildContext builder;
     private final LanguageFactory factory;
     private final EClass varref;
-
+    private final BinaryExpressionBuilder binary;
+    private final UnaryExpressionBuilder unary;
+    
+    
     public ExpressionBuilder(BuildContext builder) { 
         this.builder = builder; 
         this.factory = builder.factory();
         this.varref = builder.metamodel().getVaraibleReference();
+        this.binary = new BinaryExpressionBuilder(builder);
+        this.unary = new UnaryExpressionBuilder(builder);
     }
 
     public Value value(ExpContext context){
@@ -38,7 +43,7 @@ public class ExpressionBuilder {
             unop.setOptype(BuiltinUnaryOperatorKind.SUBEXPRESSION);
 
             SingleBuildResult<?> buildres = builder.build(context.sub_exp().exp(), SingleBuildResult.class);
-            unop.setRhs(buildres.<Value>result());
+            unop.setValue(buildres.<Value>result());
             return unop;
         } else if(context.constant()!=null){
             SingleBuildResult<?> buildres = builder.build(context.constant(), SingleBuildResult.class);
@@ -59,24 +64,10 @@ public class ExpressionBuilder {
 
             periods.setIsEndInclusive(percontext.rb.getText().equals("]"));
             return periods;
-        } else if (context.lunary != null && context.left != null ) {
-            UnaryOperator unop = factory.createUnaryOperator();
-            unop.setOptype(resolveUnaryOpCode(context.lunary.getText()));
-
-            SingleBuildResult<?> buildres = builder.build(context.left, SingleBuildResult.class);
-            unop.setRhs(buildres.<Value>result());
-            return unop;
-        } else if (context.left!=null && context.binary!=null && context.right!=null) {
-            BinaryOperator binop = factory.createBinaryOperator();
-            binop.setOptype(resolveBinaryOpCode(context.binary.getText()));
-
-            SingleBuildResult<?> buildres1 = builder.build(context.left, SingleBuildResult.class);
-            binop.setLhs(buildres1.<Value>result());
-
-            SingleBuildResult<?> buildres2 = builder.build(context.right, SingleBuildResult.class);
-            binop.setRhs(buildres2.<Value>result());
-
-            return binop;
+        } else if (unary.test(context)) {
+            return unary.get(context);
+        } else if (binary.test(context)) {
+            return binary.get(context);
         } else if(context.id() != null) {
             VaraibleReference ref = factory.createVaraibleReference();
             builder.link(ref, varref.getEStructuralFeature("variable"), context.id().getText());
@@ -123,43 +114,7 @@ public class ExpressionBuilder {
         }
     }
 
-    private static BuiltinUnaryOperatorKind resolveUnaryOpCode(String text){
-        switch (text) {
-            case "sin": return BuiltinUnaryOperatorKind.SIN;
-            case "asin": return BuiltinUnaryOperatorKind.ASIN;
-            case "cos": return BuiltinUnaryOperatorKind.COS;
-            case "acos": return BuiltinUnaryOperatorKind.ACOS;
-            case "log10": return BuiltinUnaryOperatorKind.LOG10;
-            case "log": return BuiltinUnaryOperatorKind.LOG;
-            case "exp": return BuiltinUnaryOperatorKind.EXP_OP;
-            case "not": return BuiltinUnaryOperatorKind.NOT;
-            case "-": return BuiltinUnaryOperatorKind.SUB;
-            case "+": return BuiltinUnaryOperatorKind.ADD;
-            default:
-                throw new IllegalStateException("Unary operator is not recognized: "+text);
-        }
-    }
+    
 
-    private static BuiltinBinaryOperatorKind resolveBinaryOpCode(String text){
-        switch (text) {
-            case "<": return BuiltinBinaryOperatorKind.LT;
-            case "<=": return BuiltinBinaryOperatorKind.LE;
-            case ">": return BuiltinBinaryOperatorKind.GT;
-            case ">=": return BuiltinBinaryOperatorKind.GE;
-            case "at": return BuiltinBinaryOperatorKind.AT;
-            case "==": return BuiltinBinaryOperatorKind.EQ;
-            case "<>": return BuiltinBinaryOperatorKind.NEQ;
-            case "and": return BuiltinBinaryOperatorKind.AND;
-            case "*": return BuiltinBinaryOperatorKind.MUL;
-            case "/": return BuiltinBinaryOperatorKind.DIV;
-            case "+": return BuiltinBinaryOperatorKind.ADD;
-            case "-": return BuiltinBinaryOperatorKind.SUB;
-            case "or": return BuiltinBinaryOperatorKind.OR;
-            case "mod": return BuiltinBinaryOperatorKind.MOD;
-            case "^": return BuiltinBinaryOperatorKind.POW; //TODO: check if this is correct
-        
-            default:
-                throw new IllegalStateException("Binary operator is not recognized: "+text);
-        }
-    }
+    
 }
