@@ -69,6 +69,8 @@ public class UnaryExpressionBuilder {
             case "not": return BuiltinUnaryOperatorKind.NOT;
             case "-": return BuiltinUnaryOperatorKind.SUB;
             case "+": return BuiltinUnaryOperatorKind.ADD;
+            case "start": return BuiltinUnaryOperatorKind.START;
+            case "end": return BuiltinUnaryOperatorKind.END;
             default:
                 throw new IllegalStateException("Unary operator is not recognized: "+text);
         }

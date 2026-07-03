@@ -168,8 +168,9 @@ class Category extends Operator{
     refers Operator f
 }
 
-class Set<D> extends Element {
-    refers D[] elements
+class Set<D> extends Element, Value {
+    contains TypeReference domain
+    contains D[] elements
 }
 
 class Class extends Domain, NamedEntity {
@@ -281,6 +282,12 @@ class IntegrateValue extends Value {
 class DurationValue extends Value {
     contains Value exp1
     contains Value exp2
+}
+
+class ProjectionValue extends Value {
+    contains Value p1
+    contains Value p2
+    contains Value opt
 }
 
 class IfValue extends Value {

@@ -9,6 +9,7 @@ import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.If_expContext;
 import crml.language.grammar.crmlParser.IntegrateContext;
 import crml.language.grammar.crmlParser.Period_opContext;
+import crml.language.grammar.crmlParser.Set_defContext;
 import crml.model.language.BinaryOperator;
 import crml.model.language.BuiltinBinaryOperatorKind;
 import crml.model.language.BuiltinUnaryOperatorKind;
@@ -17,6 +18,8 @@ import crml.model.language.IfValue;
 import crml.model.language.IntegrateValue;
 import crml.model.language.LanguageFactory;
 import crml.model.language.PeriodsValue;
+import crml.model.language.ProjectionValue;
+import crml.model.language.Set;
 import crml.model.language.UnaryOperator;
 import crml.model.language.Value;
 import crml.model.language.VaraibleReference;
@@ -50,6 +53,18 @@ public class ExpressionBuilder {
             return buildres.<Value>result();
         } else if(context.constructor() != null) {
             return (Value) builder.build(context.constructor(), SingleBuildResult.class).<Value>result();
+        }else if(context.p1!= null && context.p2!= null) {
+            ProjectionValue proj = factory.createProjectionValue();
+
+            SingleBuildResult<?> p1 = builder.build(context.p1, SingleBuildResult.class);
+            proj.setP1(p1.<Value>result());
+            SingleBuildResult<?> p2 = builder.build(context.p2, SingleBuildResult.class);
+            proj.setP2(p2.<Value>result());
+            if(context.opt!=null){
+                SingleBuildResult<?> opt = builder.build(context.opt, SingleBuildResult.class);
+                proj.setOpt(opt.<Value>result());
+            }
+            return proj;
         } else if(context.period_op() != null) {
             Period_opContext percontext = context.period_op();
             PeriodsValue periods = factory.createPeriodsValue();
@@ -97,6 +112,15 @@ public class ExpressionBuilder {
                 ifvalue.setOthervise(elseexp.<Value>result());
             }
             return ifvalue;
+        } else if(context.set_def() != null) {
+            Set_defContext setcontext = context.set_def();
+            Set<Value> set = factory.<Value>createSet();
+            for(ExpContext exp : setcontext.exp()) {
+                SingleBuildResult<?> val = builder.build(exp, SingleBuildResult.class);
+                set.getElements().add(val.<Value>result());
+            }
+            
+            return set;
         } else if(context.duration() != null) {
             DurationContext durcontext = context.duration();
             DurationValue duration = factory.createDurationValue();

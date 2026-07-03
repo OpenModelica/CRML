@@ -91,7 +91,8 @@ constant
 
 time : 'time';
 
-set_def : '{' (exp (',' exp)*) '}' | empty_set;
+//TODO: Why is this separed to an 
+set_def : '{' (exp (',' exp)*)? '}' ;
 
 empty_set : '{' '}';
 
@@ -100,8 +101,6 @@ sub_exp : '(' exp ')' ;
 trim : 'trim' exp 'on' exp;
 
 sum: 'sum' '(' exp (',' exp)+')' ;
-
-proj : id 'proj' ('(' id ')')?  id ;
 
 when_exp : 'when' when_e=exp 'then' then_e=exp;
 
@@ -119,7 +118,7 @@ exp
 	| constructor //# ConstructorExpression
 	| sum //# SumExpression
 	| trim //# TrimExpression
-	| proj //# ProjectionExpression
+	| p1=exp 'proj' ('(' opt=exp ')')?  p2=exp 
 	| period_op //# PoeriodOperationExpression
 	| iterator //# IteratorExpression
 	//| 'apply' cat=id 'on' '(' exp ')'
