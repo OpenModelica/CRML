@@ -49,7 +49,7 @@ class Binding {
 /////////////////////////////
 
 abstract class Operator extends NamedEntity{
-    refers Domain domain
+    contains TypeReference domain
     //override getName() {
     //    return "Placeholder operator name";
     //}
@@ -115,6 +115,22 @@ class Template extends Operator {
     refers Boolean4[] parameters
     // TODO: Returns a boolean
 }
+
+class UserOperator extends Operator {
+    contains OperatorHeaderElement[] header
+    contains Value definition
+}
+
+abstract class OperatorHeaderElement {
+
+}
+class Parameter extends OperatorHeaderElement {
+    contains Variable variable
+}
+class Keyword extends OperatorHeaderElement{
+    String keyword
+}
+
 ///////////
 // Types //
 ///////////
@@ -330,6 +346,46 @@ class StringConstant extends ConstantValue {
     String rawString
 }
 
+// Sequences are raw containers for natural language operator calls
+// An object model shall be free of any Sequence
+// Sequences should be transformed to function calls
+abstract class Sequence extends Value {
+    op Sequence getNext()
+    op void setNext2(Sequence next)
+
+
+    op Sequence tail() {
+        if (getNext() === null) {
+            return this
+        } else {
+            return getNext().tail()
+        }
+    }
+}
+
+class SequenceValue extends Sequence {
+    contains SequenceKeyword next
+    contains Value value
+
+    op void setNext2(Sequence next) {
+        if (next instanceof SequenceKeyword) {
+            setNext(next as SequenceKeyword)    
+        } else {
+            throw new IllegalArgumentException(
+                "Incompatible type for next: " + next.eClass().getName())
+        }
+        
+    }
+}
+
+class SequenceKeyword extends Sequence {
+    contains Sequence next
+    String keyword
+
+    op void setNext2(Sequence next) {
+        setNext(next)
+    }
+}
 ///////////
 // Types //
 ///////////

@@ -73,6 +73,8 @@ public class RootBuilder {
                 model.getClasses().add((Class) res);
             } else if (res instanceof crml.model.language.Object) {
                 model.getObjects().add((crml.model.language.Object)res);
+            } else if (res instanceof crml.model.language.Operator) {
+                model.getOperators().add((crml.model.language.Operator)res);
             } else {
                 builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }

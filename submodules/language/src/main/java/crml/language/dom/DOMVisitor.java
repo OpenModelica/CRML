@@ -15,6 +15,7 @@ import crml.language.dom.builders.ConstantBuilder;
 import crml.language.dom.builders.ExpressionBuilder;
 import crml.language.dom.builders.RootBuilder;
 import crml.language.dom.builders.TypeReferenceBuilder;
+import crml.language.dom.builders.UserOperatorBuilder;
 import crml.language.dom.builders.VariableBuilder;
 import crml.language.dom.builders.ConstructorBuilder;
 import crml.language.dom.util.BuildResult;
@@ -27,6 +28,7 @@ import crml.language.grammar.crmlParser.ConstantContext;
 import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.ExpContext;
+import crml.language.grammar.crmlParser.OperatorContext;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
 
@@ -42,6 +44,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final ExpressionBuilder exp = new ExpressionBuilder(this);
     private final ConstantBuilder cnst = new ConstantBuilder(this);
     private final ConstructorBuilder consr = new ConstructorBuilder(this);
+    private final UserOperatorBuilder userop =  new UserOperatorBuilder(this);
 
     // recursion funnels through here, so dispatch stays in one place
     @Override public BuildResult build(ParseTree n) { return visit(n); }
@@ -57,6 +60,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitExp(ExpContext c) { return BuildResult.wrap(exp.value(c)); }
     @Override public BuildResult visitConstant(ConstantContext c) { return BuildResult.wrap(cnst.constant(c)); }
     @Override public BuildResult visitConstructor(ConstructorContext c) { return BuildResult.wrap(consr.get(c)); }
+    @Override public BuildResult visitOperator(OperatorContext c) { return BuildResult.wrap(userop.get(c)); }
     
     
     

@@ -1,5 +1,6 @@
 package crml.language.dom.util;
 
+
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -7,12 +8,17 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 
+import com.google.common.base.Objects;
+
 import crml.language.dom.util.ScopeResolutionOptions.ResolutionStrategy;
 import crml.model.language.Class;
 import crml.model.language.ConstructorValue;
 import crml.model.language.Domain;
 import crml.model.language.Model;
+import crml.model.language.OperatorHeaderElement;
+import crml.model.language.Parameter;
 import crml.model.language.TypeReference;
+import crml.model.language.UserOperator;
 import crml.model.language.UserTypereference;
 import crml.model.language.Variable;
 import crml.model.language.impl.DomainImpl;
@@ -85,6 +91,8 @@ public class ScopeResolver {
             return getCandidate((Class) obj, id, options);
         } else if (obj instanceof Model) {
             return getCandidate((Model) obj, id, options);
+        } else if (obj instanceof UserOperator) {
+            return getCandidate((UserOperator) obj, id, options);
         } else if (obj instanceof Resource || obj instanceof ResourceSet) {
             return null;
         } else {
@@ -132,6 +140,23 @@ public class ScopeResolver {
             }
         }
         return null; // Models do not have a parent (they are root resources)
+    }
+
+    private EObject getCandidate(UserOperator op, String id, ScopeResolutionOptions options) {
+        System.err.println("Resolve (UserOperator): " + id + " in " + op);
+        if (op == null) {
+            return null;
+        }
+
+        for (OperatorHeaderElement h : op.getHeader()) {
+            if (h instanceof Parameter) {
+                Parameter p = (Parameter) h;
+                if(Objects.equal(id, p.getVariable().getName()) && isReadCompatible(p.getVariable().getDomain(), null) ){
+                    return p.getVariable();
+                };
+            }
+        }
+        return getCandidate(op.eContainer(), id, null);
     }
 
     private boolean isReadCompatible(TypeReference variable, EClass required) {

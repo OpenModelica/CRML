@@ -6,6 +6,7 @@ import java.util.List;
 import org.eclipse.emf.ecore.EObject;
 
 public abstract class BuildResult {
+
     public static class SingleBuildResult<T extends EObject> extends BuildResult{
         public final T result;
         private SingleBuildResult(T result) {

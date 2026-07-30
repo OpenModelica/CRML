@@ -43,13 +43,18 @@ category_pair : '(' op ',' op ')'; //TODO
  
 var_def : cnst='constant'? var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
 
-operator : 'Operator' '[' type ']' operator_def ';' ; //TODO
+operator : 'Operator' '[' domain=type ']' operator_def ';' ; //TODO
 
 template : 'Template' (id | user_keyword)+ '=' exp ';' ; //TODO
 
 class_params : '(' (id '=' exp)+ ')'; //TODO
 
-operator_def :  (type id | user_keyword)+ '=' apply_category? exp ; //TODO
+operator_def :  args+=operator_parameter+ '=' apply_category? value=exp ; //TODO
+
+operator_parameter 
+	: domain=type name=id # OperatorParameter
+	| kw=user_keyword # OperatorKeyword
+	;
 
 apply_category : 'apply' assoc=id 'on'; //TODO
 	 
@@ -136,9 +141,10 @@ exp
 	| lhs=exp bop5=('and'|'or') rhs=exp
 	| lhs=exp bop6='at' rhs=exp
 //
- 	| uright=user_keyword right=exp //# UserRightExpression
-	| left=exp ubinary=user_keyword right=exp //# UserLeftBinaryExpression
-	| left=exp uleft=user_keyword  //# UserLeftExpression
+//	| sqexp=exp? keyword=user_keyword+ (sqexp=exp?)+
+ 	| keyword=user_keyword rhs=exp //# UserRightExpression
+	| lhs=exp keyword=user_keyword rhs=exp //# UserLeftBinaryExpression
+	| lhs=exp keyword=user_keyword  //# UserLeftExpression
 	| id 
  	| 'element' //# ElementExpression
 	| 'terminate' //# TerminateExpression

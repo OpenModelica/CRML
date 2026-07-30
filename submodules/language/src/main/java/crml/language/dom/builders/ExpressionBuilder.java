@@ -19,6 +19,9 @@ import crml.model.language.IntegrateValue;
 import crml.model.language.LanguageFactory;
 import crml.model.language.PeriodsValue;
 import crml.model.language.ProjectionValue;
+import crml.model.language.Sequence;
+import crml.model.language.SequenceKeyword;
+import crml.model.language.SequenceValue;
 import crml.model.language.Set;
 import crml.model.language.UnaryOperator;
 import crml.model.language.Value;
@@ -83,6 +86,43 @@ public class ExpressionBuilder {
             return unary.get(context);
         } else if (binary.test(context)) {
             return binary.get(context);
+        } else if (context.keyword!=null && (context.lhs!=null || context.rhs!=null)) {
+            Sequence head = null;
+
+            if(context.lhs!=null){
+                SingleBuildResult<?> lhsr = builder.build(context.lhs, SingleBuildResult.class);
+                Object obj = lhsr.result;
+                if(obj instanceof Sequence){
+                    head = (Sequence) obj;
+                } else {
+                    SequenceValue val = factory.createSequenceValue();
+                    val.setValue((Value) obj);
+                    head = val;
+                }
+            }
+
+            SequenceKeyword kw = factory.createSequenceKeyword();
+            kw.setKeyword(context.keyword.USER_KEYWORD().getText());
+            
+            if(head==null){
+                head = kw;
+            } else {
+                head.tail().setNext2(kw);
+            }
+
+            if(context.rhs!=null){
+                SingleBuildResult<?> rhsr = builder.build(context.rhs, SingleBuildResult.class);
+                Object obj = rhsr.result;
+                if(obj instanceof Sequence){
+                    kw.setNext((Sequence) obj);
+                } else {
+                    SequenceValue val = factory.createSequenceValue();
+                    val.setValue((Value) obj);
+                    kw.setNext(val);
+                }
+            }
+            return head;
+
         } else if(context.id() != null) {
             VaraibleReference ref = factory.createVaraibleReference();
             builder.link(ref, varref.getEStructuralFeature("variable"), context.id().getText());
