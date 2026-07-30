@@ -1,0 +1,24 @@
+.numbered-code {
+    counter-reset: line;
+    display: block;
+}
+
+.code-line {
+    display: block;
+}
+
+.code-line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 3em;
+    margin-right: 1em;
+    text-align: right;
+    color: #888;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.code-line.highlighted {
+    background-color: rgb(228, 71, 84);
+}

@@ -19,7 +19,7 @@ import crml.model.language.Class;
 import crml.model.language.Dependency;
 import crml.model.language.LanguageFactory;
 import crml.model.language.Model;
-import crml.model.language.ProxyDependency;
+//import crml.model.language.ProxyDependency;
 import crml.model.language.Variable;
 
 public class RootBuilder {
@@ -81,7 +81,8 @@ public class RootBuilder {
 
     public List<Dependency> parse(DependencyContext context){
         List<Dependency> dependencies = new ArrayList<>();
-
+        return dependencies;
+        /*
         if(context instanceof SingleDependencyContext){
             SingleDependencyContext sdpc = (SingleDependencyContext) context;
             ProxyDependency dependecy = factory.createProxyDependency();
@@ -100,6 +101,6 @@ public class RootBuilder {
             return dependencies;
         }
         builder.reportError("Unknown dependency type: "+context.getClass().getSimpleName());
-        return null;
+        return null;*/
     }
 }

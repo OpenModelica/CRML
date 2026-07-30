@@ -11,6 +11,7 @@ import static j2html.TagCreator.summary;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
 //import crml.language.util.ErrorListener.CRMLSyntaxResults;
 import crml.util.NaturalCompare;
+import crml.util.SafeResource;
 
 import static com.aventstack.extentreports.Status.FAIL;
 
@@ -70,6 +72,16 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
             extentReport.setAnalysisStrategy(AnalysisStrategy.SUITE);
+            try {
+                reporter.config().setCss(new String(
+                        Files.readAllBytes(SafeResource.get("testreport.css")),
+                        StandardCharsets.UTF_8
+                ));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
             reportInitialized = true;
         }
     }
@@ -196,7 +208,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                     String fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
                     node.info(join(
                         p(join(entry.getKey(), br())),
-                        pre(code(fileContent)),
+                        pre(FormatUtil.numcode(fileContent)),
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 } catch (Exception e) {

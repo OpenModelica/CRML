@@ -411,7 +411,6 @@ enum BuiltinType { // TODO: Change string literal to modelica connector names
 }
 
 class UserTypereference extends TypeReference {
-    //String typeName // TODO: it has to be resolved to a Class or Type.
     refers Domain domain
 }
 
@@ -425,16 +424,4 @@ abstract class Dependency {
 
 class ModelDependency extends Dependency {
     refers Model referedModel
-}
-
-class ProxyDependency extends Dependency, ProxyElement {
-
-}
-
-/////////////
-// Proxies //
-/////////////
-
-class ProxyElement {
-    String name
 }
