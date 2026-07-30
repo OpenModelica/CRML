@@ -4,16 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Functions.Function0;
-import org.eclipse.xtext.xbase.lib.Procedures.Procedure0;
 
 import crml.language.dom.builders.ClassBuilder;
 import crml.language.dom.builders.ConstantBuilder;
 import crml.language.dom.builders.ExpressionBuilder;
 import crml.language.dom.builders.RootBuilder;
+import crml.language.dom.builders.TemplateBuilder;
 import crml.language.dom.builders.TypeReferenceBuilder;
 import crml.language.dom.builders.UserOperatorBuilder;
 import crml.language.dom.builders.VariableBuilder;
@@ -22,19 +21,18 @@ import crml.language.dom.util.BuildResult;
 import crml.language.dom.util.ScopeResolutionOptions;
 import crml.language.dom.util.ScopeResolver;
 import crml.language.grammar.crmlBaseVisitor;
-import crml.language.grammar.crmlParser;
 import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.ConstantContext;
 import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.OperatorContext;
+import crml.language.grammar.crmlParser.TemplateContext;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
-    //private final List<Procedure0> tasks = new ArrayList<>();
     private final List<Function0<Boolean>> tasks = new ArrayList<>();
 
     private final RootBuilder root = new RootBuilder(this);
@@ -45,6 +43,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final ConstantBuilder cnst = new ConstantBuilder(this);
     private final ConstructorBuilder consr = new ConstructorBuilder(this);
     private final UserOperatorBuilder userop =  new UserOperatorBuilder(this);
+    private final TemplateBuilder templates =  new TemplateBuilder(this);
 
     // recursion funnels through here, so dispatch stays in one place
     @Override public BuildResult build(ParseTree n) { return visit(n); }
@@ -61,7 +60,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitConstant(ConstantContext c) { return BuildResult.wrap(cnst.constant(c)); }
     @Override public BuildResult visitConstructor(ConstructorContext c) { return BuildResult.wrap(consr.get(c)); }
     @Override public BuildResult visitOperator(OperatorContext c) { return BuildResult.wrap(userop.get(c)); }
-    
+    @Override public BuildResult visitTemplate(TemplateContext c) { return BuildResult.wrap(templates.get(c)); }
     
     
     @Override

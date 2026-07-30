@@ -112,8 +112,8 @@ class BinaryOperator extends Operator, Value {
 }
 
 class Template extends Operator {
-    refers Boolean4[] parameters
-    // TODO: Returns a boolean
+    contains OperatorHeaderElement[] header
+    contains Value definition
 }
 
 class UserOperator extends Operator {

@@ -17,11 +17,11 @@ import crml.model.language.Domain;
 import crml.model.language.Model;
 import crml.model.language.OperatorHeaderElement;
 import crml.model.language.Parameter;
+import crml.model.language.Template;
 import crml.model.language.TypeReference;
 import crml.model.language.UserOperator;
 import crml.model.language.UserTypereference;
 import crml.model.language.Variable;
-import crml.model.language.impl.DomainImpl;
 
 public class ScopeResolver {
     public boolean link(EObject target, EStructuralFeature feature, String id, ScopeResolutionOptions options) {
@@ -93,6 +93,8 @@ public class ScopeResolver {
             return getCandidate((Model) obj, id, options);
         } else if (obj instanceof UserOperator) {
             return getCandidate((UserOperator) obj, id, options);
+        } else if (obj instanceof Template) {
+            return getCandidate((Template) obj, id, options);
         } else if (obj instanceof Resource || obj instanceof ResourceSet) {
             return null;
         } else {
@@ -158,6 +160,24 @@ public class ScopeResolver {
         }
         return getCandidate(op.eContainer(), id, null);
     }
+
+    private EObject getCandidate(Template op, String id, ScopeResolutionOptions options) {
+        System.err.println("Resolve (Template): " + id + " in " + op);
+        if (op == null) {
+            return null;
+        }
+
+        for (OperatorHeaderElement h : op.getHeader()) {
+            if (h instanceof Parameter) {
+                Parameter p = (Parameter) h;
+                if(Objects.equal(id, p.getVariable().getName()) && isReadCompatible(p.getVariable().getDomain(), null) ){
+                    return p.getVariable();
+                };
+            }
+        }
+        return getCandidate(op.eContainer(), id, null);
+    }
+
 
     private boolean isReadCompatible(TypeReference variable, EClass required) {
         return true;

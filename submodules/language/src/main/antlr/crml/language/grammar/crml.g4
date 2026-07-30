@@ -45,7 +45,12 @@ var_def : cnst='constant'? var_qualifier? type id  (arg_list | 'is' (exp | is_ex
 
 operator : 'Operator' '[' domain=type ']' operator_def ';' ; //TODO
 
-template : 'Template' (id | user_keyword)+ '=' exp ';' ; //TODO
+template : 'Template' args+=template_parameter+ '=' value=exp ';' ; //TODO
+
+template_parameter 
+	: name=id # TemplateParameter
+	| kw=user_keyword # TemplateKeyword
+	;
 
 class_params : '(' (id '=' exp)+ ')'; //TODO
 

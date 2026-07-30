@@ -1,12 +1,8 @@
 package crml.language.dom.builders;
 
-import org.eclipse.emf.ecore.EClass;
-
 import crml.language.dom.BuildContext;
 import crml.language.dom.util.BuildResult.SingleBuildResult;
 import crml.language.grammar.crmlParser.ExpContext;
-import crml.model.language.BinaryOperator;
-import crml.model.language.BuiltinBinaryOperatorKind;
 import crml.model.language.BuiltinUnaryOperatorKind;
 import crml.model.language.LanguageFactory;
 import crml.model.language.UnaryOperator;
@@ -15,12 +11,10 @@ import crml.model.language.Value;
 public class UnaryExpressionBuilder {
     private final BuildContext builder;
     private final LanguageFactory factory;
-    private final EClass varref;
 
     public UnaryExpressionBuilder(BuildContext builder) { 
         this.builder = builder; 
         this.factory = builder.factory();
-        this.varref = builder.metamodel().getVaraibleReference();
     }
 
     public boolean test(ExpContext context){

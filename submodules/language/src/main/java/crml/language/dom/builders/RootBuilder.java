@@ -5,12 +5,9 @@ import static crml.language.dom.builders.util.DomUtils.text;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.emf.common.util.BasicEList;
-import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 
 import crml.language.dom.BuildContext;
-import crml.language.dom.util.BuildResult.MultiBuildResult;
 import crml.language.dom.util.BuildResult.SingleBuildResult;
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.DependencyContext;

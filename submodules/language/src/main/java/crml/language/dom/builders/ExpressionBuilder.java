@@ -10,8 +10,6 @@ import crml.language.grammar.crmlParser.If_expContext;
 import crml.language.grammar.crmlParser.IntegrateContext;
 import crml.language.grammar.crmlParser.Period_opContext;
 import crml.language.grammar.crmlParser.Set_defContext;
-import crml.model.language.BinaryOperator;
-import crml.model.language.BuiltinBinaryOperatorKind;
 import crml.model.language.BuiltinUnaryOperatorKind;
 import crml.model.language.DurationValue;
 import crml.model.language.IfValue;

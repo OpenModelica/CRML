@@ -1,20 +1,13 @@
 package crml.language.dom.builders;
 
-import org.eclipse.emf.ecore.EClass;
-
 import crml.language.dom.BuildContext;
 import crml.language.dom.util.BuildResult.SingleBuildResult;
-import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.OperatorContext;
-import crml.language.grammar.crmlParser.OperatorElementContext;
 import crml.language.grammar.crmlParser.OperatorKeywordContext;
 import crml.language.grammar.crmlParser.OperatorParameterContext;
-import crml.language.grammar.crmlParser.Operator_defContext;
 import crml.language.grammar.crmlParser.Operator_parameterContext;
-import crml.model.language.ConstructorValue;
 import crml.model.language.Keyword;
 import crml.model.language.LanguageFactory;
-import crml.model.language.Operator;
 import crml.model.language.Parameter;
 import crml.model.language.TypeReference;
 import crml.model.language.UserOperator;
@@ -24,12 +17,10 @@ import crml.model.language.Variable;
 public class UserOperatorBuilder {
     private final BuildContext builder;
     private final LanguageFactory factory;
-    private final EClass op;
 
     public UserOperatorBuilder(BuildContext builder) {
         this.builder = builder;
         this.factory = builder.factory();
-        this.op = builder.metamodel().getOperator();
     }
 
     public UserOperator get(OperatorContext context){

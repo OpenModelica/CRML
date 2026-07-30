@@ -20,13 +20,11 @@ import crml.model.language.Value;
 public class ConstructorBuilder {
     private final BuildContext builder;
     private final LanguageFactory factory;
-    private final EClass cc;
     private final EClass bc;
 
     public ConstructorBuilder(BuildContext builder) {
         this.builder = builder;
         this.factory = builder.factory();
-        this.cc = builder.metamodel().getConstructorValue();
         this.bc = builder.metamodel().getBinding();
     }
 

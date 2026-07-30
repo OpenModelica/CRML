@@ -68,7 +68,7 @@ public class PrettyPrint {
             if (attr == idAttr) {
                 continue;
             }
-            entries.add(new Leaf("attr: " + attr.getName() + ": " + Objects.toString(host.eGet(attr))));
+            entries.add(new Leaf("" + attr.getName() + ": " + Objects.toString(host.eGet(attr))));
         }
 
         for (EReference ref : host.eClass().getEAllReferences()) {
@@ -82,15 +82,15 @@ public class PrettyPrint {
                 } else {
                     members.add((EObject) host.eGet(ref));
                 }
-                entries.add(new Group("cont: " + ref.getName() + ":", members));
+                entries.add(new Group("" + ref.getName() + ":", members));
             } else if (ref.isMany()) {
                 EList<?> ls = (EList<?>) host.eGet(ref);
                 for (Object obj : ls) {
-                    entries.add(new Leaf("ref: " + ref.getName() + ": " + refLabel(obj)));
+                    entries.add(new Leaf("" + ref.getName() + ": " + refLabel(obj) + " <crossref>"));
                 }
             } else {
                 EObject target = (EObject) host.eGet(ref);
-                entries.add(new Leaf("ref: " + ref.getName() + ": " + refLabel(target)));
+                entries.add(new Leaf("" + ref.getName() + ": " + refLabel(target) + " <crossref>"));
             }
         }
 
