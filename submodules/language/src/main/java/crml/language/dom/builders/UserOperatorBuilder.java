@@ -8,7 +8,6 @@ import crml.language.grammar.crmlParser.OperatorParameterContext;
 import crml.language.grammar.crmlParser.Operator_parameterContext;
 import crml.model.language.Keyword;
 import crml.model.language.LanguageFactory;
-import crml.model.language.Parameter;
 import crml.model.language.TypeReference;
 import crml.model.language.UserOperator;
 import crml.model.language.Value;
@@ -33,14 +32,12 @@ public class UserOperatorBuilder {
             if(p instanceof OperatorParameterContext){
                 OperatorParameterContext param = (OperatorParameterContext) p;
 
-                Parameter prm = factory.createParameter();
                 Variable v =  factory.createVariable();
-                prm.setVariable(v);
 
                 TypeReference paramtyperef = (TypeReference) builder.build(param.type(), SingleBuildResult.class).<TypeReference>result();
                 v.setDomain(paramtyperef);
                 v.setName(param.id().getText());
-                operator.getHeader().add(prm);
+                operator.getHeader().add(v);
             } else if(p instanceof OperatorKeywordContext){
                 OperatorKeywordContext kwc = (OperatorKeywordContext) p;
 

@@ -16,7 +16,6 @@ import crml.model.language.ConstructorValue;
 import crml.model.language.Domain;
 import crml.model.language.Model;
 import crml.model.language.OperatorHeaderElement;
-import crml.model.language.Parameter;
 import crml.model.language.Template;
 import crml.model.language.TypeReference;
 import crml.model.language.UserOperator;
@@ -151,10 +150,10 @@ public class ScopeResolver {
         }
 
         for (OperatorHeaderElement h : op.getHeader()) {
-            if (h instanceof Parameter) {
-                Parameter p = (Parameter) h;
-                if(Objects.equal(id, p.getVariable().getName()) && isReadCompatible(p.getVariable().getDomain(), null) ){
-                    return p.getVariable();
+            if (h instanceof Variable) {
+                Variable v = (Variable) h;
+                if(Objects.equal(id, v.getName()) && isReadCompatible(v.getDomain(), null) ){
+                    return v;
                 };
             }
         }
@@ -168,10 +167,10 @@ public class ScopeResolver {
         }
 
         for (OperatorHeaderElement h : op.getHeader()) {
-            if (h instanceof Parameter) {
-                Parameter p = (Parameter) h;
-                if(Objects.equal(id, p.getVariable().getName()) && isReadCompatible(p.getVariable().getDomain(), null) ){
-                    return p.getVariable();
+            if (h instanceof Variable) {
+                Variable v = (Variable) h;
+                if(Objects.equal(id, v.getName()) && isReadCompatible(v.getDomain(), null) ){
+                    return v;
                 };
             }
         }

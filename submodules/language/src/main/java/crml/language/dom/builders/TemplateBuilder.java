@@ -10,7 +10,6 @@ import crml.model.language.BuiltinType;
 import crml.model.language.BuiltinTypeReference;
 import crml.model.language.Keyword;
 import crml.model.language.LanguageFactory;
-import crml.model.language.Parameter;
 import crml.model.language.Template;
 import crml.model.language.Value;
 import crml.model.language.Variable;
@@ -35,16 +34,14 @@ public class TemplateBuilder {
             if(p instanceof TemplateParameterContext){
                 TemplateParameterContext param = (TemplateParameterContext) p;
 
-                Parameter prm = factory.createParameter();
                 Variable v =  factory.createVariable();
-                prm.setVariable(v);
 
                 BuiltinTypeReference ref2 = factory.createBuiltinTypeReference();
                 ref2.setBuiltinType(BuiltinType.BOOLEAN);
                 v.setDomain(ref2);
 
                 v.setName(param.name.getText());
-                template.getHeader().add(prm);
+                template.getHeader().add(v);
             } else if(p instanceof TemplateKeywordContext){
                 TemplateKeywordContext kwc = (TemplateKeywordContext) p;
 

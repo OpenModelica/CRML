@@ -22,3 +22,12 @@
 .code-line.highlighted {
     background-color: rgb(228, 71, 84);
 }
+
+code {
+    line-height: 1.175;
+}
+pre {
+    white-space: pre-wrap;   /* or pre */
+    line-height: 1.175;
+    margin: 0;
+}
