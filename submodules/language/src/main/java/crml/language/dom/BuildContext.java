@@ -23,6 +23,8 @@ public interface BuildContext {
 
     void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options);
 
+    void set(EObject host, EStructuralFeature reference, EObject value);
+
     default void link(EObject host, EStructuralFeature reference, String id) {
         link(host, reference, id, null);
     };

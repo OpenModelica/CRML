@@ -33,7 +33,8 @@ import crml.language.grammar.crmlParser.Var_defContext;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
-    private final List<Function0<Boolean>> tasks = new ArrayList<>();
+    private final List<Function0<Boolean>> crossrefTasks = new ArrayList<>();
+    private final List<Function0<Boolean>> modificationTasks = new ArrayList<>();
 
     private final RootBuilder root = new RootBuilder(this);
     private final ClassBuilder cls = new ClassBuilder(this);
@@ -65,20 +66,38 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     
     @Override
     public void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options) {
-        tasks.add(new LinkerTask(host, reference, id, options));
+        crossrefTasks.add(new LinkerTask(host, reference, id, options));
     }
 
     public void linker(){
-        while(tasks.removeIf(task -> task.apply())){}
+        while(crossrefTasks.removeIf(task -> task.apply())){}
 
-        if(tasks.size()>0){
+        if(crossrefTasks.size()>0){
             StringBuilder b = new StringBuilder();
-            tasks.forEach(task -> {
+            crossrefTasks.forEach(task -> {
                 b.append(System.lineSeparator());
                 b.append(task.toString());
                 
             });
             throw new RuntimeException("Unable to resolve tasks:"+b.toString());
+        }
+    }
+    
+    @Override
+    public void set(EObject host, EStructuralFeature reference, EObject value) {
+        modificationTasks.add(new ModificationTask(host, reference, value));
+    }
+    public void modify(){
+        while(modificationTasks.removeIf(task -> task.apply())){}
+
+        if(modificationTasks.size()>0){
+            StringBuilder b = new StringBuilder();
+            modificationTasks.forEach(task -> {
+                b.append(System.lineSeparator());
+                b.append(task.toString());
+                
+            });
+            throw new RuntimeException("Unable to modify tasks:"+b.toString());
         }
     }
 
@@ -108,6 +127,30 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         public String toString() {
             return "Linker task: '"+ feature.getName() + "' to '" + id + "' in " + source.toString();
         }
-
     }
+
+    private class ModificationTask implements Function0<Boolean>{
+        private final EObject host;
+        private final EStructuralFeature feature;
+        private final EObject value;
+
+        private ModificationTask(EObject host, EStructuralFeature feature, EObject value){
+            this.host = host;
+            this.feature = feature;
+            this.value = value;
+        }
+
+        @Override
+        public Boolean apply() {
+            host.eSet(feature, value);
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Modification task: '"+ feature.getName() + "' to '" + value + "' in " + host.toString();
+        }
+    }
+
+    
 }

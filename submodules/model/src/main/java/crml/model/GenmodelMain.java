@@ -31,7 +31,7 @@ public class GenmodelMain {
         List<EPackage> list = Arrays.asList(LanguagePackage.eINSTANCE);
 
         GenModel genModel = GenModelFactory.eINSTANCE.createGenModel();
-        genModel.setComplianceLevel(GenJDKLevel.JDK60_LITERAL);
+        genModel.setComplianceLevel(GenJDKLevel.JDK80_LITERAL);
         //genModel.setModelDirectory(modeldir);
         // genModel.initialize(Collections.singletonList(ePackage));
         System.out.println("Number of metamodels:" + list.size());

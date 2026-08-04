@@ -1,37 +1,13 @@
 model CategoryAssociationExample1 is {	
-	// Operators' definition
-	Template b1 'or' b2 = not (not b1 and not b2);
-
-	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P = phi 'or' (P end);
-	Operator [ Boolean ] 'id' Boolean b = b;
-	Operator [ Boolean ] 'cte_false' Boolean b = false;
-	Operator [ Boolean ] 'cte_true' Boolean b = true;
-
-	// Category definition as an operator on the operators previously defined
-	Category varying1 = { ('id', 'cte_false') };
-	Category varying2 = { ('id', 'cte_true') };
-	
-	// Association of categories with operators
-	//Category {} C3 is associate varying1 with 'decide';
-	//Category {} C4 is associate varying2 with 'decide';
-	
-	// Definition of new operators using association previously defined
-	// Decide that decision event to evaluate requirement is the end of a time period
-	Operator [ Boolean ] Period P 'decide at end' Boolean b = apply varying1 on 'decide' 'id' b 'over' P;
+	Operator [ Boolean ] Period P 'decide at end' Boolean b = true;
 	
 	// Decide that decision event to evaluate requirement is any time instant of a time period
-	Operator [ Boolean ] Periods P 'decide anytime' Boolean b = apply varying2 on 'decide' 'id' b 'over' P;
+	Operator [ Boolean ] Periods P 'decide anytime' Boolean b = true;
 	
-	// Example of operator calls	
-	Boolean b1 is time > 1.0;
-	Boolean b2 is time > 4.0;
-	Event e1 is new Event b1;
-	Event e2 is new Event b2;
-	Period P is [ e1, e2 ];
-	Period P_end is P end;
-	Boolean phi is if 2.0 < time and time < 3.5 then true else false;
+	Period P is external;
+	Boolean phi is external;
 		
 	Boolean y_decide_at_end is P 'decide at end' phi; // Value should be equal to (P_end)
-	Boolean y_decide_at_any_time is P 'decide at anytime' phi; // Value should be equal to true
+	Boolean y_decide_at_any_time is P 'decide anytime' P 'decide at end' phi; // Value should be equal to true
 	
 };

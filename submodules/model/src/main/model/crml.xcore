@@ -7,8 +7,6 @@ package crml.model.language
 
 import org.eclipse.emf.common.util.BasicEList
 
-
-
 abstract class NamedEntity {
     id String name
 }
@@ -110,15 +108,33 @@ class BinaryOperator extends Operator, Value {
     contains Value rhs
     contains Value lhs
 }
-
-class Template extends Operator {
+abstract class CustomOperator extends Operator {
     contains OperatorHeaderElement[] header
     contains Value definition
+
+    op Keyword[] getKeywords() {
+        header.filter(Keyword).toEList
+    }
+    op Variable[] getVariables() {
+        header.filter(Variable).toEList
+    }
+    op int getArity() {
+        header.filter(Variable).size
+    }
+    op boolean startsWithValue() {
+        !header.isEmpty && header.head instanceof Variable
+    }
+    op boolean endsWithValue() {
+        !header.isEmpty && header.get(header.size - 1) instanceof Variable
+    }
 }
 
-class UserOperator extends Operator {
-    contains OperatorHeaderElement[] header
-    contains Value definition
+class Template extends CustomOperator {
+
+}
+
+class UserOperator extends CustomOperator {
+
 }
 
 abstract class OperatorHeaderElement {
@@ -284,6 +300,7 @@ class VaraibleReference extends Value {
 
 class ComputedValue extends Value {
     refers Operator operator
+    contains Binding[] bindings
 }
 
 class PeriodsValue extends Value {
