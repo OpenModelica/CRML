@@ -1,4 +1,4 @@
-package crml.language.opcall.ai;
+package crml.language.opcall;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,14 +11,13 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import com.google.common.collect.Iterables;
 
 import crml.language.dom.BuildContext;
-import crml.language.opcall.Association;
-import crml.language.opcall.TypeCheck;
 import crml.language.pretty.Misc;
 import crml.model.language.Binding;
 import crml.model.language.ComputedValue;
 import crml.model.language.CustomOperator;
 import crml.model.language.Keyword;
 import crml.model.language.LanguageFactory;
+import crml.model.language.Library;
 import crml.model.language.Model;
 import crml.model.language.OperatorHeaderElement;
 import crml.model.language.Sequence;
@@ -49,6 +48,19 @@ public class MixfixParser {
         this.factory = builder.factory();
     }
 
+    public MixfixParser(Library library, BuildContext builder) {
+        this(library, builder, new TypeCheck() {});
+    }
+
+    public MixfixParser(Library library, BuildContext builder, TypeCheck typeCheck) {
+        this.levels    = OperatorUtil.load(library).stream()
+                                  .map(Collections::singletonList)
+                                  .collect(Collectors.toList());
+        this.typeCheck = typeCheck;
+        this.builder = builder;
+        this.factory = builder.factory();
+    }
+
     public Value parse(Sequence sequence) {
         System.err.println("Processing sequence: " + Misc.pretty(sequence));
         SequenceCursor cursor = new SequenceCursor(sequence);
@@ -71,19 +83,18 @@ public class MixfixParser {
                 if(value instanceof ComputedValue){
                     builder.set(host, feat, value);
                 }
-                if(content instanceof SequenceValue){
-                    perform(content);
-                }
+                perform(value);
+//                if(content instanceof SequenceValue){
+//                    perform(content);
+//                }
             } else {
                 perform(content);
             }
         }
     }
     private Value expr(SequenceCursor cursor, int level) {
-        System.err.println("Expr ("+level+"): "+Misc.pretty(cursor.peek()));
         // ── Base case: beyond all operator levels → must be an atom ──────────
         if (level >= levels.size()) {
-            System.err.println("Levels over");
             return value(cursor);
         }
 
@@ -99,11 +110,9 @@ public class MixfixParser {
         // ── Step 1: try prefix / closed operators at this level ──────────────
         Value left = null;
         for (CustomOperator op : prefixAndClosedOperators) {
-            System.err.println("Step 1: "+op);
             // Match from token index 0; no pre-parsed left argument.
             Value node = matchOp(cursor, op, 0, level, null);
             if (node != null) {
-                System.err.println("Expr match: "+node);
                 left = node;
                 break;
             }
@@ -111,7 +120,6 @@ public class MixfixParser {
 
         // ── Step 2: fall through to the next (higher) precedence level ───────
         if (left == null) {
-            System.err.println("Expr fall: ");
             left = expr(cursor, level + 1);
         }
 
@@ -125,11 +133,9 @@ public class MixfixParser {
         //            already consumed the rest of the right chain)
         //   NON   → break after a match (chaining explicitly forbidden)
         while (true) {
-            System.err.println("Expr loop: ");
             CustomOperator matched = null;
 
             for (CustomOperator op : infixAndPostfixOperators) {
-                System.err.println("Expr for: "+op);
                 // The first hole ('_') was consumed as `left`;
                 // start matching from token index 1 (the part after the leading '_').
                 Value node = matchOp(cursor, op, 1, level, left);
@@ -231,7 +237,6 @@ public class MixfixParser {
 
         for(Value arg : args){
             int idx = args.indexOf(arg);
-            System.err.println("Set bindings "+idx);
             Binding binding = factory.createBinding();
             binding.setValue(arg);
             binding.setElement(params.get(idx));

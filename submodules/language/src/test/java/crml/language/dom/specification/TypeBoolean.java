@@ -15,7 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import crml.language.dom.DOMVisitor;
 import crml.language.dom.util.BuildResult;
-import crml.language.opcall.ai.MixfixParser;
+import crml.language.opcall.MixfixParser;
 import crml.language.util.CRMLSyntaxResultsWrapper;
 import crml.language.util.DOMWrapper;
 import crml.language.util.ThrowableWrapper;

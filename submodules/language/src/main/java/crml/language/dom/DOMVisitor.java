@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.RuleNode;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Functions.Function0;
+
+import com.google.common.collect.Lists;
 
 import crml.language.dom.builders.ClassBuilder;
 import crml.language.dom.builders.ConstantBuilder;
@@ -25,11 +28,13 @@ import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.ConstantContext;
 import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
+import crml.language.grammar.crmlParser.Element_defContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.OperatorContext;
 import crml.language.grammar.crmlParser.TemplateContext;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
+import crml.model.language.Sequence;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
@@ -63,6 +68,20 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitOperator(OperatorContext c) { return BuildResult.wrap(userop.get(c)); }
     @Override public BuildResult visitTemplate(TemplateContext c) { return BuildResult.wrap(templates.get(c)); }
     
+    /*private final List<Class<?>> fallthrough = Lists.<Class<?>>asList(
+        Element_defContext.class
+    );*/
+   /* private final Class<?>[] fallthrough = {
+        Element_defContext.class
+    };
+    @Override public BuildResult visitChildren(RuleNode node){ 
+        for(Class<?> allowed : fallthrough){
+            if(allowed.isAssignableFrom(node.getRuleContext().getClass())){
+                return super.visitChildren(node);
+            };
+        }
+        throw new RuntimeException("I don't like you. "+node.getRuleContext().getClass().getSimpleName());
+    }*/
     
     @Override
     public void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options) {
@@ -85,6 +104,9 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     
     @Override
     public void set(EObject host, EStructuralFeature reference, EObject value) {
+        if(host instanceof Sequence){
+            throw new RuntimeException("Why are we setting a Seauence? ");
+        }
         modificationTasks.add(new ModificationTask(host, reference, value));
     }
     public void modify(){
@@ -142,7 +164,12 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
 
         @Override
         public Boolean apply() {
+            try {
             host.eSet(feature, value);
+            } catch (ClassCastException e){
+                System.err.println("Host hash: "+host.hashCode());
+                throw e;
+            }
             return true;
         }
 

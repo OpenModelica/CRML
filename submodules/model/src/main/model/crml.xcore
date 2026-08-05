@@ -299,7 +299,7 @@ class VaraibleReference extends Value {
 }
 
 class ComputedValue extends Value {
-    refers Operator operator
+    refers CustomOperator operator
     contains Binding[] bindings
 }
 

@@ -7,9 +7,10 @@ import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
 
 import crml.language.dom.util.BuildResult;
-import crml.language.opcall.ai.MixfixParser;
+import crml.language.opcall.MixfixParser;
 import crml.language.pretty.PrettyPrint;
 import crml.language.util.Parser;
+import crml.model.language.Library;
 import crml.model.language.Model;
 import crml.util.SafeResource;
 
@@ -52,9 +53,16 @@ public class DebugModelTest {
                 dom = ((BuildResult.SingleBuildResult<?>) result).result();
             }
             visitor.linker();
-            Model model = (Model) dom;
-            MixfixParser mixfix = new MixfixParser(model, visitor);
-            mixfix.perform(model);
+            System.out.println("--- DOM RAW---");
+            System.out.println(PrettyPrint.prettyPrint(dom));
+            if (dom instanceof Model){
+                MixfixParser mixfix = new MixfixParser((Model) dom, visitor);
+                mixfix.perform((Model) dom); 
+            } else {
+                MixfixParser mixfix = new MixfixParser((Library) dom, visitor);
+                mixfix.perform((Library) dom); 
+            }
+            
             visitor.modify();
         } catch (Throwable e) {
             error = e;

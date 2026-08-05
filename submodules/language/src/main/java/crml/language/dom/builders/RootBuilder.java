@@ -18,6 +18,7 @@ import crml.language.grammar.crmlParser.SingleDependencyContext;
 import crml.model.language.Class;
 import crml.model.language.Dependency;
 import crml.model.language.LanguageFactory;
+import crml.model.language.Library;
 import crml.model.language.Model;
 //import crml.model.language.ProxyDependency;
 import crml.model.language.Variable;
@@ -36,8 +37,7 @@ public class RootBuilder {
             case "model":
                 return processModel(context);
             case "library":
-                builder.reportImplementationError("Loading a library is not implemented yet");
-                break;
+                return processLibrary(context);
             case "package":
                 builder.reportImplementationError("Loading a package is not implemented yet");
                 break;
@@ -77,6 +77,33 @@ public class RootBuilder {
             }
         }
         return model;
+    }
+
+    private Library processLibrary(DefinitionContext context){
+        Library library = factory.createLibrary();
+        
+        library.setName(text(context.id()));
+
+        for(DependencyContext depcontext : context.dependency()){
+            library.getSuperlibs().addAll(parse(depcontext));
+        }
+
+        for(Element_defContext elemets : context.element_def()){
+            SingleBuildResult<?> buildres = builder.build(elemets, SingleBuildResult.class);
+            if(buildres == null) {
+                continue;
+            }
+                
+            EObject res = buildres.result();
+            if(res instanceof crml.model.language.Class) {
+                library.getClasses().add((Class) res);
+            } else if (res instanceof crml.model.language.Operator) {
+                library.getOperators().add((crml.model.language.Operator)res);
+            } else {
+                builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
+            }
+        }
+        return library;
     }
 
     public List<Dependency> parse(DependencyContext context){

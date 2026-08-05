@@ -1,4 +1,4 @@
-package crml.language.opcall.ai;
+package crml.language.opcall;
 
 import crml.model.language.Keyword;
 import crml.model.language.Sequence;
