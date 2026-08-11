@@ -5,7 +5,6 @@
 )
 package crml.model.language
 
-import org.eclipse.emf.common.util.BasicEList
 
 abstract class NamedEntity {
     id String name
@@ -13,7 +12,7 @@ abstract class NamedEntity {
 
 /////////////////////////////
 // ??????????????????????? //
-/////////////////////////////
+///////////////////////////// 
 
 abstract class Element extends NamedEntity{
     // TODO: must have a domain
@@ -291,7 +290,7 @@ class ComplexNumber {
 /////////////////////////
 
 abstract class Value {
-
+    contains TypeReference returnType
 }
 
 class VaraibleReference extends Value {
@@ -411,6 +410,10 @@ class SequenceKeyword extends Sequence {
 
 abstract class TypeReference {
 
+}
+
+class IndirectTypeReference extends TypeReference {
+    refers TypeReference referredType
 }
 
 class BuiltinTypeReference extends TypeReference {

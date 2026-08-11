@@ -19,6 +19,7 @@ dependencies {
     // ── ANTLR4 ───────────────────────────────────────────────────────────────
     antlr("org.antlr:antlr4:$antlr4Version")
     implementation("org.antlr:antlr4:$antlr4Version")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
 
     testImplementation(project(":util"))
     testImplementation(project(":util-test"))
