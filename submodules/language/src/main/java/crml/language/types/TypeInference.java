@@ -20,7 +20,7 @@ import crml.model.language.StringConstant;
 import crml.model.language.TimeValue;
 import crml.model.language.UnaryOperator;
 import crml.model.language.Value;
-import crml.model.language.VaraibleReference;
+import crml.model.language.VariableReference;
 import crml.model.language.util.LanguageSwitch;
 
 public class TypeInference {
@@ -40,7 +40,7 @@ public class TypeInference {
         @Override public Boolean caseUnaryOperator(UnaryOperator object) { return false; }
         @Override public Boolean caseBinaryOperator(BinaryOperator object) { return false; }
 
-        @Override public Boolean caseVaraibleReference(VaraibleReference object) { return false; }
+        @Override public Boolean caseVariableReference(VariableReference object) { return false; }
         @Override public Boolean caseComputedValue(ComputedValue object) { return false; }
         @Override public Boolean casePeriodsValue(PeriodsValue object) { return false; }
         @Override public Boolean caseIntegrateValue(IntegrateValue object) { return false; }

@@ -49,7 +49,7 @@ public class ClassBuilder {
 
             EObject res = buildres.result();
             if(res instanceof Variable){
-                cls.getVaraibles().add((Variable) res);
+                cls.getVariables().add((Variable) res);
 //            } else if(res instanceof crml.model.language.Class) {
 //                model.getClasses().add((Class) res);
             } else {

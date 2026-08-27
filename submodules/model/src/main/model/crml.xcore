@@ -218,7 +218,7 @@ class Class extends Domain, NamedEntity {
 
     refers Class[] superClasses
 
-    contains Variable[] varaibles
+    contains Variable[] variables
     
     // TODO class specialization
 }
@@ -241,7 +241,7 @@ class Library extends NamedEntity {
 
 class Model extends Library {
     contains Object[] objects
-    contains Variable[] varaibles
+    contains Variable[] variables
     contains Set<?>[] sets
     contains Period frame
 }
@@ -293,7 +293,7 @@ abstract class Value {
     contains TypeReference returnType
 }
 
-class VaraibleReference extends Value {
+class VariableReference extends Value {
     refers Variable variable
 }
 

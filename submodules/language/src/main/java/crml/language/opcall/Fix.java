@@ -22,7 +22,7 @@ public enum Fix {
         } else if(!startkw && !endkw) {
             return INFIX;
         } else {
-            throw new IllegalStateException("Unreachabvel.");
+            throw new IllegalStateException("Unreachable.");
         }
     }
 
@@ -38,7 +38,7 @@ public enum Fix {
         } else if(!startkw && !endkw) {
             return INFIX;
         } else {
-            throw new IllegalStateException("Unreachabvel.");
+            throw new IllegalStateException("Unreachable.");
         }
     }
 

@@ -44,7 +44,7 @@ public class ScopeResolver {
                     if(domain instanceof Class){
                         System.err.println("Waypoint 3:");
                         Class cls = (Class) domain;
-                        for(Variable v :cls.getVaraibles()){
+                        for(Variable v :cls.getVariables()){
                             System.err.println("Testing:" +v.getName());
                             if(id.equals(v.getName())){
                                 System.err.println("MATCHES");
@@ -111,7 +111,7 @@ public class ScopeResolver {
             return class1;
         }
 
-        for (Variable v : class1.getVaraibles()) {
+        for (Variable v : class1.getVariables()) {
             if (v.getName().equals(id) && isReadCompatible(v.getDomain(), null)) {
                 return v;
             }
@@ -125,7 +125,7 @@ public class ScopeResolver {
             return null;
         }
 
-        for (Variable v : model.getVaraibles()) {
+        for (Variable v : model.getVariables()) {
             System.err.println("Test variable (Model): " + v.getName());
             if (v.getName().equals(id) && isReadCompatible(v.getDomain(), null)) {
                 System.err.println("Test class (Model): MATCHES");

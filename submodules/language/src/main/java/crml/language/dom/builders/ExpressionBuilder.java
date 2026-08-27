@@ -23,7 +23,7 @@ import crml.model.language.SequenceValue;
 import crml.model.language.Set;
 import crml.model.language.UnaryOperator;
 import crml.model.language.Value;
-import crml.model.language.VaraibleReference;
+import crml.model.language.VariableReference;
 
 public class ExpressionBuilder {
     private final BuildContext builder;
@@ -36,7 +36,7 @@ public class ExpressionBuilder {
     public ExpressionBuilder(BuildContext builder) { 
         this.builder = builder; 
         this.factory = builder.factory();
-        this.varref = builder.metamodel().getVaraibleReference();
+        this.varref = builder.metamodel().getVariableReference();
         this.binary = new BinaryExpressionBuilder(builder);
         this.unary = new UnaryExpressionBuilder(builder);
     }
@@ -122,7 +122,7 @@ public class ExpressionBuilder {
             return head;
 
         } else if(context.id() != null) {
-            VaraibleReference ref = factory.createVaraibleReference();
+            VariableReference ref = factory.createVariableReference();
             builder.link(ref, varref.getEStructuralFeature("variable"), context.id().getText());
             return ref;
         } else if(context.integrate() != null) {
