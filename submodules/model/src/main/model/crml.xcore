@@ -65,7 +65,7 @@ enum BuiltinUnaryOperatorKind {
     START = 29   // right_op: exp 'start'
     END = 30     // right_op: exp 'end'
     SUBEXPRESSION = 31
-    EXP_OP = 22
+    EXP_OP = 101
     SUB = 102 // has both unary and binary form
     ADD = 103 // has both unary and binary form
     LOG = 104 // has both unary and binary form
