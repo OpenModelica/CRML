@@ -41,15 +41,15 @@ public class TypeResolver {
 
     public static String resolve(BuiltinType type){
         switch (type) {
-            case BuiltinType.BOOLEAN: return "CRMLtoModelica.Types.Boolean4";
-            case BuiltinType.PERIOD: return "CRMLtoModelica.Types.CRMLPeriod";
-            case BuiltinType.PERIODS: return "CRMLtoModelica.Types.CRMLPeriods";
-            case BuiltinType.EVENT: return "CRMLtoModelica.Types.Event";
-            case BuiltinType.REQUIREMENT: return "CRMLtoModelica.Types.Boolean4";
-            case BuiltinType.CLOCK: return "CRMLtoModelica.Types.CRMLClock";
-            case BuiltinType.REAL: return "Real";
-            case BuiltinType.STRING: return "String";
-            case BuiltinType.INTEGER: return "Integer";
+            case BOOLEAN: return "CRMLtoModelica.Types.Boolean4";
+            case PERIOD: return "CRMLtoModelica.Types.CRMLPeriod";
+            case PERIODS: return "CRMLtoModelica.Types.CRMLPeriods";
+            case EVENT: return "CRMLtoModelica.Types.Event";
+            case REQUIREMENT: return "CRMLtoModelica.Types.Boolean4";
+            case CLOCK: return "CRMLtoModelica.Types.CRMLClock";
+            case REAL: return "Real";
+            case STRING: return "String";
+            case INTEGER: return "Integer";
             default:
                 throw new RuntimeException("Unable to resolve type: "+type);
         }

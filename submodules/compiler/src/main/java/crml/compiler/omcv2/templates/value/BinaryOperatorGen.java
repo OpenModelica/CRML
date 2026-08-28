@@ -28,37 +28,37 @@ public class BinaryOperatorGen {
         BuiltinBinaryOperatorKind opType = op.getOptype();
 
         switch (opType) {
-            case BuiltinBinaryOperatorKind.ADD:
+            case ADD:
                 return generateAdd(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.SUB:
+            case SUB:
                 return generateSub(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.MUL:
+            case MUL:
                 return generateMul(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.DIV:
+            case DIV:
                 return generateDiv(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.POW:
+            case POW:
                 return generatePow(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.MOD:
+            case MOD:
                 // Modelica's mod() function, not the legacy OperatorMapping "mod" entry
                 // (which pointed at Modelica.Math.exp by mistake).
                 return generateMod(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.AND:
+            case AND:
                 return generateAnd(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.OR:
+            case OR:
                 return generateOr(opType, lhs, rhs, lt, rt);
-            case BuiltinBinaryOperatorKind.LT:
+            case LT:
                 return generateComparison(opType, lhs, rhs, lt, rt, "<", true, null, true);
-            case BuiltinBinaryOperatorKind.LE:
+            case LE:
                 return generateComparison(opType, lhs, rhs, lt, rt, "<=", true, "CRMLtoModelica.Functions.lEV", true);
-            case BuiltinBinaryOperatorKind.GT:
+            case GT:
                 return generateComparison(opType, lhs, rhs, lt, rt, ">", true, null, false);
-            case BuiltinBinaryOperatorKind.GE:
+            case GE:
                 return generateComparison(opType, lhs, rhs, lt, rt, ">=", true, "CRMLtoModelica.Functions.gEV", false);
-            case BuiltinBinaryOperatorKind.EQ:
+            case EQ:
                 return generateComparison(opType, lhs, rhs, lt, rt, "==", false, null, true);
-            case BuiltinBinaryOperatorKind.NEQ:
+            case NEQ:
                 return generateComparison(opType, lhs, rhs, lt, rt, "<>", false, null, true);
-            case BuiltinBinaryOperatorKind.AT:
+            case AT:
                 // No implementation exists anywhere to model this on: the legacy visitor never
                 // handled it and no CRMLtoModelica library function backs it (crml.g4 notes
                 // "Moved to binary operator. Why was it separate?" with no follow-up).

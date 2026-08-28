@@ -20,9 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -46,6 +48,12 @@ import crml.util.SafeResource;
 import static com.aventstack.extentreports.Status.FAIL;
 
 public class SpecificationTestListener implements TestExecutionListener, AfterEachCallback, AfterAllCallback {
+
+    // Keys whose CustomHtmlReporter content is rendered inside a collapsible
+    // <details> element instead of always-expanded — for large tree dumps
+    // (object model / DOM) that would otherwise dominate the report.
+    private static final Set<String> COLLAPSIBLE_KEYS = Stream.of("DOM", "Object Model")
+        .collect(Collectors.toSet());
 
     // Static report state shared across all instances
     private static ExtentSparkReporter reporter;
@@ -217,6 +225,19 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 }     
+            } else if (entry.getValue() instanceof CustomHtmlReporter && COLLAPSIBLE_KEYS.contains(entry.getKey())) {
+                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
+                Object report;
+                try {
+                    report = syntax.report();
+                } catch (Exception e) {
+                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
+                node.info(details(
+                    summary(entry.getKey()),
+                    join(report)
+                ).render());
             } else if (entry.getValue() instanceof CustomHtmlReporter) {
                 CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
                 Object report;

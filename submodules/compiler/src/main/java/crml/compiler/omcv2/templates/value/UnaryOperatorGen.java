@@ -25,41 +25,41 @@ public class UnaryOperatorGen {
         BuiltinUnaryOperatorKind opType = op.getOptype();
 
         switch (opType) {
-            case BuiltinUnaryOperatorKind.SUBEXPRESSION:
+            case SUBEXPRESSION:
                 // Explicit parenthesisation around a sub-expression; passes the
                 // operand's type through unchanged, so no type check applies.
                 return parenthesize(operand);
-            case BuiltinUnaryOperatorKind.ADD:
+            case ADD:
                 return generateSign(opType, operand, t, "+");
-            case BuiltinUnaryOperatorKind.SUB:
+            case SUB:
                 return generateSign(opType, operand, t, "-");
-            case BuiltinUnaryOperatorKind.NOT:
+            case NOT:
                 return generateNot(opType, operand, t);
-            case BuiltinUnaryOperatorKind.SIN:
+            case SIN:
                 return generateMath(opType, operand, t, "Modelica.Math.sin");
-            case BuiltinUnaryOperatorKind.ASIN:
+            case ASIN:
                 return generateMath(opType, operand, t, "Modelica.Math.asin");
-            case BuiltinUnaryOperatorKind.COS:
+            case COS:
                 return generateMath(opType, operand, t, "Modelica.Math.cos");
-            case BuiltinUnaryOperatorKind.ACOS:
+            case ACOS:
                 return generateMath(opType, operand, t, "Modelica.Math.acos");
-            case BuiltinUnaryOperatorKind.LOG:
+            case LOG:
                 return generateMath(opType, operand, t, "Modelica.Math.log");
-            case BuiltinUnaryOperatorKind.LOG10:
+            case LOG10:
                 return generateMath(opType, operand, t, "Modelica.Math.log10");
-            case BuiltinUnaryOperatorKind.EXP_OP:
+            case EXP_OP:
                 return generateMath(opType, operand, t, "Modelica.Math.exp");
-            case BuiltinUnaryOperatorKind.START:
+            case START:
                 return generatePeriodEndpoint(opType, operand, t, "CRMLtoModelica.Functions.PStart");
-            case BuiltinUnaryOperatorKind.END:
+            case END:
                 return generatePeriodEndpoint(opType, operand, t, "CRMLtoModelica.Functions.PEnd");
-            case BuiltinUnaryOperatorKind.CARD:
+            case CARD:
                 // CRMLtoModelica.Blocks.CardClock is a block, not a function: it needs
                 // to be instantiated as a component on the host model, which this
                 // generator does not yet support (see Scope.reference()).
                 throw unsupported(opType, "requires instantiating the "
                     + "CRMLtoModelica.Blocks.CardClock block, which this generator does not yet support");
-            case BuiltinUnaryOperatorKind.TICK:
+            case TICK:
                 throw unsupported(opType, "requires instantiating the "
                     + "CRMLtoModelica.Blocks.ClockTick block, which this generator does not yet support");
             default:
