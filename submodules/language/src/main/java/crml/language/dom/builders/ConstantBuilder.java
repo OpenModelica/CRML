@@ -73,6 +73,7 @@ public class ConstantBuilder {
             if(value instanceof Float || value instanceof Double) {
                 RealConstant rv = factory.createRealConstant();
                 rv.setValue(value.doubleValue());
+                rv.setLiteral(numc.getText());
                 BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
                 typeref.setBuiltinType(BuiltinType.REAL);
                 rv.setReturnType(typeref);

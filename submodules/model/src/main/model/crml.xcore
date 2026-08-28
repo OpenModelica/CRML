@@ -353,6 +353,7 @@ class IntegerConstant extends ConstantValue {
 }
 
 class RealConstant extends ConstantValue {
+    String literal
     Double value
 }
 

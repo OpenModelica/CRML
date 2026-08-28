@@ -8,11 +8,15 @@ import crml.model.language.Variable;
 
 public class VariableGen {
     public static Scope generate(ModelScope scope, Variable variable){
-        RawstringScope decl = new RawstringScope(TypeResolver.resolve(variable.getDomain())+" "+variable.getName());
-        scope.addVariable(decl);
-
-        //TODO: configure value
-
-        return scope;
+        if(variable.getDefinition()==null){
+            RawstringScope decl = new RawstringScope(TypeResolver.resolve(variable.getDomain())+" "+variable.getName()+";");
+            scope.addVariable(decl);
+            return scope;
+        } else {
+            Scope value = ValueGen.generate(scope, variable.getDefinition());
+            RawstringScope decl = new RawstringScope(TypeResolver.resolve(variable.getDomain())+" "+variable.getName()+" = "+value.reference()+";");
+            scope.addVariable(decl);
+            return scope;
+        }
     }
 }
