@@ -22,8 +22,8 @@ tests:
 test-dom:
 	$(GRADLE_CMD) :language:clean :language:test --tests "crml.language.dom.specification.*"
 
-test-omcv2:
-	$(GRADLE_CMD) :compiler:clean :compiler:test --tests "crml.compiler.omcv2.specification.*"
+test-crmlcv2:
+	$(GRADLE_CMD) :compiler:clean :compiler:test --tests "crml.compiler.crmlcv2.specification.*"
 
 test-etl:
 	$(GRADLE_CMD) test --tests "ctests.ETLTests*"

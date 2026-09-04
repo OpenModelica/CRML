@@ -1,0 +1,22 @@
+package crml.compiler.crmlcv2.templates;
+
+import crml.compiler.crmlcv2.scopes.ModelScope;
+import crml.compiler.crmlcv2.scopes.RawstringScope;
+import crml.compiler.crmlcv2.scopes.Scope;
+import crml.compiler.crmlcv2.util.TypeResolver;
+import crml.model.language.Variable;
+
+public class VariableGen {
+    public static Scope generate(ModelScope scope, Variable variable){
+        if(variable.getDefinition()==null){
+            RawstringScope decl = new RawstringScope(TypeResolver.resolve(variable.getDomain())+" "+variable.getName()+";");
+            scope.addVariable(decl);
+            return scope;
+        } else {
+            Scope value = ValueGen.generate(scope, variable.getDefinition());
+            RawstringScope decl = new RawstringScope(TypeResolver.resolve(variable.getDomain())+" "+variable.getName()+" = "+value.reference()+";");
+            scope.addVariable(decl);
+            return scope;
+        }
+    }
+}
