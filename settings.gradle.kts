@@ -10,10 +10,11 @@
 rootProject.name = "crml-compiler"
 
 include(
-        "util",
-        "util-test",
+        "model",
         "language",
         "compiler",
+        "util",
+        "util-test",
         "test-resources"
 )
 for (project in rootProject.children) {

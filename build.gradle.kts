@@ -6,6 +6,17 @@ plugins {
 group = "crml"
 version = "1.0-SNAPSHOT"
 
+// ─────────────────────────────────────────────
+//  Shared version catalogue
+// ─────────────────────────────────────────────
+val emfCoreVersion    by extra("2.33.0")   // org.eclipse.emf.ecore + codegen in xtextLanguages
+val emfCommonVersion  by extra("2.28.0")   // org.eclipse.emf.common
+val emfCodegenVersion by extra("2.45.0")   // org.eclipse.emf.codegen.ecore (runtime)
+val xcoreVersion      by extra("1.21.0")   // org.eclipse.emf.ecore.xcore
+val xcoreLibVersion   by extra("1.6.0")    // org.eclipse.emf.ecore.xcore.lib
+val xtextVersion      by extra("2.33.0")   // org.eclipse.xtext.*
+val antlr4Version     by extra("4.9.2")    // org.antlr:antlr4
+
 allprojects {
     repositories {
         mavenCentral()
@@ -16,7 +27,12 @@ allprojects {
             url = uri("https://repo.eclipse.org/content/groups/releases/")
         }*/
     }
-} 
+}
+
+// The GitHub Packages repository that hosts emf-mermaid is declared in
+// :model, the one project that can use it, and only the optional
+// generateMermaid task resolves anything from it. Building the project needs
+// no GitHub credentials.
 
 subprojects {
     plugins.apply("java")

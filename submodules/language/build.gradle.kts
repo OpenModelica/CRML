@@ -6,9 +6,20 @@ plugins {
 group = "crml"
 version = "1.0-SNAPSHOT"
 
+val antlr4Version: String by rootProject.extra
+
+// ─────────────────────────────────────────────
+//  Dependencies
+// ─────────────────────────────────────────────
 dependencies {
-    antlr("org.antlr:antlr4:4.9.2")
-    implementation("org.antlr:antlr4:4.9.2")
+    // Model submodule – language depends on the EMF model definition.
+    // EMF (EObject, EList, etc.) reaches this module transitively via model's api deps.
+    implementation(project(":model"))
+
+    // ── ANTLR4 ───────────────────────────────────────────────────────────────
+    antlr("org.antlr:antlr4:$antlr4Version")
+    implementation("org.antlr:antlr4:$antlr4Version")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
 
     testImplementation(project(":util"))
     testImplementation(project(":util-test"))
@@ -23,17 +34,11 @@ dependencies {
     testImplementation("org.junit.platform:junit-platform-launcher")
 
     testImplementation("com.aventstack:extentreports:5.0.9")
-    
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir("build/generated-src/antlr/main")
-        }
-    }
-}
-
+// ─────────────────────────────────────────────
+//  ANTLR grammar generation
+// ─────────────────────────────────────────────
 tasks.generateGrammarSource {
     maxHeapSize = "64m"
     arguments.addAll(listOf(

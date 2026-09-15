@@ -11,6 +11,7 @@ import static j2html.TagCreator.summary;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,9 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -40,10 +43,17 @@ import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
 //import crml.language.util.ErrorListener.CRMLSyntaxResults;
 import crml.util.NaturalCompare;
+import crml.util.SafeResource;
 
 import static com.aventstack.extentreports.Status.FAIL;
 
 public class SpecificationTestListener implements TestExecutionListener, AfterEachCallback, AfterAllCallback {
+
+    // Keys whose CustomHtmlReporter content is rendered inside a collapsible
+    // <details> element instead of always-expanded — for large tree dumps
+    // (object model / DOM) that would otherwise dominate the report.
+    private static final Set<String> COLLAPSIBLE_KEYS = Stream.of("DOM", "Object Model")
+        .collect(Collectors.toSet());
 
     // Static report state shared across all instances
     private static ExtentSparkReporter reporter;
@@ -70,6 +80,16 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
             extentReport.setAnalysisStrategy(AnalysisStrategy.SUITE);
+            try {
+                reporter.config().setCss(new String(
+                        Files.readAllBytes(SafeResource.get("testreport.css")),
+                        StandardCharsets.UTF_8
+                ));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
             reportInitialized = true;
         }
     }
@@ -196,7 +216,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                     String fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
                     node.info(join(
                         p(join(entry.getKey(), br())),
-                        pre(code(fileContent)),
+                        pre(FormatUtil.numcode(fileContent)),
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 } catch (Exception e) {
@@ -205,11 +225,31 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 }     
+            } else if (entry.getValue() instanceof CustomHtmlReporter && COLLAPSIBLE_KEYS.contains(entry.getKey())) {
+                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
+                Object report;
+                try {
+                    report = syntax.report();
+                } catch (Exception e) {
+                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
+                node.info(details(
+                    summary(entry.getKey()),
+                    join(report)
+                ).render());
             } else if (entry.getValue() instanceof CustomHtmlReporter) {
                 CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
+                Object report;
+                try {
+                    report = syntax.report();
+                } catch (Exception e) {
+                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
                 node.info(join(
                     p(join(entry.getKey(), br())),
-                    syntax.report()
+                    report
                     //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
                 ).render());
             } else if (entry.getValue() instanceof String && "AST".equals(entry.getKey())) {
@@ -219,8 +259,15 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         pre(code(ast))
                     ).render());
             } else {
+                String value;
+                try {
+                    value = entry.getValue().toString();
+                } catch (Exception e) {
+                    value = "<" + e.getClass().getSimpleName() + " while rendering value: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
                 node.info(join(p(join(entry.getKey(), br())),
-                        p(entry.getValue().toString())).render());
+                        p(value)).render());
             }
         }
 

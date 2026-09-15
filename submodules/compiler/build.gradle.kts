@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation(project(":language"))
+    implementation(project(":model"))
     implementation(project(":util"))
 
     implementation("org.apache.logging.log4j:log4j-api") {
@@ -79,6 +80,24 @@ tasks.jar {
             "Main-Class" to "crml.compiler.CRMLC",
             "Multi-Release" to "true"
         )
+    }
+}
+
+// The old AST-based translation pipeline (crmlVisitorImpl/CRMLC and its ctests)
+// predates the current ANTLR grammar and no longer compiles against it. It is
+// being superseded by the OM-based omcv2 pipeline; kept on disk for reference
+// but excluded from compilation until it is revived or removed.
+sourceSets {
+    main {
+        java {
+            exclude("crml/compiler/translation/**")
+            exclude("crml/compiler/CRMLC.java")
+        }
+    }
+    test {
+        java {
+            exclude("ctests/**")
+        }
     }
 }
 

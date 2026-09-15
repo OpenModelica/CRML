@@ -7,46 +7,79 @@ definition : definition_type id 'is' dependency* '{'
 		(element_def)* 
 		'}'  ';' EOF;	
 
-dependency : (id |'flatten' '{' id (',' id)* '}') 'union' ;
+dependency 
+	: id 'union' # SingleDependency
+	|'flatten' '{' id (',' id)* '}' 'union' # DependencySet
+	;
 
 definition_type : 'model' | 'package' | 'library'; // should we keep library?
 
-element_def : comment | template | class_def | uninstantiated_def | type_def | operator | var_def | category;
+element_def 
+	: comment # CommentElement //TODO
+	| template # TemplateElement //TODO
+	| class_def # ClassElement
+	| uninstantiated_def # UninstantiatedElement //TODO
+	| type_def # TypeElement //TODO
+	| operator # OperatorElement //TODO
+	| var_def # VaraibleElement //TODO
+	| category # CategoryElement //TODO
+	;
 	
-class_def : 'class' id 'is' ('{' class_var_def+ '}' ('extends' type class_params? id? )?)';' ;
+class_def : partial='partial'? 'class' id 'is' ('{' class_var_def+ '}' extension? )';' ;
 
-uninstantiated_def : static_qualifier (type id (',' id)* | structure_type id (',' id)* )';' ;
+extension 
+	: 'extends' type class_params? id?
+	;
 
-static_qualifier : 'parameter' ;
+uninstantiated_def : static_qualifier (type id (',' id)* | structure_type id (',' id)* )';' ; //TODO
 
-category : 'Category' id '=' '{' category_pair (',' category_pair)* '}' ';';
+static_qualifier : 'parameter' ; //TODO
 
-category_pair : '(' op ',' op ')';
+category : 'Category' id '=' '{' category_pair (',' category_pair)* '}' ';'; //TODO
+
+category_pair : '(' op ',' op ')'; //TODO
 
 //association : 'Category' empty_set c_set=id 'is' 'associate' c_name=id 'with' c_op_name=user_keyword ';';
  
-var_def : var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
+var_def : cnst='constant'? var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
 
-operator : 'Operator' '[' type ']' operator_def ';' ;
+operator : 'Operator' '[' domain=type ']' operator_def ';' ; //TODO
 
-template : 'Template' (id | user_keyword)+ '=' exp ';' ;
+template : 'Template' args+=template_parameter+ '=' value=exp ';' ; //TODO
 
-class_params : '(' (id '=' exp)+ ')';
+template_parameter 
+	: name=id # TemplateParameter
+	| kw=user_keyword # TemplateKeyword
+	;
 
-operator_def :  (type id | user_keyword)+ '=' apply_category? exp ;
+class_params : '(' (id '=' exp)+ ')'; //TODO
 
-apply_category : 'apply' assoc=id 'on';
+operator_def :  args+=operator_parameter+ '=' apply_category? value=exp ; //TODO
+
+operator_parameter 
+	: domain=type name=id # OperatorParameter
+	| kw=user_keyword # OperatorKeyword
+	;
+
+apply_category : 'apply' assoc=id 'on'; //TODO
 	 
-type_def : 'type' id ('extends' type  arg_list? id?)?  ('{' class_var_def * '}' )? ;
+type_def : partial='partial'? 'type' id ('extends' type  arg_list? id?)?  ('{' class_var_def * '}' )? ; //TODO
 	 
-class_var_def : ( var_def )|'alias' id ';'| comment
-			| 'forbid' (op| op) (',' (op| op))* ';' | uninstantiated_def ;
+class_var_def 
+	: var_def 
+	|'alias' id ';' //TODO
+	| comment //TODO
+	| 'forbid' (op| op) (',' (op| op))* ';' //TODO
+	| uninstantiated_def  //TODO
+	;
 
-var_qualifier : 'fixed';
-	 
-arg_list : '(' (id ('='| 'is') (arg_list | exp) (',' id ('='| 'is') (arg_list | exp))*)? ')';
+var_qualifier : 'fixed'; //TODO: is this something that is now the constant?
 
-crml_component_reference : '.'? id array_subscripts? ( '.' id array_subscripts? )* ;
+// Change: at some point, it allowed exp and arg_list, now it is just expt, to make the processing simpler
+// WARNING: note that if a single value is provided in parenthesis, it may look like an arg_list, but it is a sub-expression
+arg_list : '(' (id ('='| 'is') exp) (',' id ('='| 'is') exp)* ')' ; //TODO
+
+crml_component_reference : '.'? id array_subscripts? ( '.' id array_subscripts? )* ; //TODO ???
 
 type :   (builtin_type | id ) isset=empty_set?;
 
@@ -54,15 +87,22 @@ builtin_type : 'Integer' |'Real' | 'Boolean' | 'String' | 'Clock' | 'Set' | 'Per
 
 structure_type : 'type' | 'class';
 
-external_type : type | structure_type ;
+external_type : type | structure_type ; //Unused?
 
 boolean_value : 'true' |'false' | 'undecided' | 'undefined' ;
 
-constant : boolean_value | string | number | time;
+// Can't use named contexts as then no visitExp is generated and processing becomes unnecessary complicated.
+constant 
+	: boolean_value 
+	| string 
+	| number 
+	| time 
+	;
 
 time : 'time';
 
-set_def : '{' (exp (',' exp)*) '}' | empty_set;
+//TODO: Why is this separed to an 
+set_def : '{' (exp (',' exp)*)? '}' ;
 
 empty_set : '{' '}';
 
@@ -72,26 +112,57 @@ trim : 'trim' exp 'on' exp;
 
 sum: 'sum' '(' exp (',' exp)+')' ;
 
-proj : id 'proj' ('(' id ')')?  id ;
-
 when_exp : 'when' when_e=exp 'then' then_e=exp;
 
 integrate : 'integrate' exp 'on' exp;
 
 duration : 'duration' exp 'on' exp;
 
-tick : 'tick' id;
-    
- exp : sub_exp | id | constant | constructor | sum |trim |  proj | period_op | iterator
-	 //| 'apply' cat=id 'on' '(' exp ')'
-	 | right=exp runary=right_op 
-	 | lunary=builtin_op left=exp 
-	 | left=exp binary=builtin_op right=exp
- 	 | uright=user_keyword right=exp 
-	 | left=exp ubinary=user_keyword right=exp 
-	 | left=exp uleft=user_keyword  
- 	 | 'element' | 'terminate' | when_exp | exp 'at' at=exp 
- 	 | integrate | tick |crml_component_reference | if_exp | set_def | 'evaluate' exp | duration;
+// Can't use named contexts as then no visitExp is generated and processing becomes unnecessary complicated.
+// TODO: Operator precendence has to be cleaned up
+exp 
+ 	: sub_exp //# SubExpression
+	| constant //# ConstantExpression
+	| constructor //# ConstructorExpression
+	| sum //# SumExpression
+	| trim //# TrimExpression
+	| p1=exp 'proj' ('(' opt=exp ')')?  p2=exp 
+	| period_op //# PoeriodOperationExpression
+	| iterator //# IteratorExpression
+	//| 'apply' cat=id 'on' '(' exp ')'
+//TODO: with mater on filter pre 
+// Unary operations
+	| lhs=exp uop0=('start' | 'end')
+	| uop1=('-' | '+' | 'par' ) rhs=exp //TODO do we need '+'?
+	| uop2=('cos' | 'acos' | 'sin' | 'asin' ) rhs=exp
+	| uop3=('exp' | 'log' | 'log10' | 'card') rhs=exp
+	| uop4=('not' | 'tick' ) rhs=exp
+// Binary operations
+	| <assoc=right> lhs=exp bop0='^' rhs=exp
+	| lhs=exp bop1=('*'|'/'|'mod') rhs=exp
+	| lhs=exp bop2=('+'|'-') rhs=exp
+	| lhs=exp bop3=('+'|'-') rhs=exp
+	| lhs=exp bop4=('<'|'<='|'>='|'>'|'=='|'<>') rhs=exp
+	| lhs=exp bop5=('and'|'or') rhs=exp
+	| lhs=exp bop6='at' rhs=exp
+//
+//	| sqexp=exp? keyword=user_keyword+ (sqexp=exp?)+
+ 	| keyword=user_keyword rhs=exp //# UserRightExpression
+	| lhs=exp keyword=user_keyword rhs=exp //# UserLeftBinaryExpression
+	| lhs=exp keyword=user_keyword  //# UserLeftExpression
+	| id 
+ 	| 'element' //# ElementExpression
+	| 'terminate' //# TerminateExpression
+	| when_exp //# WhenExpression
+//	| exp 'at' at=exp // Moved to binary operator. Why was it separate?
+ 	| integrate //# IntegrateExpression
+//	| 'tick' tick=exp // Moved to unary expression level 4
+	| crml_component_reference //# ComponentReferenceExpression
+	| if_exp //# IfExpression
+	| set_def //# SetDefinitionExpression
+	| 'evaluate' exp //# EvaluateExpression
+	| duration //# DurationExpression
+	;
  	 
 iterator : name= ITERATOR;
 
@@ -101,17 +172,26 @@ constructor : 'new' type (arg_list | exp)?;
 	
 period_op : lb=('['| ']') exp ',' exp rb=('['| ']') ; 
 
-op : builtin_op|user_keyword
-;
+//right_op : 'start' | 'end';
+//
 
-right_op : 'start' | 'end';
-		
+// Needed for forbid and category
+op : builtin_op|user_keyword ;
+
+//TODO: Check operator precendence. (BooleanIntegration_no_ext.crml)
+// Note: expressions DO NOT use this rule due to operator priority
+// ALWAYS sync this with exp_un and exp_bin
 builtin_op : 'and' | '*' | '+' | '-' | '/' | 'with' | 'master' | 'on' | 'filter'
 				| '<=' | '<' | '>=' | '>' | '<>' | 'par' | '==' |
 				'pre' | 'not'| '-' | 'card' | 'or' | '^' |
 				'mod' |
 				'exp' | 'log' | 'log10' |
-				'cos' |'acos' | 'sin' | 'asin'  ;
+				'cos' |'acos' | 'sin' | 'asin' |
+				'at' ;
+
+
+
+
 
 array_subscripts :
   '[' subscript ( ',' subscript )* ']'

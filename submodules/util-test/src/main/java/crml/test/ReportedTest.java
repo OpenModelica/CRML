@@ -51,4 +51,15 @@ public class ReportedTest {
 			throw new RuntimeException(e);
 		}
 	}
+
+	/**
+	 * Same as {@link #fileNameSourceHelper2(Path)}, but faulty models are dropped
+	 * entirely instead of being included as skipped test cases. Intended for DOM
+	 * tests, which only care about models that are expected to translate cleanly.
+	 */
+	public static List<Arguments> fileNameSourceHelperDom(Path source) {
+		return fileNameSourceHelper2(source).stream()
+			.filter(args -> (Boolean) args.get()[1])
+			.collect(Collectors.toList());
+	}
 }
