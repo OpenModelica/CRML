@@ -68,7 +68,7 @@ public class BinaryExpressionBuilder {
             case "-": return BuiltinBinaryOperatorKind.SUB;
             case "or": return BuiltinBinaryOperatorKind.OR;
             case "mod": return BuiltinBinaryOperatorKind.MOD;
-            case "^": return BuiltinBinaryOperatorKind.POW; //TODO: check if this is correct
+            case "^": return BuiltinBinaryOperatorKind.POW;
         
             default:
                 throw new IllegalStateException("Binary operator is not recognized: "+text);
