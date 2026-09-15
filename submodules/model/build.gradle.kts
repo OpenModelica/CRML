@@ -18,6 +18,24 @@ java {
 
 repositories {
     mavenCentral()
+
+    // emf-mermaid is published to GitHub Packages, which needs credentials.
+    // Only the "mermaid" source set and its generateMermaid task resolve
+    // anything from here, so a build without credentials is unaffected.
+    // The content filter keeps Gradle from consulting this repository for any
+    // other module, so a missing credential can only ever surface in
+    // generateMermaid.
+    maven {
+        name = "emf-mermaid"
+        url = uri("https://maven.pkg.github.com/folmate/emf-mermaid")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+        content {
+            includeGroup("io.github.folmate.ecore2mermaid")
+        }
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -68,9 +86,6 @@ dependencies {
     api("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
     api("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
     api("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
-
-    // ── Mermaid diagram generation ────────────────────────────────────────
-    implementation("io.github.folmate.ecore2mermaid:core:0.0.1")
 }
 
 // ─────────────────────────────────────────────
@@ -119,18 +134,63 @@ sourceSets {
             exclude("**/*.xcore")
         }
     }
+
+    // Mermaid diagram generation, kept out of the main source set so that
+    // neither the jar nor any dependent project carries emf-mermaid, and so
+    // that "gradlew build" never resolves it. Nothing in assemble or check
+    // compiles this source set; only generateMermaid does.
+    create("mermaid") {
+        compileClasspath += sourceSets["main"].output
+        runtimeClasspath += sourceSets["main"].output
+    }
+}
+
+// Give the mermaid source set the same EMF dependencies as main, so
+// MermaidMain can see the generated LanguagePackage.
+configurations["mermaidImplementation"].extendsFrom(configurations["implementation"])
+configurations["mermaidRuntimeOnly"].extendsFrom(configurations["runtimeOnly"])
+
+dependencies {
+    "mermaidImplementation"("io.github.folmate.ecore2mermaid:core:0.0.1")
+}
+
+// emf-mermaid lives behind GitHub Packages, so say so plainly instead of
+// letting the build fail with "Username must not be null!" or a bare 403.
+val hasMermaidCredentials =
+    (project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")) != null &&
+    (project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")) != null
+
+// A separate task rather than a doFirst on the compile: Gradle resolves a
+// task's classpath before running its actions, so a doFirst would never get
+// the chance to speak.
+val checkMermaidCredentials by tasks.registering {
+    group = "verification"
+    description = "Fails with an explanation when the emf-mermaid credentials are missing"
+    doLast {
+        if (!hasMermaidCredentials) {
+            throw GradleException(
+                "generateMermaid needs emf-mermaid from GitHub Packages, which requires credentials. " +
+                "Set gpr.user and gpr.key in ~/.gradle/gradle.properties, or the GITHUB_ACTOR and " +
+                "GITHUB_TOKEN environment variables, with a token that has read:packages. " +
+                "No other task needs them."
+            )
+        }
+    }
+}
+
+tasks.named("compileMermaidJava") {
+    dependsOn(checkMermaidCredentials)
 }
 
 tasks.register<JavaExec>("generateMermaid") {
     group = "code generation"
-    description = "Generates a Mermaid class diagram from the CRML EPackage"
-
-    dependsOn(tasks.compileJava)
+    description = "Generates a Mermaid class diagram from the CRML EPackage (needs GitHub Packages credentials)"
 
     val outputFile = layout.buildDirectory.file("generated/crml-diagram.mmd")
     outputs.file(outputFile)
 
-    classpath = sourceSets.main.get().runtimeClasspath
+    // Carries its own task dependencies, so compileMermaidJava runs first.
+    classpath = sourceSets["mermaid"].runtimeClasspath
     mainClass.set("crml.model.MermaidMain")
     args = listOf(outputFile.get().asFile.absolutePath)
 }
