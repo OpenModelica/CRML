@@ -1,0 +1,11 @@
+model PartialType is {
+   partial type Quantity is (Real q is rate*u + offset)  { 
+    String SIUnit;	// SI unit for quantity q
+    String userUnit;	// User unit for quantity q
+    Real u;		// Quantity q expressed in user units
+    Real rate;		// Conversion rate between user units and SI units
+    Real offset;		// offset between user units and SI units
+    };
+
+    PressureQuantity is Quantity (SIUnit = "Pa", userUnit = "bar", rate = 1.e5, offset = 0, u = 3);
+};
