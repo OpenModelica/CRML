@@ -1,0 +1,13 @@
+model PressureUnits is 
+    'Units'
+    union {
+        PressureBar P0 is 3; // value = 3 bar in user units and 3.e5 Pa in SI units
+        Pressure P1 is 10.e5 'Pa';
+        Pressure P2 is 3 'bar'; // conversion of bar to SI units is made automatically
+        Pressure P3 is (P1 + P2) 'bar'; // P1 and P2 are automatically converted to SI units, added and the results displayed in bar
+        Pressure P4 is (10.e5 'Pa' + 3 'bar') 'bar'; // P3 = P4
+        Real P5 is (P1 + 3 'bar') 'Pa'; //P1 and 3 are automatically converted to SI units, added and the results displayed in Pa
+        Pressure P6 is 3; // ERROR: ommiting the unit is NOT POSSIBLE because Pressure is a partial type that cannot be instantiated
+        Pressure P7 is 3 'K'; // ERROR: specifying a wrong unit is NOT POSSIBLE because K is not a subtype of Pressure
+        Pressure P8 is external 'bar'; // is allowed
+};
