@@ -40,5 +40,6 @@ The documentation for CRML can be found [HERE](documentation/crml_specification)
 
 # License
 
-See [OSMC-License.txt](OSMC-License.txt): the OSMC Public License (OSMC-PL) version 1.8 or the GNU AGPL version 3,
-as for [OpenModelica](https://github.com/OpenModelica/OpenModelica).
+The CRML compiler is under the OSMC Public License (OSMC-PL) version 1.8 or the GNU AGPL version 3, as for
+[OpenModelica](https://github.com/OpenModelica/OpenModelica), see [OSMC-License.txt](OSMC-License.txt).
+The libraries are under a different license.
