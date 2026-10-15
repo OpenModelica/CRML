@@ -37,3 +37,8 @@ You can use gradle to build the project from scratch.
 # CRML specification
 
 The documentation for CRML can be found [HERE](documentation/crml_specification)
+
+# License
+
+See [OSMC-License.txt](OSMC-License.txt): the OSMC Public License (OSMC-PL) version 1.8 or the GNU AGPL version 3,
+as for [OpenModelica](https://github.com/OpenModelica/OpenModelica).
