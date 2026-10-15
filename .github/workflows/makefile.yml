@@ -83,6 +83,46 @@ jobs:
       with:
         report_paths: '**/build/test-results/test/TEST-*.xml'
 
+  web:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+          distribution: 'temurin'
+          java-version: '17'
+    - uses: actions/setup-node@v4
+      with:
+          node-version: '20'
+
+    - name: build the crml-compiler for web browsers
+      run: ./gradlew :compiler:shadowJar :web:web
+
+    - name: compare the web build with the jar
+      run: |
+        MODELS=submodules/test-resources/src/main/resources/testModels
+        mkdir -p build
+        java -jar submodules/compiler/build/libs/compiler-all.jar -o build/web-expected \
+          $(find $MODELS -name '*.crml' | LC_ALL=C sort) > build/web-expected.log 2>&1
+        # the translator prints its traces to the standard output, so only the result is shown
+        node submodules/web/test/compare.mjs submodules/web/build/generated/teavm/js/crml.js \
+          $MODELS build/web-expected > build/web-compare.log || {
+          grep "^$MODELS" build/web-compare.log; tail -1 build/web-compare.log; exit 1; }
+        tail -1 build/web-compare.log
+        mkdir -p build/crml-compiler-web
+        cp submodules/web/build/generated/teavm/js/crml.js \
+           submodules/web/build/generated/teavm/wasm-gc/crml.wasm \
+           submodules/web/build/generated/teavm/wasm-gc/crml.wasm-runtime.js \
+           submodules/web/README.md build/crml-compiler-web/
+
+    - name: upload the crml-compiler for web browsers
+      uses: actions/upload-artifact@v4
+      with:
+        name: crml-compiler-web
+        path: ${{github.workspace}}/build/crml-compiler-web
+
 ## you can use this to run everything in a Docker container
 ##  test:
 ##    runs-on: ubuntu-latest
