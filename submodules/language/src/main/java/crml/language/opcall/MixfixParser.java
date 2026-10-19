@@ -11,7 +11,6 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import com.google.common.collect.Iterables;
 
 import crml.language.dom.BuildContext;
-import crml.language.pretty.Misc;
 import crml.model.language.Binding;
 import crml.model.language.ComputedValue;
 import crml.model.language.CustomOperator;
@@ -62,18 +61,27 @@ public class MixfixParser {
     }
 
     public Value parse(Sequence sequence) {
-        System.err.println("Processing sequence: " + Misc.pretty(sequence));
         SequenceCursor cursor = new SequenceCursor(sequence);
         Value result = expr(cursor, 0);
 
         if (!cursor.isExhausted()) {
-            System.err.println("Sequence not exhausetd.");
+            // The sequence is not a call to any operator in scope. Leaving it in
+            // place is deliberate: a consumer then sees an unresolved Sequence
+            // and can say so, rather than a silently wrong tree.
             return null;
         }
-        System.err.println("Computed value: "+result);
         return result;
     }
+
+    /**
+     * Replaces every Sequence below {@code root} that spells out a call to an
+     * operator in scope with the corresponding ComputedValue. Sequences that
+     * match no operator are left untouched.
+     */
     public void perform(EObject root){
+        if (root == null) {
+            return;
+        }
         for(EObject content :root.eContents()){
             if(content instanceof Sequence){
                 EObject host = content.eContainer();
@@ -82,11 +90,13 @@ public class MixfixParser {
 
                 if(value instanceof ComputedValue){
                     builder.set(host, feat, value);
+                    // Recurse into the arguments, which may themselves be calls.
+                    perform(value);
+                } else {
+                    // Unresolved: keep walking the sequence itself so nested
+                    // values still get their chance.
+                    perform(content);
                 }
-                perform(value);
-//                if(content instanceof SequenceValue){
-//                    perform(content);
-//                }
             } else {
                 perform(content);
             }
@@ -230,7 +240,6 @@ public class MixfixParser {
         }
 
         ComputedValue  call = factory.createComputedValue();
-        System.err.println("Create Computed value for operator "+op.getKeywords().get(0));
         call.setOperator(op);
 
         List<Variable> params = op.getVariables();

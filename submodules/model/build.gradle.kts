@@ -63,13 +63,12 @@ val emfCodegenVersion: String by rootProject.extra
 val xcoreVersion:      String by rootProject.extra
 val xcoreLibVersion:   String by rootProject.extra
 val xtextVersion:      String by rootProject.extra
+val xbaseLibVersion:   String by rootProject.extra
 
 // ─────────────────────────────────────────────
 //  Dependencies
 // ─────────────────────────────────────────────
 dependencies {
-    implementation("org.eclipse.emf:org.eclipse.emf.codegen.ecore:$emfCodegenVersion")
-
     // ── Xcore language support (build-time only) ──────────────────────────
     // These go on the classpath used by the Xtext builder to process .xcore
     // files and drive the EMF code generator.
@@ -86,6 +85,16 @@ dependencies {
     api("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
     api("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
     api("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
+
+    // xcore.lib asks for xbase.lib [2.18.0,3.0.0), which would resolve to the
+    // newest Xtext release. Xtext 2.26 and later are compiled for Java 11+, so
+    // hold xbase.lib at the last Java 8 release. strictly() is published with
+    // the api variant, so :language and :compiler get the same version.
+    constraints {
+        api("org.eclipse.xtext:org.eclipse.xtext.xbase.lib") {
+            version { strictly(xbaseLibVersion) }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -143,6 +152,22 @@ sourceSets {
         compileClasspath += sourceSets["main"].output
         runtimeClasspath += sourceSets["main"].output
     }
+}
+
+// GenModel generation, kept out of main because EMF codegen pulls
+// in Eclipse platform and JDT jars compiled for Java 17, which must not reach
+// the Java 8 runtime classpath. Only generateGenModel uses it, and that runs on
+// Gradle's own JVM.
+sourceSets.create("genmodel") {
+    compileClasspath += sourceSets["main"].output
+    runtimeClasspath += sourceSets["main"].output
+}
+
+configurations["genmodelImplementation"].extendsFrom(configurations["implementation"])
+configurations["genmodelRuntimeOnly"].extendsFrom(configurations["runtimeOnly"])
+
+dependencies {
+    "genmodelImplementation"("org.eclipse.emf:org.eclipse.emf.codegen.ecore:$emfCodegenVersion")
 }
 
 // Give the mermaid source set the same EMF dependencies as main, so
@@ -203,7 +228,7 @@ tasks.register<JavaExec>("generateGenModel") {
 
     outputs.file(outputFile)
 
-    classpath = sourceSets.main.get().runtimeClasspath
+    classpath = sourceSets["genmodel"].runtimeClasspath
     mainClass.set("crml.model.GenmodelMain")     
     
     args = listOf(

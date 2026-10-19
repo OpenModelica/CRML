@@ -17,8 +17,11 @@ dependencies {
     implementation(project(":model"))
 
     // ── ANTLR4 ───────────────────────────────────────────────────────────────
+    // The full tool (with ST4, ICU4J, antlr 3 and treelayout) is needed only
+    // by generateGrammarSource. The generated parser needs only the runtime,
+    // which must stay at the tool's version: the parser checks it on load.
     antlr("org.antlr:antlr4:$antlr4Version")
-    implementation("org.antlr:antlr4:$antlr4Version")
+    implementation("org.antlr:antlr4-runtime:$antlr4Version")
     implementation("org.apache.commons:commons-lang3:3.20.0")
 
     testImplementation(project(":util"))
@@ -34,6 +37,12 @@ dependencies {
     testImplementation("org.junit.platform:junit-platform-launcher")
 
     testImplementation("com.aventstack:extentreports:5.0.9")
+}
+
+// The antlr plugin makes api extend antlr, which would put the whole tool
+// back on the runtime classpath of this project and of every consumer.
+configurations.api {
+    setExtendsFrom(extendsFrom.filter { it.name != "antlr" })
 }
 
 // ─────────────────────────────────────────────

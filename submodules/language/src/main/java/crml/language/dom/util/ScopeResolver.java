@@ -25,29 +25,22 @@ import crml.model.language.Variable;
 public class ScopeResolver {
     public boolean link(EObject target, EStructuralFeature feature, String id, ScopeResolutionOptions options) {
         if (options != null && options.strategy == ResolutionStrategy.CONSTRUCTOR_BINDING) {
-            System.err.println("Binding resolution");
             EObject container = target.eContainer();
             while ((!(container instanceof ConstructorValue)) && (!(container instanceof Resource)) && (!(container instanceof ResourceSet))){
                 container =  container.eContainer();
             }
-            System.err.println("Container:" + container);
             if(container instanceof ConstructorValue){
-                System.err.println("Waypoint 1:");
                 ConstructorValue constructor = (ConstructorValue) container;
                 TypeReference typeref = constructor.getDomain();
                 if(typeref==null) return false;
                 if(typeref instanceof UserTypereference){
-                    System.err.println("Waypoint 2:");
                     UserTypereference userref = (UserTypereference) typeref;
                     Domain domain = userref.getDomain();
                     if(domain==null) return false;
                     if(domain instanceof Class){
-                        System.err.println("Waypoint 3:");
                         Class cls = (Class) domain;
                         for(Variable v :cls.getVariables()){
-                            System.err.println("Testing:" +v.getName());
                             if(id.equals(v.getName())){
-                                System.err.println("MATCHES");
                                 if (feature.isMany()) {
                                     ((EList) target.eGet(feature)).add(v);
                                 } else {
@@ -85,7 +78,6 @@ public class ScopeResolver {
         // If the current container is not in the processed one, we move a level up.
         // E.g., if the container is a Varaible or Operator (that cannot have childrent)
         // then we move to its container
-        System.err.println("Resolve (EObject): " + id + " in " + obj);
         if (obj instanceof Class) {
             return getCandidate((Class) obj, id, options);
         } else if (obj instanceof Model) {
@@ -102,7 +94,6 @@ public class ScopeResolver {
     }
 
     private EObject getCandidate(Class class1, String id, ScopeResolutionOptions options) {
-        System.err.println("Resolve (Class): " + id + " in " + class1);
         if (class1 == null) {
             return null;
         }
@@ -120,23 +111,18 @@ public class ScopeResolver {
     }
 
     private EObject getCandidate(Model model, String id, ScopeResolutionOptions options) {
-        System.err.println("Resolve (Model): " + id + " in " + model);
         if (model == null) {
             return null;
         }
 
         for (Variable v : model.getVariables()) {
-            System.err.println("Test variable (Model): " + v.getName());
             if (v.getName().equals(id) && isReadCompatible(v.getDomain(), null)) {
-                System.err.println("Test class (Model): MATCHES");
                 return v;
             }
         }
 
         for (Class v : model.getClasses()) {
-            System.err.println("Test class (Model): " + v.getName());
             if (v.getName().equals(id) && isReadCompatible(v, null)) {
-                System.err.println("Test class (Model): MATCHES");
                 return v;
             }
         }
@@ -144,7 +130,6 @@ public class ScopeResolver {
     }
 
     private EObject getCandidate(UserOperator op, String id, ScopeResolutionOptions options) {
-        System.err.println("Resolve (UserOperator): " + id + " in " + op);
         if (op == null) {
             return null;
         }
@@ -161,7 +146,6 @@ public class ScopeResolver {
     }
 
     private EObject getCandidate(Template op, String id, ScopeResolutionOptions options) {
-        System.err.println("Resolve (Template): " + id + " in " + op);
         if (op == null) {
             return null;
         }
