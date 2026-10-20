@@ -1,0 +1,55 @@
+name: Web release
+
+# Pushing a tag web-<version> publishes the web build of the translator as the
+# release <tag>: crml.js, crml.wasm, crml.wasm-runtime.js, the README and their
+# SHA-256 sums. OpenModelica downloads crml.js from it for its web OMEdit.
+on:
+  push:
+    tags: [ 'web-*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+          distribution: 'temurin'
+          java-version: '17'
+    - uses: actions/setup-node@v4
+      with:
+          node-version: '20'
+
+    - name: build the crml-compiler for web browsers
+      run: ./gradlew :compiler:shadowJar :web:web
+
+    - name: compare the web build with the jar
+      run: |
+        MODELS=submodules/test-resources/src/main/resources/testModels
+        mkdir -p build
+        java -jar submodules/compiler/build/libs/compiler-all.jar -o build/web-expected \
+          $(find $MODELS -name '*.crml' | LC_ALL=C sort) > build/web-expected.log 2>&1
+        node submodules/web/test/compare.mjs submodules/web/build/generated/teavm/js/crml.js \
+          $MODELS build/web-expected > build/web-compare.log || {
+          grep "^$MODELS" build/web-compare.log; tail -1 build/web-compare.log; exit 1; }
+        tail -1 build/web-compare.log
+
+    - name: publish the release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        mkdir -p build/crml-compiler-web
+        cp submodules/web/build/generated/teavm/js/crml.js \
+           submodules/web/build/generated/teavm/wasm-gc/crml.wasm \
+           submodules/web/build/generated/teavm/wasm-gc/crml.wasm-runtime.js \
+           submodules/web/README.md build/crml-compiler-web/
+        (cd build/crml-compiler-web && sha256sum crml.js crml.wasm crml.wasm-runtime.js README.md > SHA256SUMS)
+        cat build/crml-compiler-web/SHA256SUMS
+        gh release create "$GITHUB_REF_NAME" build/crml-compiler-web/* \
+          --title "CRML translator for web browsers, $GITHUB_REF_NAME" \
+          --notes "The CRML to Modelica translator built with TeaVM from $GITHUB_SHA, see submodules/web/README.md."

@@ -24,6 +24,13 @@ writes
 
 The CI uploads both as the artifact `crml-compiler-web`.
 
+## Release
+
+Pushing a tag `web-<version>`, e.g. `web-1.0.0`, publishes the release of that name with `crml.js`, `crml.wasm`,
+`crml.wasm-runtime.js`, this README and `SHA256SUMS` (`.github/workflows/web-release.yml`). The OpenModelica web
+OMEdit downloads `crml.js` from such a release, pinned by its version and SHA-256 sum, to translate CRML files.
+`crml.js` is reproducible: building the same sources gives the same file.
+
 ## Usage
 
 ```js
