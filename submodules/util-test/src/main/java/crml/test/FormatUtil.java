@@ -32,4 +32,10 @@ public class FormatUtil {
                     .toArray(DomContent[]::new)
             );
     }
+
+    /** The number of lines {@link #numcode} shows for {@code code}, ignoring a trailing newline. */
+    public static int lineCount(String code) {
+        String trimmed = code.endsWith("\n") ? code.substring(0, code.length() - 1) : code;
+        return trimmed.isEmpty() ? 0 : trimmed.split("\\R", -1).length;
+    }
 }

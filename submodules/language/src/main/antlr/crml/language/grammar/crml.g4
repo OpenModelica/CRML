@@ -130,7 +130,7 @@ exp
 	| period_op //# PoeriodOperationExpression
 	| iterator //# IteratorExpression
 	//| 'apply' cat=id 'on' '(' exp ')'
-//TODO: with mater on filter pre 
+//TODO: with master on pre
 // Unary operations
 	| lhs=exp uop0=('start' | 'end')
 	| uop1=('-' | '+' | 'par' ) rhs=exp //TODO do we need '+'?
@@ -145,6 +145,9 @@ exp
 	| lhs=exp bop4=('<'|'<='|'>='|'>'|'=='|'<>') rhs=exp
 	| lhs=exp bop5=('and'|'or') rhs=exp
 	| lhs=exp bop6='at' rhs=exp
+// Loosest: everything to its right is the condition, as the corpus writes it:
+// c filter (a) and (b) is c filter ((a) and (b)).
+	| lhs=exp bop7='filter' rhs=exp
 //
 //	| sqexp=exp? keyword=user_keyword+ (sqexp=exp?)+
  	| keyword=user_keyword rhs=exp //# UserRightExpression

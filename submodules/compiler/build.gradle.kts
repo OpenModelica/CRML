@@ -68,11 +68,38 @@ application {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Needs OpenModelica; run through verificationTest instead.
+        excludeTags("omc")
+    }
     testLogging {
         events("passed", "skipped", "failed")
     }
     ignoreFailures = true
+}
+
+/**
+ * End-to-end verification: simulates the generated Modelica with OpenModelica
+ * and compares it with the reference results. Skips every case if omc is not
+ * installed. Report: build/verification_report.html.
+ */
+tasks.register<Test>("verificationTest") {
+    group = "verification"
+    description = "Simulates the generated Modelica with omc and compares it with the reference results"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("omc")
+    }
+    systemProperty("crml.test.report", "build/verification_report.html")
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+    ignoreFailures = true
+    // omc is the bottleneck and every case reads the same libraries; running
+    // in parallel would only contend for the same CPU and disk.
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
 }
 
 tasks.jar {

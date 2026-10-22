@@ -5,33 +5,27 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import crml.compiler.crmlcv2.Diagnostic;
-import crml.compiler.crmlcv2.OMCv2;
 import crml.compiler.crmlcv2.TranslationResult;
 import crml.compiler.util.CodeWrapper;
 import crml.compiler.util.CompilerRoot;
+import crml.compiler.util.CrmlFrontEnd;
 import crml.compiler.util.DiagnosticsWrapper;
 import crml.compiler.util.ObjectModelWrapper;
 import crml.compiler.util.ThrowableWrapper;
 import crml.compiler.util.TraceWrapper;
-import crml.language.dom.DOMVisitor;
-import crml.language.dom.util.BuildResult;
-import crml.language.util.Parser;
-import crml.model.language.Model;
 import crml.test.ReportedTest;
 import crml.test.TestResourcesRoot;
 
 /**
  * Base for the OMCv2 (OM to Modelica) specification report: parses a CRML model,
- * builds its object model and feeds it to {@link OMCv2}, reporting the object
+ * builds its object model and feeds it to {@link crml.compiler.crmlcv2.OMCv2}, reporting the object
  * model, the generated Modelica, the CRML-to-Modelica trace and the diagnostics.
  * Subclasses only provide the subset of {@link #SPEC_DOC_EXAMPLES} they cover via
  * a static {@code fileNameSource()}.
@@ -67,59 +61,31 @@ public abstract class OMCv2SpecificationTest extends ReportedTest {
     public void translateToModelica(final Path fileName) throws IOException {
         emit(fileName, "CRML model");
 
-        Parser.ParserResult parsed = new Parser().parse(fileName);
-        if (parsed.syntax().hasErrors()) {
-            StringBuilder syntaxErrors = new StringBuilder();
-            for (Object syntaxError : parsed.syntax().errors()) {
-                syntaxErrors.append(syntaxError).append(System.lineSeparator());
-            }
-            emit(CodeWrapper.of(syntaxErrors.toString()), "Syntax errors");
+        CrmlFrontEnd run = CrmlFrontEnd.run(fileName);
+        if (run.hasSyntaxErrors()) {
+            emit(CodeWrapper.of(String.join(System.lineSeparator(), run.syntaxErrors())), "Syntax errors");
         }
-        Assumptions.assumeFalse(parsed.syntax().hasErrors(), "Model failed to parse");
+        Assumptions.assumeFalse(run.hasSyntaxErrors(), "Model failed to parse");
 
-        Throwable error = null;
-        EObject dom = null;
-        try {
-            DOMVisitor visitor = new DOMVisitor();
-            BuildResult result = visitor.build(parsed.ast());
-            if (result instanceof BuildResult.SingleBuildResult) {
-                dom = ((BuildResult.SingleBuildResult<?>) result).result();
-            }
-            visitor.linker();
-            // Natural-language operator calls are parsed as raw Sequences; this
-            // turns the ones that name an operator in scope into calls.
-            visitor.resolveOperatorCalls();
-        } catch (Throwable e) {
-            error = e;
+        if (run.dom() != null) {
+            emit(ObjectModelWrapper.of(run.dom()), "Object Model");
+        }
+        if (run.error() == null) {
+            Assumptions.assumeTrue(run.model() != null, "Definition is not a model (e.g. a library)");
         }
 
-        if (dom != null) {
-            emit(ObjectModelWrapper.of(dom), "Object Model");
+        TranslationResult result = run.translation();
+        if (result != null) {
+            emit(CodeWrapper.of(result.text()), "Modelica");
+            emit(TraceWrapper.of(result.trace()), "Trace");
+            emit(DiagnosticsWrapper.of(result.diagnostics()), "Diagnostics");
+        }
+        if (run.error() != null) {
+            emit(ThrowableWrapper.of(run.error()), "Error");
         }
 
-        List<Diagnostic> errors = new ArrayList<>();
-        if (error == null) {
-            Assumptions.assumeTrue(dom instanceof Model, "Definition is not a model (e.g. a library)");
-            try {
-                TranslationResult result = new OMCv2().translateModel((Model) dom);
-                emit(CodeWrapper.of(result.text()), "Modelica");
-                emit(TraceWrapper.of(result.trace()), "Trace");
-                emit(DiagnosticsWrapper.of(result.diagnostics()), "Diagnostics");
-                for (Diagnostic diagnostic : result.diagnostics()) {
-                    if (diagnostic.severity() == Diagnostic.Severity.ERROR) {
-                        errors.add(diagnostic);
-                    }
-                }
-            } catch (Throwable e) {
-                error = e;
-            }
-        }
-
-        if (error != null) {
-            emit(ThrowableWrapper.of(error), "Error");
-        }
-
-        assertNull(error, "OMCv2 translation threw an exception");
+        List<Diagnostic> errors = run.errors();
+        assertNull(run.error(), "OMCv2 translation threw an exception");
         assertEquals(0, errors.size(), "OMCv2 recorded ERROR diagnostics: " + errors);
     }
 }

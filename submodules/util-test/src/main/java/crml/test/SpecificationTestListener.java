@@ -9,6 +9,8 @@ import static j2html.TagCreator.p;
 import static j2html.TagCreator.pre;
 import static j2html.TagCreator.summary;
 
+import j2html.tags.specialized.DetailsTag;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
@@ -20,11 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -49,12 +49,6 @@ import static com.aventstack.extentreports.Status.FAIL;
 
 public class SpecificationTestListener implements TestExecutionListener, AfterEachCallback, AfterAllCallback {
 
-    // Keys whose CustomHtmlReporter content is rendered inside a collapsible
-    // <details> element instead of always-expanded — for large tree dumps
-    // (object model / DOM) that would otherwise dominate the report.
-    private static final Set<String> COLLAPSIBLE_KEYS = Stream.of("DOM", "Object Model")
-        .collect(Collectors.toSet());
-
     // Static report state shared across all instances
     private static ExtentSparkReporter reporter;
     private static ExtentReports extentReport;
@@ -74,9 +68,23 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     // Shared parameters (both paths)
     private static final Map<String, Map<String, ? extends Object>> SHARED = new HashMap<>();
 
+    /**
+     * {@code content} inside a {@code <details>} element, closed by default, so
+     * code, logs and tree dumps do not dominate the report. The summary line
+     * shows the key and, when given, a short note such as the size.
+     */
+    private static DetailsTag collapsed(String key, String note, Object content) {
+        return details(
+            summary(note == null || note.isEmpty() ? key : key + " (" + note + ")"),
+            join(content));
+    }
+
     private static synchronized void initReport() {
         if (!reportInitialized) {
-            reporter = new ExtentSparkReporter("build" + java.io.File.separator + "test_report.html");
+            // A task running a separate suite names its own report, so it does
+            // not overwrite the one the test task wrote.
+            reporter = new ExtentSparkReporter(System.getProperty("crml.test.report",
+                "build" + java.io.File.separator + "test_report.html"));
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
             extentReport.setAnalysisStrategy(AnalysisStrategy.SUITE);
@@ -211,12 +219,17 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
             if (entry.getValue() instanceof Path) {
+                // A file's contents are collapsed; its link stays visible.
                 Path path = (Path) entry.getValue();
                 try { 
                     String fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                    if (fileContent.indexOf('\0') >= 0) {
+                        // Binary, such as a simulation result: only the link is useful.
+                        throw new IOException(path + " is not a text file");
+                    }
                     node.info(join(
-                        p(join(entry.getKey(), br())),
-                        pre(FormatUtil.numcode(fileContent)),
+                        collapsed(entry.getKey(), FormatUtil.lineCount(fileContent) + " lines",
+                            pre(FormatUtil.numcode(fileContent))),
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 } catch (Exception e) {
@@ -225,33 +238,23 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 }     
-            } else if (entry.getValue() instanceof CustomHtmlReporter && COLLAPSIBLE_KEYS.contains(entry.getKey())) {
-                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
-                Object report;
-                try {
-                    report = syntax.report();
-                } catch (Exception e) {
-                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
-                    node.log(FAIL, e);
-                }
-                node.info(details(
-                    summary(entry.getKey()),
-                    join(report)
-                ).render());
             } else if (entry.getValue() instanceof CustomHtmlReporter) {
-                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
+                CustomHtmlReporter reporter = (CustomHtmlReporter) entry.getValue();
                 Object report;
                 try {
-                    report = syntax.report();
+                    report = reporter.report();
                 } catch (Exception e) {
                     report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
                     node.log(FAIL, e);
                 }
-                node.info(join(
-                    p(join(entry.getKey(), br())),
-                    report
-                    //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
-                ).render());
+                if (reporter.collapsible()) {
+                    node.info(collapsed(entry.getKey(), reporter.summary(), report).render());
+                } else {
+                    node.info(join(
+                        p(join(entry.getKey(), br())),
+                        report
+                    ).render());
+                }
             } else if (entry.getValue() instanceof String && "AST".equals(entry.getKey())) {
                     String ast = (String) entry.getValue();
                     node.info(details(

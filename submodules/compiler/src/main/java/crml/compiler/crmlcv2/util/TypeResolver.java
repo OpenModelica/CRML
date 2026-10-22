@@ -8,6 +8,7 @@ import crml.model.language.ConstructorValue;
 import crml.model.language.Domain;
 import crml.model.language.IndirectTypeReference;
 import crml.model.language.TypeReference;
+import crml.model.language.UnaryOperator;
 import crml.model.language.UserTypereference;
 import crml.model.language.Value;
 import crml.model.language.Variable;
@@ -136,6 +137,21 @@ public class TypeResolver implements Modelica {
         }
         if (value instanceof ConstructorValue) {
             return resolveBuiltin(((ConstructorValue) value).getDomain());
+        }
+        if (value instanceof UnaryOperator) {
+            // The operators whose result is an Event whatever their operand:
+            // typeinference.csv has TICK,EVENT,1,CLOCK and START/END,EVENT,1,PERIOD.
+            UnaryOperator unary = (UnaryOperator) value;
+            switch (unary.getOptype()) {
+                case TICK:
+                case START:
+                case END:
+                    return BuiltinType.EVENT;
+                case SUBEXPRESSION:
+                    return inferBuiltin(unary.getValue());
+                default:
+                    return null;
+            }
         }
         return null;
     }

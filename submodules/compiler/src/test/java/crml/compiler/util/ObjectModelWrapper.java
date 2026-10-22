@@ -20,6 +20,11 @@ public class ObjectModelWrapper implements CustomHtmlReporter {
         return pre(code(PrettyPrint.prettyPrint(model)));
     }
 
+    @Override
+    public boolean collapsible() {
+        return true;
+    }
+
     public static ObjectModelWrapper of(EObject model) {
         return new ObjectModelWrapper(model);
     }

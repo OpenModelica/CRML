@@ -22,6 +22,17 @@ public class ThrowableWrapper implements CustomHtmlReporter {
         return pre(code(sw.toString()));
     }
 
+    @Override
+    public boolean collapsible() {
+        return true;
+    }
+
+    /** The exception itself, so what went wrong is visible without expanding the stack trace. */
+    @Override
+    public String summary() {
+        return throwable.toString();
+    }
+
     public static ThrowableWrapper of(Throwable throwable) {
         return new ThrowableWrapper(throwable);
     }

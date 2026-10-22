@@ -221,9 +221,15 @@ public final class BinaryOperatorTransformer implements Modelica {
             Expression lhs, Expression rhs, BuiltinType lt, BuiltinType rt,
             BinaryOperatorKind modelicaOp, String symbol,
             boolean eventSupported, String eventFunction, boolean periodSupported) {
-        if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
+        // Event operands are looked through: "tick C >= P start" carries no
+        // return type, and would otherwise fall into the numeric branch and
+        // become Modelica's >= on two Event records. Only Event is inferred, so
+        // numeric and Boolean comparisons dispatch exactly as before.
+        boolean events = TypeResolver.inferBuiltin(op.getLhs()) == BuiltinType.EVENT
+            && TypeResolver.inferBuiltin(op.getRhs()) == BuiltinType.EVENT;
+        if (!events && isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return call(libraryRef("CRMLtoModelica.Functions.cvBooleanToBoolean4"), binary(modelicaOp, lhs, rhs));
-        } else if (eventSupported && lt == BuiltinType.EVENT && rt == BuiltinType.EVENT) {
+        } else if (eventSupported && events) {
             if (eventFunction == null) {
                 throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
                     "no CRMLtoModelica.Functions implementation exists for a strict Event "

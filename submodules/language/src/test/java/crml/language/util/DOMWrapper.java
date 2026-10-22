@@ -22,6 +22,11 @@ public class DOMWrapper implements CustomHtmlReporter {
         return pre(code(PrettyPrint.prettyPrint(dom)));
     }
 
+    @Override
+    public boolean collapsible() {
+        return true;
+    }
+
     public static DOMWrapper of(EObject dom) {
         return new DOMWrapper(dom);
     }

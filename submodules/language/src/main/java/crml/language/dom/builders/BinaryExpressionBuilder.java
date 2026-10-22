@@ -25,7 +25,8 @@ public class BinaryExpressionBuilder {
             context.bop3!=null ^ 
             context.bop4!=null ^ 
             context.bop5!=null ^ 
-            context.bop6!=null
+            context.bop6!=null ^
+            context.bop7!=null
         );
     }
 
@@ -50,6 +51,7 @@ public class BinaryExpressionBuilder {
         if(context.bop4!=null) return context.bop4.getText();
         if(context.bop5!=null) return context.bop5.getText();
         if(context.bop6!=null) return context.bop6.getText();
+        if(context.bop7!=null) return context.bop7.getText();
         throw new IllegalStateException("No binary operator found in context: "+context.getText());
     }
     private static BuiltinBinaryOperatorKind resolveBinaryOpCode(String text){
@@ -69,6 +71,7 @@ public class BinaryExpressionBuilder {
             case "or": return BuiltinBinaryOperatorKind.OR;
             case "mod": return BuiltinBinaryOperatorKind.MOD;
             case "^": return BuiltinBinaryOperatorKind.POW;
+            case "filter": return BuiltinBinaryOperatorKind.FILTER;
         
             default:
                 throw new IllegalStateException("Binary operator is not recognized: "+text);

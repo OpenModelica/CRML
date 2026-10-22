@@ -17,6 +17,16 @@ public class CodeWrapper implements CustomHtmlReporter {
         return pre(FormatUtil.numcode(code));
     }
 
+    @Override
+    public boolean collapsible() {
+        return true;
+    }
+
+    @Override
+    public String summary() {
+        return FormatUtil.lineCount(code) + " lines";
+    }
+
     public static CodeWrapper of(String code) {
         return new CodeWrapper(code);
     }
