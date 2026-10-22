@@ -34,10 +34,14 @@ import crml.language.grammar.crmlParser.OperatorContext;
 import crml.language.grammar.crmlParser.TemplateContext;
 import crml.language.grammar.crmlParser.TypeContext;
 import crml.language.grammar.crmlParser.Var_defContext;
+import crml.language.opcall.MixfixParser;
+import crml.model.language.Library;
+import crml.model.language.Model;
 import crml.model.language.Sequence;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
+    private EObject builtRoot;
     private final List<Function0<Boolean>> crossrefTasks = new ArrayList<>();
     private final List<Function0<Boolean>> modificationTasks = new ArrayList<>();
 
@@ -58,7 +62,10 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     }
 
     // routing — mechanical, no instanceof
-    @Override public BuildResult visitDefinition(DefinitionContext c) { return BuildResult.wrap(root.root(c)); }
+    @Override public BuildResult visitDefinition(DefinitionContext c) {
+        builtRoot = root.root(c);
+        return BuildResult.wrap(builtRoot);
+    }
     @Override public BuildResult visitVar_def(Var_defContext c) { return BuildResult.wrap(vars.variable(c)); }
     @Override public BuildResult visitType(TypeContext c) { return BuildResult.wrap(typeref.reference(c)); }
     @Override public BuildResult visitClass_def(Class_defContext c) { return BuildResult.wrap(cls.buildClass(c)); }
@@ -102,6 +109,27 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         }
     }
     
+    /**
+     * Replaces the natural-language operator calls in the built model - parsed
+     * as raw Sequences, since the grammar cannot know which operators are in
+     * scope - with ComputedValue calls to the operators they name.
+     *
+     * <p>Run this after {@link #linker()}: matching a call against an operator
+     * needs the operator declarations resolved. A Sequence that names no
+     * operator in scope is left as it is, so a consumer can report it rather
+     * than silently receiving a wrong tree.
+     */
+    public void resolveOperatorCalls(){
+        if (builtRoot instanceof Model) {
+            new MixfixParser((Model) builtRoot, this).perform(builtRoot);
+        } else if (builtRoot instanceof Library) {
+            new MixfixParser((Library) builtRoot, this).perform(builtRoot);
+        } else {
+            return;
+        }
+        modify();
+    }
+
     @Override
     public void set(EObject host, EStructuralFeature reference, EObject value) {
         if(host instanceof Sequence){

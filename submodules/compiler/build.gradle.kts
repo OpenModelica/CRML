@@ -11,6 +11,7 @@ repositories {
 dependencies {
     implementation(project(":language"))
     implementation(project(":model"))
+    implementation(project(":modelica")) 
     implementation(project(":util"))
 
     implementation("org.apache.logging.log4j:log4j-api") {

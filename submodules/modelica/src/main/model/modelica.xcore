@@ -1,0 +1,229 @@
+@GenModel(
+    bundleManifest="false",
+    modelDirectory="crml-modelica/src-gen",
+    complianceLevel="8.0"
+)
+package crml.model.modelica
+
+abstract class ModelicaElement {
+}
+
+/////////////////
+// References  //
+/////////////////
+
+enum RawReason {
+    UNRESOLVED = 0 // A lookup was attempted and found nothing. Unlike the others, a defect.
+    EXTERNAL_LIBRARY = 1 // A member of CRMLtoModelica.mo, which this compiler never parses.
+    MODELICA_BUILTIN = 2 // Part of the Modelica language: Real, Integer, String, mod, integer, time.
+    // The Modelica Standard Library, which CRMLtoModelica.mo does not itself
+    // depend on - a model using these needs MSL on the load path.
+    STANDARD_LIBRARY = 3
+}
+
+class Reference<T extends ModelicaElement> extends ModelicaElement {
+    refers T target
+    String rawText
+    RawReason reason
+}
+
+/////////////
+// Classes //
+/////////////
+
+enum ClassKind {
+    MODEL = 0
+    RECORD = 1
+    BLOCK = 2
+    FUNCTION = 3
+    PACKAGE = 4
+}
+
+class ClassDefinition extends ModelicaElement {
+    String name
+    ClassKind kind
+    Boolean partial
+    String comment
+
+    contains ExtendsClause[] extendsClauses
+    contains ClassDefinition[] nestedClasses
+    contains ComponentDeclaration[] components
+
+    contains Equation[] equations
+    contains Statement[] statements
+    contains Placeholder[] placeholders
+}
+
+class ExtendsClause extends ModelicaElement {
+    contains Reference<ClassDefinition> superClass
+}
+
+// The only raw-text node. Prints as a Modelica line comment, so it can never
+// produce executable Modelica; it makes a diagnosed gap visible in the .mo.
+class Placeholder extends ModelicaElement {
+    String message
+}
+
+////////////////
+// Components //
+////////////////
+
+enum Visibility {
+    PUBLIC = 0
+    PROTECTED = 1
+}
+
+enum Causality {
+    NONE = 0
+    INPUT = 1
+    OUTPUT = 2
+}
+
+enum Variability {
+    CONTINUOUS = 0
+    CONSTANT = 1
+}
+
+class ComponentDeclaration extends ModelicaElement {
+    String name
+    // Resolved to a generated class, or raw for a library or builtin type.
+    // "declaredType" rather than "type": type is a reserved word in Xcore.
+    contains Reference<ClassDefinition> declaredType
+    Visibility visibility
+    Causality causality
+    Variability variability
+
+    // Empty means a scalar component.
+    contains ArrayDimension[] arrayDimensions
+    // The "(a = x, b = y)" part.
+    contains ModificationElement[] modifications
+    // The "= expr" part. Kept separate from the modifications even though
+    // Modelica's grammar folds them together: generators want "declare x of
+    // type T equal to e", and the printer re-joins the two.
+    contains Expression binding
+    String comment
+}
+
+// A null size prints as ":".
+class ArrayDimension extends ModelicaElement {
+    contains Expression size
+}
+
+// Flat: a modification binds one member to one expression. Modelica allows
+// nesting - T t(m(start = 0)) - but CRML cannot express it, because a Binding
+// refers to a single Element and so has no dotted member path.
+class ModificationElement extends ModelicaElement {
+    String name
+    contains Expression value
+}
+
+//////////////////////////
+// Sections and bodies  //
+//////////////////////////
+
+class Equation extends ModelicaElement {
+    contains Expression lhs
+    contains Expression rhs
+    String comment
+}
+
+// An assignment: "target := value". The only statement kind the transformation
+// produces, for the algorithm body of an operator compiled to a function.
+class Statement extends ModelicaElement {
+    contains ComponentReference target
+    contains Expression value
+    String comment
+}
+
+/////////////////
+// Expressions //
+/////////////////
+
+abstract class Expression extends ModelicaElement {
+}
+
+// A dotted, optionally subscripted name: a.b[1].c
+class ComponentReference extends Expression {
+    contains ReferencePart[] parts
+}
+
+class ReferencePart extends ModelicaElement {
+    String name
+    contains Expression[] subscripts
+}
+
+enum BinaryOperatorKind {
+    ADD = 0
+    SUB = 1
+    MUL = 2
+    DIV = 3
+    POW = 4
+    AND = 5
+    OR = 6
+    EQ = 7
+    NEQ = 8
+    LT = 9
+    LE = 10
+    GT = 11
+    GE = 12
+}
+
+enum UnaryOperatorKind {
+    PLUS = 0
+    MINUS = 1
+    NOT = 2 // This is Modelica NOT, different from CRML's not
+}
+
+class BinaryExpression extends Expression {
+    BinaryOperatorKind operator
+    contains Expression lhs
+    contains Expression rhs
+}
+
+class UnaryExpression extends Expression {
+    UnaryOperatorKind operator
+    contains Expression operand
+}
+
+// Flat name, positional arguments. Every call the transformation emits is
+// positional, and Modelica builtins (pre, edge, time, integer, String, ...) are
+// ordinary calls here - the printer treats them identically.
+class FunctionCall extends Expression {
+    contains Reference<ClassDefinition> function
+    contains Expression[] arguments
+}
+
+// Flat: CRML's IfValue has exactly one condition, and elseif chains arise from
+// nesting rather than from a branch list.
+class IfExpression extends Expression {
+    contains Expression condition
+    contains Expression thenExpression
+    contains Expression elseExpression
+}
+
+// {a, b, c}
+class ArrayConstructor extends Expression {
+    contains Expression[] elements
+}
+
+class ParenthesizedExpression extends Expression {
+    contains Expression inner
+}
+
+class IntegerLiteral extends Expression {
+    Integer value
+}
+
+class RealLiteral extends Expression {
+    // The source spelling, when there was one; otherwise value is printed.
+    String literal
+    Double value
+}
+
+class StringLiteral extends Expression {
+    String value
+}
+
+class BooleanLiteral extends Expression {
+    Boolean value
+}

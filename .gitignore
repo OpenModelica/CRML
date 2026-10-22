@@ -1,8 +1,11 @@
 # Ignore Gradle project-specific cache directory
 .gradle
 
-# Ignore Gradle build output directory
-build
+# Ignore Gradle build output directories. Anchored: an unqualified "build"
+# also matches a source package named build, which silently kept
+# crml/modelica/build/Modelica.java out of the repository.
+/build/
+/submodules/*/build/
 
 # Ignore translated tests
 generated

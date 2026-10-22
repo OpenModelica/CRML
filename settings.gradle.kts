@@ -13,6 +13,7 @@ include(
         "util",
         "util-test",
         "model",
+        "modelica",
         "language",
         "compiler",
         "test-resources",
