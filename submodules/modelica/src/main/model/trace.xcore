@@ -1,0 +1,32 @@
+@GenModel(
+    bundleManifest="false",
+    modelDirectory="crml-modelica/src-gen",
+    complianceLevel="8.0"
+)
+package crml.model.trace
+
+import org.eclipse.emf.ecore.EObject
+
+class TraceModel {
+    contains TraceLink[] links
+}
+
+enum TraceLinkKind {
+    MODEL_TO_CLASS = 0
+    CLASS_TO_MODEL = 1
+    OPERATOR_TO_FUNCTION = 2
+    OPERATOR_TO_BLOCK = 3
+    VARIABLE_TO_COMPONENT = 4
+    VARIABLE_TO_EQUATION = 5
+    VALUE_TO_COMPONENT = 6
+    VALUE_TO_EQUATION = 7
+    SET_TO_COMPONENT = 8
+    UNSUPPORTED = 9
+}
+
+class TraceLink {
+    refers EObject crml
+    refers EObject modelica
+    TraceLinkKind kind
+    String note
+}

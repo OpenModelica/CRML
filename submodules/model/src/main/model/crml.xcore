@@ -1,0 +1,450 @@
+@GenModel(
+    bundleManifest="false",
+    modelDirectory="crml-model/src-gen",
+    complianceLevel="8.0"
+)
+package crml.model.language
+
+
+abstract class NamedEntity {
+    id String name
+}
+
+/////////////////////////////
+// ??????????????????????? //
+///////////////////////////// 
+
+abstract class Element extends NamedEntity{
+    // TODO: must have a domain
+    // TODO: must have a name
+    // TODO: name must be unique in the class
+    contains Value definition
+    Boolean external // TODO mutually exclusive with definition
+}
+
+class Variable extends Element, OperatorHeaderElement {
+    contains TypeReference domain
+    Boolean constant
+
+}
+
+abstract class Object extends Element {
+    refers Class domain
+    contains Variable[] variables
+    contains Object[] objects
+    contains Set<?>[] sets
+    contains Period frame //Optional to have
+}
+
+class Binding {
+    refers Element element
+    contains Value value
+}
+
+/////////////////////////////
+// Templates and Operators //
+/////////////////////////////
+
+abstract class Operator extends NamedEntity{
+    contains TypeReference domain
+    //override getName() {
+    //    return "Placeholder operator name";
+    //}
+}
+
+enum BuiltinUnaryOperatorKind {
+    PAR = 14
+    PRE = 16 //?? 
+    NOT = 17
+    CARD = 18
+    LOG10 = 24
+    COS = 25
+    ACOS = 26
+    SIN = 27
+    ASIN = 28
+    START = 29   // right_op: exp 'start'
+    END = 30     // right_op: exp 'end'
+    SUBEXPRESSION = 31
+    EXP_OP = 101
+    SUB = 102 // has both unary and binary form
+    ADD = 103 // has both unary and binary form
+    LOG = 104 // has both unary and binary form
+    TICK = 51
+}
+
+class UnaryOperator extends Operator, Value {
+    BuiltinUnaryOperatorKind optype
+    contains Value value
+
+}
+
+enum BuiltinBinaryOperatorKind {
+    AND = 0
+    MUL = 1
+    ADD = 2
+    SUB = 3
+    DIV = 4
+    WITH = 5
+    MASTER = 6
+    ON = 7
+    FILTER = 8
+    LE = 9
+    LT = 10
+    GE = 11
+    GT = 12
+    NEQ = 13
+    PAR = 14
+    EQ = 15
+    OR = 19
+    POW = 20
+    MOD = 21
+    LOG = 23
+    AT = 101
+}
+
+class BinaryOperator extends Operator, Value {
+    BuiltinBinaryOperatorKind optype
+    contains Value rhs
+    contains Value lhs
+}
+abstract class CustomOperator extends Operator {
+    contains OperatorHeaderElement[] header
+    contains Value definition
+
+    op Keyword[] getKeywords() {
+        header.filter(Keyword).toEList
+    }
+    op Variable[] getVariables() {
+        header.filter(Variable).toEList
+    }
+    op int getArity() {
+        header.filter(Variable).size
+    }
+    op boolean startsWithValue() {
+        !header.isEmpty && header.head instanceof Variable
+    }
+    op boolean endsWithValue() {
+        !header.isEmpty && header.get(header.size - 1) instanceof Variable
+    }
+}
+
+class Template extends CustomOperator {
+
+}
+
+class UserOperator extends CustomOperator {
+
+}
+
+abstract class OperatorHeaderElement {
+
+}
+
+//class Parameter extends OperatorHeaderElement {
+//    contains Variable variable
+//}
+
+class Keyword extends OperatorHeaderElement{
+    String keyword
+}
+
+///////////
+// Types //
+///////////
+abstract class Domain {
+    // TODO: A domain is a finite or infinite set of elements of the same kind. 
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    Boolean partial
+    // TODO: a domain can be aliased
+}
+
+class CRMLType {
+    // TODO: Therefore, the words ‘type’ and ‘domain’ are synonymous. (specs)
+}
+
+class Clock {
+
+}
+
+class DiscreteClock {
+
+}
+
+class Period {
+    refers Event start
+    refers Event end
+}
+
+class Periods {
+    refers Period[] Periods
+    // TODO event based generator?
+}
+
+class Boolean4 {
+    refers BooleanConstant value // TODO??
+}
+
+class Requirement extends Boolean4 {
+    // TODO should this be implemented in CRML?
+}
+class Event {
+    refers Boolean4 boolean
+}
+
+//class Operator { implemented elsewhere
+//
+//}
+
+class Category extends Operator{
+    // Categories are operators on operators.
+    refers Operator f
+}
+
+class Set<D> extends Element, Value {
+    contains TypeReference domain
+    contains D[] elements
+}
+
+class Class extends Domain, NamedEntity {
+    // Domain of all objects, have the same attributes but no devinition (is it really practical? default values?)
+    // TODO: A domain is a finite or infinite set of elements of the same kind. 
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    // Boolean partial // inherits from domain
+    // TODO: a domain can be aliased
+
+    refers Class[] superClasses
+
+    contains Variable[] variables
+    
+    // TODO class specialization
+}
+
+class PowerClass {
+    // sets of objects of Class c (from specs)
+    // TODO where it isu used? 
+}
+
+class Library extends NamedEntity {
+    //contains Element[] elements // TODO derived maybe?
+    contains Dependency[] superlibs
+    // TODO: A library can contain domain extensions
+    // TODO: A library can contain domain specializations
+    contains Class[] classes
+    contains Operator[] operators
+    //contains Template[] templates // Not in specs, but might be good to have
+    // TODO: A library can contain categories
+}
+
+class Model extends Library {
+    contains Object[] objects
+    contains Variable[] variables
+    contains Set<?>[] sets
+    contains Period frame
+}
+
+class Package {
+    contains Package[] subpackages
+    contains Library[] libraries
+    contains Model[] models
+}
+
+/////////////////////
+// Primitive times //
+/////////////////////
+
+enum BooleanLiteral {
+    TRUE = 0
+    FALSE = 1
+    UNDECIDED = 2
+    UNDEFINED = 3
+}
+
+class NaturalNumber {
+
+}
+
+// EInteger?
+//class Integer {
+//
+//}
+
+class Real {
+
+}
+
+class ComplexNumber {
+
+}
+
+// EString?
+//class String {
+//
+//}
+
+///////////////////////
+// Ideas for values and Expressions
+/////////////////////////
+
+abstract class Value {
+    contains TypeReference returnType
+}
+
+class VariableReference extends Value {
+    refers Variable variable
+}
+
+class ComputedValue extends Value {
+    refers CustomOperator operator
+    contains Binding[] bindings
+}
+
+class PeriodsValue extends Value {
+    Boolean isStartInclusive
+    Boolean isEndInclusive
+    contains Value startValue
+    contains Value endValue
+}
+
+class IntegrateValue extends Value {
+    contains Value integrand
+    contains Value interval
+}
+
+class DurationValue extends Value {
+    contains Value exp1
+    contains Value exp2
+}
+
+class ProjectionValue extends Value {
+    contains Value p1
+    contains Value p2
+    contains Value opt
+}
+
+class IfValue extends Value {
+    contains Value condition
+    contains Value then
+    contains Value othervise
+}
+
+class ConstructorValue extends Value {
+    contains TypeReference domain
+
+    //TODO: (validation) bindings and value should be mutually exclusive
+    contains Binding[] bindings
+    contains Value value
+
+}
+
+abstract class ConstantValue extends Value {
+
+}
+
+class BooleanConstant extends ConstantValue {
+    BooleanLiteral value
+}
+
+class IntegerConstant extends ConstantValue {
+    Integer value
+}
+
+class RealConstant extends ConstantValue {
+    String literal
+    Double value
+}
+
+class TimeValue extends ConstantValue{
+    // in the grammar this is handled as a constant. not sure why
+}
+
+class StringConstant extends ConstantValue {
+    String rawString
+}
+
+// Sequences are raw containers for natural language operator calls
+// An object model shall be free of any Sequence
+// Sequences should be transformed to function calls
+abstract class Sequence extends Value {
+    op Sequence getNext()
+    op void setNext2(Sequence next)
+
+
+    op Sequence tail() {
+        if (getNext() === null) {
+            return this
+        } else {
+            return getNext().tail()
+        }
+    }
+}
+
+class SequenceValue extends Sequence {
+    contains SequenceKeyword next
+    contains Value value
+
+    op void setNext2(Sequence next) {
+        if (next instanceof SequenceKeyword) {
+            setNext(next as SequenceKeyword)    
+        } else {
+            throw new IllegalArgumentException(
+                "Incompatible type for next: " + next.eClass().getName())
+        }
+        
+    }
+}
+
+class SequenceKeyword extends Sequence {
+    contains Sequence next
+    String keyword
+
+    op void setNext2(Sequence next) {
+        setNext(next)
+    }
+}
+///////////
+// Types //
+///////////
+
+abstract class TypeReference {
+
+}
+
+class IndirectTypeReference extends TypeReference {
+    refers TypeReference referredType
+}
+
+class BuiltinTypeReference extends TypeReference {
+    BuiltinType builtinType
+}
+
+enum BuiltinType { // TODO: Change string literal to modelica connector names
+    STRING = 0,
+    BOOLEAN = 1,
+    INTEGER = 2,
+    REAL = 3,
+    EVENT = 4,
+    CLOCK = 5,
+    PERIOD = 6,
+    PERIODS = 7,
+    REQUIREMENT = 8
+}
+
+class UserTypereference extends TypeReference {
+    refers Domain domain
+}
+
+//////////////////
+// Dependencies //
+//////////////////
+
+abstract class Dependency {
+
+}
+
+class ModelDependency extends Dependency {
+    refers Model referedModel
+}

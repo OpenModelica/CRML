@@ -19,6 +19,19 @@ test: tests
 tests:
 	$(GRADLE_CMD) test
 
+test-dom:
+	$(GRADLE_CMD) :language:clean :language:test --tests "crml.language.dom.specification.*"
+
+test-crmlcv2:
+	$(GRADLE_CMD) :compiler:clean :compiler:test --tests "crml.compiler.crmlcv2.specification.*"
+
+# Simulates the generated Modelica with omc and compares it with the reference
+# results. Picks up every class in crml.compiler.crmlcv2.verification named
+# Verification<Suite>; SUITE narrows it, e.g. make test-verification SUITE=ETL.
+# Report: submodules/compiler/build/verification_report.html
+test-verification:
+	$(GRADLE_CMD) :compiler:verificationTest --tests "crml.compiler.crmlcv2.verification.Verification$(SUITE)*"
+
 test-etl:
 	$(GRADLE_CMD) test --tests "ctests.ETLTests*"
 
