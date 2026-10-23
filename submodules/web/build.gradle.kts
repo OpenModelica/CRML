@@ -9,6 +9,10 @@
  * for log4j, Eclipse/OSGi and the JDK classes TeaVM lacks, and the TeaVM
  * plug-in and substitution policy in crml.web.teavm.
  */
+import com.sun.net.httpserver.HttpServer
+import java.net.InetSocketAddress
+import java.nio.file.Files
+
 plugins {
     id("java")
     id("antlr")
@@ -110,6 +114,63 @@ tasks.named("copyWasmGCRuntime") {
             }
             check(patched != text) { "No WeakRef to patch in ${file.name}; check the TeaVM runtime" }
             file.writeText(patched)
+        }
+    }
+}
+
+// A page that translates the CRML typed into it with crml.js or crml.wasm.
+val demoDir = layout.buildDirectory.dir("demo")
+
+val demo by tasks.registering(Sync::class) {
+    group = "build"
+    description = "Assembles the demo page with the JavaScript and WebAssembly translators in build/demo."
+    dependsOn("generateJavaScript", "buildWasmGC")
+    from("demo")
+    from(layout.buildDirectory.dir("generated/teavm/js")) { into("js") }
+    from(layout.buildDirectory.dir("generated/teavm/wasm-gc")) { into("wasm-gc") }
+    into(demoDir)
+}
+
+// Browsers load ES modules and WebAssembly only over HTTP, so the demo is
+// served, by the JDK's HTTP server, until the build is stopped with Ctrl+C:
+//   ./gradlew :web:serveDemo [-Pport=8000]
+tasks.register("serveDemo") {
+    group = "application"
+    description = "Serves the demo page on http://localhost:<port>/ (-Pport, default 8000) until stopped."
+    dependsOn(demo)
+    val port = (project.findProperty("port") ?: "8000").toString().toInt()
+    val root = demoDir.map { it.asFile.toPath().toAbsolutePath().normalize() }
+    doLast {
+        val dir = root.get()
+        val types = mapOf(
+            "html" to "text/html; charset=utf-8",
+            "js" to "text/javascript; charset=utf-8",
+            "wasm" to "application/wasm"
+        )
+        val server = HttpServer.create(InetSocketAddress(port), 0)
+        server.createContext("/") { exchange ->
+            exchange.use {
+                val path = it.requestURI.path.removePrefix("/").ifEmpty { "index.html" }
+                val file = dir.resolve(path).normalize()
+                if (!file.startsWith(dir) || !Files.isRegularFile(file)) {
+                    it.sendResponseHeaders(404, -1)
+                } else {
+                    val bytes = Files.readAllBytes(file)
+                    it.responseHeaders.add("Content-Type",
+                        types[file.fileName.toString().substringAfterLast('.')] ?: "application/octet-stream")
+                    // So that a page reloaded after a rebuild gets the new translator.
+                    it.responseHeaders.add("Cache-Control", "no-store")
+                    it.sendResponseHeaders(200, bytes.size.toLong())
+                    it.responseBody.write(bytes)
+                }
+            }
+        }
+        server.start()
+        logger.lifecycle("Serving $dir on http://localhost:$port/ — stop with Ctrl+C")
+        try {
+            Thread.currentThread().join()
+        } finally {
+            server.stop(0)
         }
     }
 }

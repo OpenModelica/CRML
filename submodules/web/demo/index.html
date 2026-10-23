@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRML translator</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --border: #d0d7de;
+    --panel: #f6f8fa; --error: #cf222e; --accent: #0969da;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --border: #30363d;
+      --panel: #161b22; --error: #ff7b72; --accent: #4493f8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 system-ui, sans-serif;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-bottom: 12px; }
+  h1 { font-size: 18px; margin: 0; }
+  label { color: var(--muted); }
+  select, input {
+    font: inherit; color: var(--fg); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
+  }
+  #status { color: var(--muted); margin-left: auto; }
+  main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
+  section { display: flex; flex-direction: column; min-height: 0; }
+  h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+  textarea, pre {
+    flex: 1; margin: 0; padding: 8px; min-height: 0; overflow: auto;
+    font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--fg); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; tab-size: 4;
+  }
+  textarea { resize: none; }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  pre.error { color: var(--error); }
+</style>
+</head>
+<body>
+<header>
+  <h1>CRML to Modelica</h1>
+  <label>Build
+    <select id="target">
+      <option value="js">JavaScript (crml.js)</option>
+      <option value="wasm">WebAssembly (crml.wasm)</option>
+    </select>
+  </label>
+  <label>within <input id="within" size="16" placeholder="(none)"></label>
+  <span id="status">loading…</span>
+</header>
+<main>
+  <section>
+    <h2>CRML</h2>
+    <textarea id="crml" spellcheck="false">model Foo is {
+    Boolean b1 is true;
+    Boolean b2 is not b1;
+    Boolean b3 is b1 and b2;
+};</textarea>
+  </section>
+  <section>
+    <h2>Modelica</h2>
+    <pre id="out"></pre>
+  </section>
+</main>
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const translators = {};
+
+  // The translate function of each build, loaded the first time it is chosen.
+  async function translator(target) {
+    if (!translators[target]) {
+      translators[target] = target === 'js'
+        ? import('./js/crml.js').then((m) => m.translate)
+        : loadWasm();
+    }
+    return translators[target];
+  }
+
+  async function loadWasm() {
+    if (typeof TeaVM === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = './wasm-gc/crml.wasm-runtime.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('cannot load crml.wasm-runtime.js'));
+        document.head.append(script);
+      });
+    }
+    const { exports } = await TeaVM.wasmGC.load('./wasm-gc/crml.wasm');
+    return exports.translate;
+  }
+
+  let pending = 0;
+  async function run() {
+    const ticket = ++pending;
+    const target = $('target').value;
+    try {
+      const translate = await translator(target);
+      if (ticket !== pending) return;
+      const start = performance.now();
+      const result = translate($('crml').value, $('within').value);
+      const ms = (performance.now() - start).toFixed(1);
+      $('out').textContent = result;
+      $('out').classList.toggle('error', result.startsWith('ERROR '));
+      $('status').textContent = `${target === 'js' ? 'crml.js' : 'crml.wasm'}: ${ms} ms`;
+    } catch (e) {
+      if (ticket !== pending) return;
+      $('out').textContent = String(e);
+      $('out').classList.add('error');
+      $('status').textContent = target === 'wasm' ? 'WebAssembly GC is not available' : 'failed';
+    }
+  }
+
+  let timer;
+  const later = () => { clearTimeout(timer); timer = setTimeout(run, 200); };
+  $('crml').addEventListener('input', later);
+  $('within').addEventListener('input', later);
+  $('target').addEventListener('change', run);
+  // ?build=wasm opens the page with the WebAssembly build.
+  if (new URLSearchParams(location.search).get('build') === 'wasm') $('target').value = 'wasm';
+  run();
+</script>
+</body>
+</html>

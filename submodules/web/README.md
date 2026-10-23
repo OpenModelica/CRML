@@ -65,6 +65,17 @@ or
 `translate` returns the Modelica text that the omcv2 pipeline gives on the JVM for the same CRML file, or a text
 starting with `ERROR ` when the translation fails.
 
+## Demo
+
+```bash
+./gradlew :web:serveDemo            # or -Pport=<port>, the default is 8000
+```
+
+builds both translators and serves `demo/index.html` with them on `http://localhost:8000/` until stopped with
+Ctrl+C. The page translates the CRML typed into it as you type, with `crml.js` or, chosen in the page or with
+`?build=wasm`, with `crml.wasm`. `./gradlew :web:demo` only assembles the page in `build/demo`, for another server:
+browsers load ES modules and WebAssembly only over HTTP.
+
 ## Test
 
 ```bash
