@@ -130,3 +130,18 @@ sourceSets {
 }
 
 // Equivalent to: ./gradlew test --tests "ctests.*TLTests"
+// Writes the Modelica text of every test model as the omcv2 pipeline gives
+// it, the reference that the web build is compared with:
+//   ./gradlew :compiler:translateModels -Pmodels=<dir> -Pout=<dir>
+// Relative directories are taken from the root of the repository.
+tasks.register<JavaExec>("translateModels") {
+    group = "verification"
+    description = "Translates the .crml files under -Pmodels into -Pout, the reference for the web build"
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("crml.compiler.util.TranslateModels")
+    args = listOf(
+        rootProject.file(project.findProperty("models")
+            ?: "submodules/test-resources/src/main/resources/testModels").path,
+        rootProject.file(project.findProperty("out") ?: "build/web-expected").path
+    )
+}

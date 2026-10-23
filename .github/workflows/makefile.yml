@@ -95,22 +95,21 @@ jobs:
           java-version: '17'
     - uses: actions/setup-node@v4
       with:
-          node-version: '20'
+          node-version: '22'
 
     - name: build the crml-compiler for web browsers
-      run: ./gradlew :compiler:shadowJar :web:web
+      run: ./gradlew :web:web
 
-    - name: compare the web build with the jar
+    - name: compare the web build with the JVM
       run: |
         MODELS=submodules/test-resources/src/main/resources/testModels
-        mkdir -p build
-        java -jar submodules/compiler/build/libs/compiler-all.jar -o build/web-expected \
-          $(find $MODELS -name '*.crml' | LC_ALL=C sort) > build/web-expected.log 2>&1
-        # the translator prints its traces to the standard output, so only the result is shown
-        node submodules/web/test/compare.mjs submodules/web/build/generated/teavm/js/crml.js \
-          $MODELS build/web-expected > build/web-compare.log || {
-          grep "^$MODELS" build/web-compare.log; tail -1 build/web-compare.log; exit 1; }
-        tail -1 build/web-compare.log
+        ./gradlew :compiler:translateModels -Pmodels=$MODELS -Pout=build/web-expected
+        for BUILD in submodules/web/build/generated/teavm/js/crml.js \
+                     submodules/web/build/generated/teavm/wasm-gc/crml.wasm; do
+          node submodules/web/test/compare.mjs $BUILD $MODELS build/web-expected > build/web-compare.log || {
+            grep "^$MODELS" build/web-compare.log; tail -1 build/web-compare.log; exit 1; }
+          echo "$(basename $BUILD): $(tail -1 build/web-compare.log)"
+        done
         mkdir -p build/crml-compiler-web
         cp submodules/web/build/generated/teavm/js/crml.js \
            submodules/web/build/generated/teavm/wasm-gc/crml.wasm \
