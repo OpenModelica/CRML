@@ -28,6 +28,7 @@
     font: inherit; color: var(--fg); background: var(--panel);
     border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
   }
+  #model { max-width: 22em; }
   #status { color: var(--muted); margin-left: auto; }
   main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; }
   @media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
@@ -47,6 +48,11 @@
 <body>
 <header>
   <h1>CRML to Modelica</h1>
+  <label>Model
+    <select id="model">
+      <option value="">Example</option>
+    </select>
+  </label>
   <label>Build
     <select id="target">
       <option value="js">JavaScript (crml.js)</option>
@@ -98,6 +104,46 @@
     return exports.translate;
   }
 
+  // The test models, from models.json, grouped by their directory.
+  const example = $('crml').value;
+  const params = new URLSearchParams(location.search);
+
+  async function listModels() {
+    const response = await fetch('./models.json');
+    if (!response.ok) return;
+    const groups = new Map();
+    for (const path of await response.json()) {
+      const slash = path.lastIndexOf('/');
+      const dir = path.substring(0, slash);
+      if (!groups.has(dir)) {
+        const group = document.createElement('optgroup');
+        group.label = dir;
+        groups.set(dir, group);
+        $('model').append(group);
+      }
+      groups.get(dir).append(new Option(path.substring(slash + 1).replace(/\.crml$/, ''), path));
+    }
+  }
+
+  // Keeps the address readable and shareable: ?build=wasm&model=testModels/a/B.crml.
+  function updateUrl() {
+    const search = [...params].map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2F/g, '/')}`).join('&');
+    history.replaceState(null, '', search ? '?' + search : location.pathname);
+  }
+
+  async function openModel(path) {
+    if (path) {
+      const response = await fetch('./models/' + path);
+      $('crml').value = response.ok ? await response.text() : `// cannot load ${path}`;
+      params.set('model', path);
+    } else {
+      $('crml').value = example;
+      params.delete('model');
+    }
+    updateUrl();
+    run();
+  }
+
   let pending = 0;
   async function run() {
     const ticket = ++pending;
@@ -123,10 +169,25 @@
   const later = () => { clearTimeout(timer); timer = setTimeout(run, 200); };
   $('crml').addEventListener('input', later);
   $('within').addEventListener('input', later);
-  $('target').addEventListener('change', run);
-  // ?build=wasm opens the page with the WebAssembly build.
-  if (new URLSearchParams(location.search).get('build') === 'wasm') $('target').value = 'wasm';
-  run();
+  $('target').addEventListener('change', () => {
+    if ($('target').value === 'wasm') params.set('build', 'wasm');
+    else params.delete('build');
+    updateUrl();
+    run();
+  });
+  $('model').addEventListener('change', () => openModel($('model').value));
+
+  // ?build=wasm opens the page with the WebAssembly build, ?model=<path> with
+  // that model of models.json.
+  if (params.get('build') === 'wasm') $('target').value = 'wasm';
+  await listModels();
+  const model = params.get('model');
+  if (model && [...$('model').options].some((o) => o.value === model)) {
+    $('model').value = model;
+    await openModel(model);
+  } else {
+    run();
+  }
 </script>
 </body>
 </html>

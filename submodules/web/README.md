@@ -73,8 +73,12 @@ starting with `ERROR ` when the translation fails.
 
 builds both translators and serves `demo/index.html` with them on `http://localhost:8000/` until stopped with
 Ctrl+C. The page translates the CRML typed into it as you type, with `crml.js` or, chosen in the page or with
-`?build=wasm`, with `crml.wasm`. `./gradlew :web:demo` only assembles the page in `build/demo`, for another server:
-browsers load ES modules and WebAssembly only over HTTP.
+`?build=wasm`, with `crml.wasm`. It also opens any `.crml` file under `test-resources/src/main/resources/testModels`
+and `language/src/test/resources/specs`, chosen in the page or with e.g.
+`?model=testModels/spec-doc-examples/BooleanConjunction.crml`. The build copies these files and lists them in
+`models.json`, so models added to or removed from these directories appear in the page on the next build.
+`./gradlew :web:demo` only assembles the page in `build/demo`, for another server: browsers load ES modules and
+WebAssembly only over HTTP.
 
 ## Test
 

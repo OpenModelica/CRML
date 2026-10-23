@@ -121,6 +121,37 @@ tasks.named("copyWasmGCRuntime") {
 // A page that translates the CRML typed into it with crml.js or crml.wasm.
 val demoDir = layout.buildDirectory.dir("demo")
 
+// The CRML models the page offers, by the directory under models/ they are
+// served from. Every .crml file in these trees is taken, so new models appear
+// in the page on the next build.
+val demoModelTrees = mapOf(
+    "testModels" to fileTree("../test-resources/src/main/resources/testModels") { include("**/*.crml") },
+    "specs" to fileTree("../language/src/test/resources/specs") { include("**/*.crml") }
+)
+
+// models.json, the list of the models for the page, which cannot list a
+// directory over HTTP.
+val demoModels by tasks.registering {
+    description = "Lists the CRML models of the demo page in models.json."
+    val trees = demoModelTrees
+    trees.forEach { (dir, tree) ->
+        inputs.files(tree).withPropertyName(dir).withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+    val index = layout.buildDirectory.file("demo-models/models.json")
+    outputs.file(index)
+    doLast {
+        val paths = trees.flatMap { (dir, tree) ->
+            val files = mutableListOf<String>()
+            tree.visit { if (!isDirectory) files.add("$dir/$path") }
+            files
+        }.sorted()
+        val json = paths.joinToString(",\n  ", "[\n  ", "\n]\n") {
+            "\"" + it.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        }
+        index.get().asFile.apply { parentFile.mkdirs() }.writeText(json)
+    }
+}
+
 val demo by tasks.registering(Sync::class) {
     group = "build"
     description = "Assembles the demo page with the JavaScript and WebAssembly translators in build/demo."
@@ -128,6 +159,8 @@ val demo by tasks.registering(Sync::class) {
     from("demo")
     from(layout.buildDirectory.dir("generated/teavm/js")) { into("js") }
     from(layout.buildDirectory.dir("generated/teavm/wasm-gc")) { into("wasm-gc") }
+    from(demoModels)
+    demoModelTrees.forEach { (dir, tree) -> from(tree) { into("models/$dir") } }
     into(demoDir)
 }
 
@@ -145,7 +178,9 @@ tasks.register("serveDemo") {
         val types = mapOf(
             "html" to "text/html; charset=utf-8",
             "js" to "text/javascript; charset=utf-8",
-            "wasm" to "application/wasm"
+            "wasm" to "application/wasm",
+            "json" to "application/json; charset=utf-8",
+            "crml" to "text/plain; charset=utf-8"
         )
         val server = HttpServer.create(InetSocketAddress(port), 0)
         server.createContext("/") { exchange ->
