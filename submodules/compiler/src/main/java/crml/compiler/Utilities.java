@@ -20,11 +20,11 @@ public class Utilities {
         return fileName.substring(0, dotPos);
     }
 
-   public static String addDirToPath (String path, String dir){
+    public static String addDirToPath (String path, String dir){
         return path + java.io.File.separator + dir;
     }
 
-     public static String removeWindowsDriveLetter(String path) {
+    public static String removeWindowsDriveLetter(String path) {
         // check if is a windows path and remove the /C: part
         int colonIndex = path.indexOf(':');
         if (colonIndex != -1)
@@ -32,7 +32,7 @@ public class Utilities {
         return path;
      }
 
-     public static File getFileInPath(String fileName) {
+    public static File getFileInPath(String fileName) {
         String path = System.getenv("PATH");
         
         if (path != null) {

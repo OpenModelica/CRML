@@ -11,3 +11,15 @@ public class CRMLTranslationException extends RuntimeException{
 		super(errorMessage);
 	}
 }
+
+class SIUnitMismatchException extends RuntimeException{
+	public SIUnitMismatchException(String errorMessage) {
+		super(errorMessage);
+	}
+}
+
+class InvalidUserTypeOpException extends RuntimeException{
+	public InvalidUserTypeOpException(String errorMessage) {
+		super(errorMessage);
+	}
+}

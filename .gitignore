@@ -25,6 +25,7 @@ gradle.properties
 
 # ignore generated antlr files
 src/main/antlr/grammar/.antlr/
+submodules/language/src/main/antlr/crml/language/grammar/.antlr/
 
 # ignore IDE
 .vscode
