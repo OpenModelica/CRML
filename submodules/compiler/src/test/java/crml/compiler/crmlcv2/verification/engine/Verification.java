@@ -7,8 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,56 +24,99 @@ import crml.compiler.util.CompilerRoot;
 import crml.compiler.util.CrmlFrontEnd;
 
 /**
- * One case taken as far as it goes: translate, package, load and check,
- * simulate, compare with the reference.
+ * One case taken as far as it goes.
  *
- * <p>The comparison is over the model's own CRML variables, found through the
- * trace, not over whatever names happen to appear in both result files.
- * Internal names (block instances, hoisted helpers) are the compiler's business
- * and may differ from the reference model's; a CRML variable is what the
- * requirement means, and the reference observes it under the same name. A CRML
- * variable the reference observes but the simulation does not produce is a
- * failure, not a skipped comparison.
+ * <p>Every case is translated, packaged, loaded, checked and simulated. A case
+ * {@link VerificationCase.Mode#WITHOUT_REFERENCE without a reference} ends
+ * there: it passes if it simulates, whatever the values. A case
+ * {@link VerificationCase.Mode#WITH_REFERENCE with a reference} then compares
+ * the model's outputs with the reference, and passes only if every output
+ * matches.
  *
- * <p>Class instances and sets are walked down to their scalar members (see
- * {@link ComparedVariables}), and only scalars are compared, by name. A Clock, Period,
- * Periods or Event has a different representation in the compiler's library
- * and in the reference models (a record or a block instance on one side, a
- * scalar or a differently shaped record on the other), so comparing them needs
- * a definition of equality per type; until there is one they are reported as
- * not comparable, and a case that has any is at best a partial match.
+ * <p>The outputs are the model's CRML variables, found through the trace and
+ * walked into class instances ({@link Outputs}), not whatever names happen to
+ * appear in both result files: internal names are the compiler's business. A
+ * Clock, Period or Event is compared by what it means, not by the record that
+ * implements it ({@link Observation}). An output the reference records but the
+ * simulation does not produce is a failure, not a skipped comparison.
  */
 public final class Verification {
 
     /** How far a case got. Declared in pipeline order: each one implies the stages before passed. */
     public enum Outcome {
-        NO_REFERENCE,
+        /** The fixtures do not allow the case to be verified. */
+        FIXTURE_INCOMPLETE,
         TRANSLATION_FAILED,
         LOAD_FAILED,
         CHECK_FAILED,
         SIMULATION_FAILED,
-        NOTHING_TO_COMPARE,
-        MISSING_VARIABLES,
+        /** Without a reference: the model simulated, which is all that is asked. */
+        SIMULATED,
+        /** With a reference: the comparison itself could not be run. */
+        COMPARISON_FAILED,
         MISMATCH,
-        /** Everything compared matches, but some variables could not be compared. */
+        MISSING_OUTPUTS,
+        /** With a reference: no output could be compared, so nothing was verified. */
+        NOTHING_COMPARED,
+        /** With a reference: everything compared matches, but some outputs could not be compared. */
         PARTIAL_MATCH,
         MATCH
     }
 
-    /** What happened to one compared variable. */
-    public enum VariableStatus {
+    /** What happened to one output. */
+    public enum Status {
         MATCH,
         DIFFERS,
-        /** The reference observes it, the simulation result does not have it. */
+        /** The reference records it, the simulation result does not have it. */
         MISSING,
-        /** The translation dropped the CRML variable, so no component exists. */
+        /** The translation produced no component for it. */
         DROPPED,
-        /** The CRML variable exists but the reference does not observe it. */
+        /** The reference does not record it. */
         NOT_IN_REFERENCE,
-        /** The variable's type has no comparison defined yet. */
-        NOT_COMPARABLE,
+        /** Its type has no comparison defined. */
+        NO_RULE,
+        /** An external, bound by the harness: not an output. */
+        INPUT,
         /** Comparable, but the case stopped before the comparison. */
         NOT_REACHED
+    }
+
+    /** One output and what happened to it. */
+    public static final class OutputResult {
+        private final String name;
+        private final String kind;
+        private String comparedAs = "";
+        private Status status;
+        private String detail = "";
+
+        OutputResult(String name, String kind, Status status) {
+            this.name = name;
+            this.kind = kind;
+            this.status = status;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        /** The kind of value: scalar, clock, period, event, input, or a type with no rule. */
+        public String kind() {
+            return kind;
+        }
+
+        /** The signals compared, compiled model first, or empty if none was. */
+        public String comparedAs() {
+            return comparedAs;
+        }
+
+        public Status status() {
+            return status;
+        }
+
+        /** Why it has its status, or empty. */
+        public String detail() {
+            return detail;
+        }
     }
 
     private static final Path OUT = CompilerRoot.OUT.resolve("verification");
@@ -89,8 +133,8 @@ public final class Verification {
     private OmcRunner.Output comparison;
     private Outcome outcome;
     private String reason = "";
-    private final List<ComparedVariables.Entry> entries = new ArrayList<>();
-    private final Map<String, VariableStatus> variables = new LinkedHashMap<>();
+    private final List<Outputs.Output> outputs = new ArrayList<>();
+    private final List<OutputResult> results = new ArrayList<>();
 
     private Verification(VerificationCase verificationCase, OmcRunner omc) {
         this.verificationCase = verificationCase;
@@ -105,10 +149,14 @@ public final class Verification {
         return verification;
     }
 
+    private boolean withReference() {
+        return verificationCase.mode() == VerificationCase.Mode.WITH_REFERENCE;
+    }
+
     private void run() throws IOException, InterruptedException {
         frontEnd = CrmlFrontEnd.run(verificationCase.source());
-        if (!verificationCase.hasReference()) {
-            finish(Outcome.NO_REFERENCE, "no reference result at " + verificationCase.reference());
+        if (verificationCase.fixtureProblem() != null) {
+            finish(Outcome.FIXTURE_INCOMPLETE, verificationCase.fixtureProblem());
             return;
         }
         TranslationResult translation = frontEnd.translation();
@@ -117,13 +165,13 @@ public final class Verification {
             return;
         }
 
-        // Known from the translation alone, so the report lists the variables
-        // that would be compared even for a case that stops before comparing.
-        for (ComparedVariables.Entry entry : ComparedVariables.of(frontEnd.model(), translation.trace())) {
-            entries.add(entry);
-            variables.put(entry.name, !entry.comparable ? VariableStatus.NOT_COMPARABLE
-                : entry.dropped ? VariableStatus.DROPPED
-                : VariableStatus.NOT_REACHED);
+        if (withReference()) {
+            // Known from the translation alone, so the report lists the outputs
+            // even for a case that stops before comparing.
+            for (Outputs.Output output : Outputs.of(frontEnd.model(), translation.trace())) {
+                outputs.add(output);
+                results.add(new OutputResult(output.name, kind(output), initialStatus(output)));
+            }
         }
 
         writePackage(translation.text());
@@ -148,64 +196,159 @@ public final class Verification {
             return;
         }
 
-        compare(Paths.get(resultFile));
+        if (withReference()) {
+            compare(Paths.get(resultFile));
+        } else {
+            finish(Outcome.SIMULATED, "simulated; " + simulation.value("SIMULATION_OPTIONS"));
+        }
     }
+
+    private static String kind(Outputs.Output output) {
+        return output.kind == Outputs.Kind.NO_RULE ? output.type : output.kind.name().toLowerCase();
+    }
+
+    private static Status initialStatus(Outputs.Output output) {
+        switch (output.kind) {
+            case INPUT:
+                return Status.INPUT;
+            case NO_RULE:
+                return Status.NO_RULE;
+            default:
+                return output.dropped ? Status.DROPPED : Status.NOT_REACHED;
+        }
+    }
+
+    // --- comparison --------------------------------------------------------
 
     private void compare(Path resultFile) throws IOException, InterruptedException {
         Set<String> actual = new LinkedHashSet<>(simulation.values("ACTUAL"));
-        List<String> expected = simulation.values("EXPECTED");
-        List<String> compared = new ArrayList<>();
-        for (ComparedVariables.Entry entry : entries) {
-            if (!entry.comparable) {
-                variables.put(entry.name, VariableStatus.NOT_COMPARABLE);
-            } else if (!expected.contains(entry.name)) {
-                variables.put(entry.name, VariableStatus.NOT_IN_REFERENCE);
-            } else if (entry.dropped) {
-                variables.put(entry.name, VariableStatus.DROPPED);
-            } else if (!actual.contains(entry.name)) {
-                variables.put(entry.name, VariableStatus.MISSING);
+        Set<String> expected = new LinkedHashSet<>(simulation.values("EXPECTED"));
+        double tolerance = 1e-4 * Math.max(1, parse(simulation.value("STOP_TIME")));
+
+        Map<OutputResult, Observation> observed = new HashMap<>();
+        for (int i = 0; i < outputs.size(); i++) {
+            Outputs.Output output = outputs.get(i);
+            OutputResult result = results.get(i);
+            if (result.status == Status.INPUT || result.status == Status.NO_RULE) {
+                continue;
+            }
+            Observation observation = Observation.of(output, actual, expected);
+            if (observation.unobservable != null) {
+                result.status = Status.NOT_IN_REFERENCE;
+                result.detail = observation.unobservable;
+            } else if (output.dropped) {
+                result.status = Status.DROPPED;
+                result.detail = "the translation produced no component for it";
+            } else if (observation.missing != null) {
+                result.status = Status.MISSING;
+                result.detail = "the result has no " + observation.missing;
             } else {
-                variables.put(entry.name, VariableStatus.MATCH);
-                compared.add(entry.name);
+                observed.put(result, observation);
+                StringBuilder comparedAs = new StringBuilder();
+                for (Observation.Check check : observation.checks) {
+                    comparedAs.append(comparedAs.length() == 0 ? "" : ", ").append(check.describe());
+                }
+                result.comparedAs = comparedAs.toString();
             }
         }
 
-        if (!compared.isEmpty()) {
-            comparison = omc.run(directory, "compare.mos", comparisonScript(resultFile, compared));
-            for (String failed : comparison.values("DIFF_FAILED")) {
-                variables.put(failed, VariableStatus.DIFFERS);
+        if (!observed.isEmpty()) {
+            List<Observation.Check> trajectories = new ArrayList<>();
+            List<Observation.Check> steps = new ArrayList<>();
+            for (OutputResult result : results) {
+                Observation observation = observed.get(result);
+                if (observation != null) {
+                    for (Observation.Check check : observation.checks) {
+                        (check.method == Observation.Method.TRAJECTORY ? trajectories : steps).add(check);
+                    }
+                }
             }
-            if (!comparison.has("DIFF_OK")) {
-                finish(Outcome.SIMULATION_FAILED, "the comparison did not run: " + comparison.errors());
+            comparison = omc.run(directory, "compare.mos", comparisonScript(resultFile, trajectories, steps));
+            if (!trajectories.isEmpty() && !comparison.has("DIFF_OK")) {
+                finish(Outcome.COMPARISON_FAILED, "diffSimulationResults did not run: " + comparison.errors());
                 return;
             }
+            Set<String> failedTrajectories = new LinkedHashSet<>(comparison.values("DIFF_FAILED"));
+            Map<String, List<double[]>> series = series(comparison.values("SERIES"));
+            Set<String> read = new LinkedHashSet<>(comparison.values("SERIES_END"));
+
+            for (OutputResult result : results) {
+                Observation observation = observed.get(result);
+                if (observation == null) {
+                    continue;
+                }
+                result.status = Status.MATCH;
+                for (Observation.Check check : observation.checks) {
+                    String difference;
+                    if (check.method == Observation.Method.TRAJECTORY) {
+                        difference = failedTrajectories.contains(check.actual)
+                            ? "differs beyond tolerance; see diff." + check.actual + ".csv" : null;
+                    } else {
+                        int index = steps.indexOf(check);
+                        if (!read.contains("a" + index) || !read.contains("e" + index)) {
+                            finish(Outcome.COMPARISON_FAILED, "could not read " + check.describe()
+                                + ": " + comparison.errors());
+                            return;
+                        }
+                        Steps got = Steps.of(series.getOrDefault("a" + index, Collections.emptyList()), tolerance);
+                        Steps want = Steps.of(series.getOrDefault("e" + index, Collections.emptyList()), tolerance);
+                        difference = got.difference(want, tolerance);
+                    }
+                    if (difference != null) {
+                        result.status = Status.DIFFERS;
+                        result.detail += (result.detail.isEmpty() ? "" : "; ") + check.describe() + ": " + difference;
+                    }
+                }
+            }
         }
 
-        int differs = count(VariableStatus.DIFFERS);
-        int missing = count(VariableStatus.MISSING) + count(VariableStatus.DROPPED);
+        int matched = count(Status.MATCH);
+        int differs = count(Status.DIFFERS);
+        int missing = count(Status.MISSING) + count(Status.DROPPED);
+        int unobserved = count(Status.NOT_IN_REFERENCE) + count(Status.NO_RULE);
         if (differs > 0) {
-            finish(Outcome.MISMATCH, differs + " variable(s) differ from the reference"
+            finish(Outcome.MISMATCH, differs + " output(s) differ from the reference"
                 + (missing > 0 ? ", " + missing + " missing" : ""));
         } else if (missing > 0) {
-            finish(Outcome.MISSING_VARIABLES, missing + " variable(s) the reference observes are missing");
-        } else if (compared.isEmpty()) {
-            finish(Outcome.NOTHING_TO_COMPARE, "none of the model's variables could be compared with the reference"
-                + (count(VariableStatus.NOT_COMPARABLE) > 0
-                    ? " (" + count(VariableStatus.NOT_COMPARABLE) + " not comparable)" : ""));
-        } else if (count(VariableStatus.NOT_COMPARABLE) > 0) {
-            finish(Outcome.PARTIAL_MATCH, compared.size() + " variable(s) match the reference, "
-                + count(VariableStatus.NOT_COMPARABLE) + " could not be compared");
+            finish(Outcome.MISSING_OUTPUTS, missing + " output(s) the reference records are missing");
+        } else if (matched == 0) {
+            finish(Outcome.NOTHING_COMPARED, "no output could be compared with the reference"
+                + (unobserved > 0 ? " (" + unobserved + " not observable)" : ""));
+        } else if (unobserved > 0) {
+            finish(Outcome.PARTIAL_MATCH, matched + " output(s) match the reference, "
+                + unobserved + " could not be compared");
         } else {
-            finish(Outcome.MATCH, compared.size() + " variable(s) match the reference");
+            finish(Outcome.MATCH, matched + " output(s) match the reference");
+        }
+    }
+
+    /** The {@code @@SERIES <id> <time> <value>} points, by id. */
+    private static Map<String, List<double[]>> series(List<String> values) {
+        Map<String, List<double[]>> series = new HashMap<>();
+        for (String value : values) {
+            String[] parts = value.trim().split("\\s+");
+            if (parts.length == 3) {
+                series.computeIfAbsent(parts[0], k -> new ArrayList<>())
+                    .add(new double[] {parse(parts[1]), parse(parts[2])});
+            }
+        }
+        return series;
+    }
+
+    private static double parse(String number) {
+        try {
+            return number == null ? 0 : Double.parseDouble(number.trim());
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 
     // --- files and scripts -------------------------------------------------
 
     /**
-     * {@code <out>/<Name>/package.mo}, the generated model and the harness, each
-     * with a {@code within} clause naming that package, so the harness's own
-     * package path does not matter.
+     * {@code <out>/<Name>/src/<Name>/package.mo}, the generated model and the
+     * harness, each with a {@code within} clause naming that package, so the
+     * harness's own package path does not matter.
      */
     private void writePackage(String modelica) throws IOException {
         directory = OUT.resolve(verificationCase.suite()).resolve(verificationCase.name()).toAbsolutePath();
@@ -216,17 +359,14 @@ public final class Verification {
         Files.createDirectories(packageDirectory);
 
         String name = verificationCase.name();
-        // The fixtures may be read from inside the test-resources jar, which omc
-        // cannot see, so everything it reads is copied next to the scripts.
-        reference = directory.resolve(verificationCase.reference().getFileName().toString());
-        Files.copy(verificationCase.reference(), reference);
-        if (verificationCase.mode() == VerificationCase.Mode.HARNESS) {
-            Files.copy(crmlLibrary(), directory.resolve("CRML.mo"));
-        }
-
         write(packageDirectory.resolve("package.mo"), "within ;\npackage " + name + "\nend " + name + ";\n");
         write(packageDirectory.resolve(name + ".mo"), within(modelica, name));
-        if (verificationCase.harness() != null) {
+        if (withReference()) {
+            // The fixtures may be read from inside the test-resources jar, which
+            // omc cannot see, so everything it reads is copied next to the scripts.
+            reference = directory.resolve(verificationCase.reference().getFileName().toString());
+            Files.copy(verificationCase.reference(), reference);
+            Files.copy(crmlLibrary(), directory.resolve("CRML.mo"));
             try (DirectoryStream<Path> files = Files.newDirectoryStream(verificationCase.harness(), "*.mo")) {
                 for (Path file : files) {
                     String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
@@ -243,40 +383,51 @@ public final class Verification {
     }
 
     private String simulationScript() {
-        boolean harness = verificationCase.mode() == VerificationCase.Mode.HARNESS;
         String simulated = verificationCase.name() + "." + verificationCase.simulatedClass();
-        String reference = OmcRunner.literal(this.reference);
         StringBuilder script = new StringBuilder("echo(false);\n");
-        if (harness) {
+        if (withReference()) {
             // The harnesses are built from CRML.mo, which uses the MSL.
             load(script, "LOAD_MSL", "loadModel(Modelica, {\"4.0.0\"})");
         }
         load(script, "LOAD_CRMLtoModelica", "loadFile(" + OmcRunner.literal(OMCUtil.getCRMLToModelicaFile()) + ")");
-        if (harness) {
+        if (withReference()) {
             load(script, "LOAD_CRML", "loadFile(" + OmcRunner.literal(directory.resolve("CRML.mo")) + ")");
         }
         load(script, "LOAD_MODEL", "loadFile(" + OmcRunner.literal(packageDirectory.resolve("package.mo")) + ")");
         script.append("check := checkModel(").append(simulated).append(");\n")
-            .append("print(\"@@CHECK\\n\" + check + \"\\n\" + getErrorString() + \"\\n\");\n")
+            .append("print(\"@@CHECK\\n\" + check + \"\\n\" + getErrorString() + \"\\n\");\n");
+        String prefix = OmcRunner.literal(verificationCase.simulatedClass());
+        if (withReference()) {
             // The reference decides the simulated interval; the harness's own
             // experiment annotation is not necessarily the interval it was made with.
-            .append("ref := readSimulationResult(").append(reference).append(", {time});\n")
-            .append("stop := ref[1, size(ref, 2)];\n")
-            .append("print(\"@@STOP_TIME \" + String(stop) + \"\\n\" + getErrorString() + \"\\n\");\n")
-            .append("res := simulate(").append(simulated)
-            .append(", stopTime = stop, fileNamePrefix = ").append(OmcRunner.literal(verificationCase.simulatedClass()))
-            .append(");\n")
-            // A record field cannot be read inside an expression in a script,
-            // only assigned: "res.resultFile + ..." fails without a message.
-            .append("resultFile := res.resultFile;\n")
+            String reference = OmcRunner.literal(this.reference);
+            script.append("ref := readSimulationResult(").append(reference).append(", {time});\n")
+                .append("stop := ref[1, size(ref, 2)];\n")
+                .append("print(\"@@STOP_TIME \" + String(stop) + \"\\n\" + getErrorString() + \"\\n\");\n")
+                .append("res := simulate(").append(simulated)
+                .append(", stopTime = stop, fileNamePrefix = ").append(prefix).append(");\n");
+        } else {
+            // No reference to take the interval from: the model's own experiment
+            // annotation, or omc's default.
+            script.append("res := simulate(").append(simulated)
+                .append(", fileNamePrefix = ").append(prefix).append(");\n");
+        }
+        // A record field cannot be read inside an expression in a script, only
+        // assigned: "res.resultFile + ..." fails without a message.
+        script.append("resultFile := res.resultFile;\n")
             .append("messages := res.messages;\n")
-            .append("print(\"@@RESULT_FILE \" + resultFile + \"\\n\" + messages + \"\\n\" + getErrorString() + \"\\n\");\n")
-            .append("if resultFile <> \"\" then\n")
-            .append("  actual := readSimulationResultVars(resultFile);\n")
-            .append("  for v in actual loop print(\"@@ACTUAL \" + v + \"\\n\"); end for;\n")
-            .append("end if;\n")
-            .append("expected := readSimulationResultVars(").append(reference).append(");\n")
-            .append("for v in expected loop print(\"@@EXPECTED \" + v + \"\\n\"); end for;\n");
+            .append("options := res.simulationOptions;\n")
+            .append("print(\"@@SIMULATION_OPTIONS \" + options + \"\\n\");\n")
+            .append("print(\"@@RESULT_FILE \" + resultFile + \"\\n\" + messages + \"\\n\" + getErrorString() + \"\\n\");\n");
+        if (withReference()) {
+            String reference = OmcRunner.literal(this.reference);
+            script.append("if resultFile <> \"\" then\n")
+                .append("  actual := readSimulationResultVars(resultFile);\n")
+                .append("  for v in actual loop print(\"@@ACTUAL \" + v + \"\\n\"); end for;\n")
+                .append("end if;\n")
+                .append("expected := readSimulationResultVars(").append(reference).append(");\n")
+                .append("for v in expected loop print(\"@@EXPECTED \" + v + \"\\n\"); end for;\n");
+        }
         return script.toString();
     }
 
@@ -286,17 +437,44 @@ public final class Verification {
             .append("if not ok then exit(1); end if;\n");
     }
 
-    private String comparisonScript(Path resultFile, List<String> compared) {
-        StringBuilder vars = new StringBuilder();
-        for (String variable : compared) {
-            vars.append(vars.length() == 0 ? "" : ", ").append(OmcRunner.literal(variable));
+    /**
+     * Scalars through {@code diffSimulationResults}; every other signal printed
+     * as its change points, {@code @@SERIES a<i>} for the compiled model and
+     * {@code e<i>} for the reference, each closed by {@code @@SERIES_END} so a
+     * signal that could not be read is told apart from one that never changes.
+     */
+    private String comparisonScript(Path resultFile, List<Observation.Check> trajectories,
+            List<Observation.Check> steps) {
+        StringBuilder script = new StringBuilder("echo(false);\n");
+        if (!trajectories.isEmpty()) {
+            StringBuilder vars = new StringBuilder();
+            for (Observation.Check check : trajectories) {
+                vars.append(vars.length() == 0 ? "" : ", ").append(OmcRunner.literal(check.actual));
+            }
+            script.append("(ok, failed) := diffSimulationResults(").append(OmcRunner.literal(resultFile))
+                .append(", ").append(OmcRunner.literal(reference))
+                .append(", ").append(OmcRunner.literal(directory.resolve("diff").toString()))
+                .append(", vars = {").append(vars).append("});\n")
+                .append("print(\"@@DIFF_OK \" + String(ok) + \"\\n\" + getErrorString() + \"\\n\");\n")
+                .append("for v in failed loop print(\"@@DIFF_FAILED \" + v + \"\\n\"); end for;\n");
         }
-        return "echo(false);\n"
-            + "(ok, failed) := diffSimulationResults(" + OmcRunner.literal(resultFile) + ", "
-            + OmcRunner.literal(reference) + ", "
-            + OmcRunner.literal(directory.resolve("diff").toString()) + ", vars = {" + vars + "});\n"
-            + "print(\"@@DIFF_OK \" + String(ok) + \"\\n\" + getErrorString() + \"\\n\");\n"
-            + "for v in failed loop print(\"@@DIFF_FAILED \" + v + \"\\n\"); end for;\n";
+        for (int i = 0; i < steps.size(); i++) {
+            printSeries(script, "a" + i, resultFile, steps.get(i).actual);
+            printSeries(script, "e" + i, reference, steps.get(i).expected);
+        }
+        return script.toString();
+    }
+
+    private static void printSeries(StringBuilder script, String id, Path file, String variable) {
+        script.append("r := readSimulationResult(").append(OmcRunner.literal(file))
+            .append(", {time, ").append(variable).append("});\n")
+            .append("for i in 1:size(r, 2) loop\n")
+            .append("  if i == 1 or r[2, i] <> r[2, i - 1] then\n")
+            .append("    print(\"@@SERIES ").append(id)
+            .append(" \" + String(r[1, i], significantDigits = 15) + \" \" + String(r[2, i], significantDigits = 15) + \"\\n\");\n")
+            .append("  end if;\n")
+            .append("end for;\n")
+            .append("print(\"@@SERIES_END ").append(id).append("\\n\" + getErrorString() + \"\\n\");\n");
     }
 
     private static Path crmlLibrary() {
@@ -305,16 +483,18 @@ public final class Verification {
 
     // --- results -----------------------------------------------------------
 
-    /** {@code summary.txt} in the working directory: the outcome and every variable's status. */
+    /** {@code summary.txt} in the working directory: the mode, the outcome and every output. */
     private void writeSummary() throws IOException {
         if (directory == null) {
             return;
         }
         StringBuilder summary = new StringBuilder()
-            .append(verificationCase).append(" (").append(verificationCase.mode()).append(")\n")
+            .append(verificationCase).append("\n")
             .append(outcome).append(": ").append(reason).append("\n\n");
-        for (Map.Entry<String, VariableStatus> entry : variables.entrySet()) {
-            summary.append(String.format("%-18s %s%n", entry.getValue(), entry.getKey()));
+        for (OutputResult result : results) {
+            summary.append(String.format("%-17s %-8s %s%s%s%n", result.status, result.kind, result.name,
+                result.comparedAs.isEmpty() || result.comparedAs.equals(result.name) ? "" : "  [" + result.comparedAs + "]",
+                result.detail.isEmpty() ? "" : "  -- " + result.detail));
         }
         write(directory.resolve("summary.txt"), summary.toString());
     }
@@ -337,10 +517,10 @@ public final class Verification {
         return "ERROR diagnostics: " + frontEnd.errors();
     }
 
-    private int count(VariableStatus status) {
+    private int count(Status status) {
         int count = 0;
-        for (VariableStatus value : variables.values()) {
-            if (value == status) {
+        for (OutputResult result : results) {
+            if (result.status == status) {
                 count++;
             }
         }
@@ -363,12 +543,26 @@ public final class Verification {
         return reason;
     }
 
+    /** True if the case meets what its mode asks: it simulates, or every output matches. */
+    public boolean passed() {
+        return outcome == (withReference() ? Outcome.MATCH : Outcome.SIMULATED);
+    }
+
     /**
-     * Every variable the case compares or would compare, in model order, with
-     * its status; empty if the model did not translate.
+     * True if the case neither passed nor showed a defect: the fixtures are
+     * incomplete, or the reference could not observe some or all outputs.
      */
-    public Map<String, VariableStatus> variables() {
-        return variables;
+    public boolean inconclusive() {
+        return outcome == Outcome.FIXTURE_INCOMPLETE || outcome == Outcome.NOTHING_COMPARED
+            || outcome == Outcome.PARTIAL_MATCH;
+    }
+
+    /**
+     * Every output of a case with a reference, in model order, with what
+     * happened to it; empty without a reference or if the model did not translate.
+     */
+    public List<OutputResult> outputs() {
+        return Collections.unmodifiableList(results);
     }
 
     /** The case's working directory, or null if nothing was written. */

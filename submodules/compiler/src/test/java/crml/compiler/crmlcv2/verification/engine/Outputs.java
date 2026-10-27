@@ -24,48 +24,61 @@ import crml.model.trace.TraceLinkKind;
 import crml.model.trace.TraceModel;
 
 /**
- * The names under which a model's CRML variables appear in a simulation result,
- * down to the scalars that can be compared.
+ * A model's outputs: its CRML variables as they appear in a simulation result,
+ * each with the kind of value it holds.
  *
  * <p>A variable of a scalar type is one name. A class instance is the names of
  * its members, inherited ones included, under {@code instance.member}, and a
  * member that is itself a class instance is walked the same way. A set is an
  * array, so its elements are {@code name[1]} to {@code name[n]}. These are the
- * names the generated Modelica gives them: a CRML class becomes a nested model,
- * a class-typed variable a component of it, and a set an array.
+ * names the generated Modelica gives them.
  *
- * <p>Whether a variable was dropped is read from the trace: a variable, or a
- * class member, that the translation could not map has no component linked to
- * it, and neither has anything under it.
+ * <p>A Clock, Period or Event is one output, not the fields of the record that
+ * implements it: what it means is compared (see {@link Observation}), not how
+ * the compiler's library or the reference model happens to store it.
+ *
+ * <p>Externals are inputs - the harness binds them - so they are listed but
+ * not compared. Whether a variable was dropped is read from the trace: a
+ * variable, or a class member, that the translation could not map has no
+ * component linked to it, and neither has anything under it.
  */
-final class ComparedVariables {
+final class Outputs {
 
-    /** One name in the result file, and whether it can be compared. */
-    static final class Entry {
+    /** What kind of value an output holds, which decides how it is compared. */
+    enum Kind {
+        SCALAR,
+        CLOCK,
+        PERIOD,
+        EVENT,
+        /** An external: an input of the model, bound by the harness. */
+        INPUT,
+        /** A type with no comparison defined, such as Periods. */
+        NO_RULE
+    }
+
+    /** One output. */
+    static final class Output {
         final String name;
-        final boolean comparable;
+        final Kind kind;
         final boolean dropped;
+        /** The CRML type, for an output of kind {@link Kind#NO_RULE}. */
+        final String type;
 
-        Entry(String name, boolean comparable, boolean dropped) {
+        Output(String name, Kind kind, boolean dropped, String type) {
             this.name = name;
-            this.comparable = comparable;
+            this.kind = kind;
             this.dropped = dropped;
-        }
-
-        @Override
-        public String toString() {
-            return name + (comparable ? "" : " (not comparable)") + (dropped ? " (dropped)" : "");
+            this.type = type;
         }
     }
 
-    /** The types whose values both sides represent as one scalar of the same name. */
     private static final Set<BuiltinType> SCALAR = EnumSet.of(
         BuiltinType.BOOLEAN, BuiltinType.REQUIREMENT, BuiltinType.REAL, BuiltinType.INTEGER, BuiltinType.STRING);
 
     private final Set<Variable> declared = new HashSet<>();
-    private final List<Entry> entries = new ArrayList<>();
+    private final List<Output> outputs = new ArrayList<>();
 
-    private ComparedVariables(TraceModel trace) {
+    private Outputs(TraceModel trace) {
         for (TraceLink link : trace.getLinks()) {
             if (link.getKind() == TraceLinkKind.VARIABLE_TO_COMPONENT && link.getCrml() instanceof Variable) {
                 declared.add((Variable) link.getCrml());
@@ -73,20 +86,22 @@ final class ComparedVariables {
         }
     }
 
-    /** Every name of {@code model}'s top-level variables, in declaration order. */
-    static List<Entry> of(Model model, TraceModel trace) {
-        ComparedVariables walk = new ComparedVariables(trace);
+    /** Every output of {@code model}, in declaration order. */
+    static List<Output> of(Model model, TraceModel trace) {
+        Outputs walk = new Outputs(trace);
         for (Variable variable : model.getVariables()) {
             walk.variable("", variable, false, new ArrayDeque<>());
         }
-        return Collections.unmodifiableList(walk.entries);
+        return Collections.unmodifiableList(walk.outputs);
     }
 
     private void variable(String prefix, Variable variable, boolean parentDropped,
             Deque<crml.model.language.Class> enclosing) {
         String name = prefix + variable.getName();
         boolean dropped = parentDropped || !declared.contains(variable);
-        if (variable.getDefinition() instanceof crml.model.language.Set<?>) {
+        if (Boolean.TRUE.equals(variable.getExternal())) {
+            outputs.add(new Output(name, Kind.INPUT, dropped, null));
+        } else if (variable.getDefinition() instanceof crml.model.language.Set<?>) {
             crml.model.language.Set<?> set = (crml.model.language.Set<?>) variable.getDefinition();
             for (int i = 1; i <= set.getElements().size(); i++) {
                 type(name + "[" + i + "]", set.getDomain(), dropped, enclosing);
@@ -98,22 +113,33 @@ final class ComparedVariables {
 
     private void type(String name, TypeReference type, boolean dropped,
             Deque<crml.model.language.Class> enclosing) {
-        if (SCALAR.contains(TypeResolver.resolveBuiltin(type))) {
-            entries.add(new Entry(name, true, dropped));
-            return;
+        BuiltinType builtin = TypeResolver.resolveBuiltin(type);
+        if (SCALAR.contains(builtin)) {
+            outputs.add(new Output(name, Kind.SCALAR, dropped, null));
+        } else if (builtin == BuiltinType.CLOCK) {
+            outputs.add(new Output(name, Kind.CLOCK, dropped, null));
+        } else if (builtin == BuiltinType.PERIOD) {
+            outputs.add(new Output(name, Kind.PERIOD, dropped, null));
+        } else if (builtin == BuiltinType.EVENT) {
+            outputs.add(new Output(name, Kind.EVENT, dropped, null));
+        } else if (builtin != null) {
+            outputs.add(new Output(name, Kind.NO_RULE, dropped, builtin.getLiteral()));
+        } else {
+            crml.model.language.Class clazz = classOf(type);
+            if (clazz == null) {
+                outputs.add(new Output(name, Kind.NO_RULE, dropped, "unresolved type"));
+            } else if (enclosing.contains(clazz)) {
+                // A class that contains itself cannot be instantiated; stop
+                // rather than recurse forever.
+                outputs.add(new Output(name, Kind.NO_RULE, dropped, "recursive class " + clazz.getName()));
+            } else {
+                enclosing.push(clazz);
+                for (Variable member : members(clazz)) {
+                    variable(name + ".", member, dropped, enclosing);
+                }
+                enclosing.pop();
+            }
         }
-        crml.model.language.Class clazz = classOf(type);
-        // A class that contains itself, directly or not, cannot be instantiated;
-        // stop rather than recurse forever.
-        if (clazz == null || enclosing.contains(clazz)) {
-            entries.add(new Entry(name, false, dropped));
-            return;
-        }
-        enclosing.push(clazz);
-        for (Variable member : members(clazz)) {
-            variable(name + ".", member, dropped, enclosing);
-        }
-        enclosing.pop();
     }
 
     /**

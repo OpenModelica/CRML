@@ -8,7 +8,7 @@ import java.util.List;
 import crml.compiler.util.CompilerRoot;
 
 /**
- * One CRML model, with whatever the fixtures provide to check its simulation.
+ * One CRML model, and how it is verified.
  *
  * <p>The fixtures live in three parallel trees under the test resources, keyed
  * by the suite path (e.g. {@code libraries/ETL_test}) and the model name:
@@ -17,22 +17,37 @@ import crml.compiler.util.CompilerRoot;
  * verificationModels/&lt;suite&gt;/&lt;Name&gt;/   harness: &lt;Name&gt;_verif.mo extends &lt;Name&gt; and binds
  *                                         its externals from &lt;Name&gt;_externals.mo
  * refResults/&lt;suite&gt;/&lt;Name&gt;_verif_ref.mat   reference for the harness
- * refResults/&lt;suite&gt;/&lt;Name&gt;_ref.mat         reference for a model simulated on its
- *                                         own (by convention named *_no_ext)
  * </pre>
  * The references are Dymola simulations of hand-written reference models
  * (libraries/modelica/CRML_test) in the same harness, so they are independent
  * of any CRML compiler.
+ *
+ * <p>A model named {@code *_no_ext} binds all its variables itself and has no
+ * external reference: it is only simulated. Any {@code *_no_ext_ref.mat} next
+ * to it is not used. Every other model is verified against its reference.
  */
 public final class VerificationCase {
 
-    /** How the model is simulated. */
+    /** How a model is verified. */
     public enum Mode {
-        /** The model has externals: simulate the harness that binds them. */
-        HARNESS,
-        /** The model binds everything itself: simulate it directly. */
-        STANDALONE
+        /** Simulate the harness that binds the externals, and compare the outputs with the reference. */
+        WITH_REFERENCE("with reference"),
+        /** Simulate the model on its own; producing correct results is not required. */
+        WITHOUT_REFERENCE("without reference");
+
+        private final String label;
+
+        Mode(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
+
+    private static final String NO_EXTERNALS = "_no_ext";
 
     private static final Path TEST_MODELS = CompilerRoot.RESOURCES.resolve("testModels");
     private static final Path VERIFICATION_MODELS = CompilerRoot.RESOURCES.resolve("verificationModels");
@@ -54,25 +69,30 @@ public final class VerificationCase {
         this.reference = reference;
     }
 
-    /** Every model of {@code suite}, e.g. {@code "libraries/ETL_test"}. */
+    /**
+     * Every model of {@code suite}, e.g. {@code "libraries/ETL_test"}: those
+     * verified with a reference first, then those only simulated.
+     */
     public static List<VerificationCase> discover(String suite) {
-        List<VerificationCase> cases = new ArrayList<>();
+        List<VerificationCase> withReference = new ArrayList<>();
+        List<VerificationCase> withoutReference = new ArrayList<>();
         for (Path source : CompilerRoot.fileNameSourceHelper(TEST_MODELS.resolve(suite))) {
-            cases.add(of(suite, source));
+            VerificationCase verificationCase = of(suite, source);
+            (verificationCase.mode == Mode.WITH_REFERENCE ? withReference : withoutReference).add(verificationCase);
         }
-        return cases;
+        withReference.addAll(withoutReference);
+        return withReference;
     }
 
     static VerificationCase of(String suite, Path source) {
         String file = source.getFileName().toString();
         String name = file.substring(0, file.length() - ".crml".length());
-        Path harness = VERIFICATION_MODELS.resolve(suite).resolve(name);
-        if (Files.isDirectory(harness)) {
-            return new VerificationCase(suite, name, source, Mode.HARNESS, harness,
-                REFERENCES.resolve(suite).resolve(name + "_verif_ref.mat"));
+        if (name.endsWith(NO_EXTERNALS)) {
+            return new VerificationCase(suite, name, source, Mode.WITHOUT_REFERENCE, null, null);
         }
-        return new VerificationCase(suite, name, source, Mode.STANDALONE, null,
-            REFERENCES.resolve(suite).resolve(name + "_ref.mat"));
+        return new VerificationCase(suite, name, source, Mode.WITH_REFERENCE,
+            VERIFICATION_MODELS.resolve(suite).resolve(name),
+            REFERENCES.resolve(suite).resolve(name + "_verif_ref.mat"));
     }
 
     public String suite() {
@@ -92,27 +112,42 @@ public final class VerificationCase {
         return mode;
     }
 
-    /** The harness directory, or null for a standalone model. */
+    /** Where the harness is expected, or null for a model verified without a reference. */
     public Path harness() {
         return harness;
     }
 
     /** The class to simulate, unqualified. */
     public String simulatedClass() {
-        return mode == Mode.HARNESS ? name + "_verif" : name;
+        return mode == Mode.WITH_REFERENCE ? name + "_verif" : name;
     }
 
-    /** Where the reference result is expected; it may not exist. */
+    /** Where the reference result is expected, or null for a model verified without one. */
     public Path reference() {
         return reference;
     }
 
-    public boolean hasReference() {
-        return Files.isRegularFile(reference);
+    /**
+     * What the fixtures lack for this case to be verified, or null if they are
+     * complete. A model with externals cannot be simulated without the harness
+     * that binds them, and there is nothing to verify it against without the
+     * reference.
+     */
+    public String fixtureProblem() {
+        if (mode == Mode.WITHOUT_REFERENCE) {
+            return null;
+        }
+        if (!Files.isDirectory(harness)) {
+            return "no harness at " + harness + " (a model without one must be named *" + NO_EXTERNALS + ")";
+        }
+        if (!Files.isRegularFile(reference)) {
+            return "no reference result at " + reference;
+        }
+        return null;
     }
 
     @Override
     public String toString() {
-        return suite + "/" + name;
+        return suite + "/" + name + ".crml";
     }
 }
