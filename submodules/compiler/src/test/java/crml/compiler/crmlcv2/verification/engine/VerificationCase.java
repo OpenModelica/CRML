@@ -78,7 +78,11 @@ public final class VerificationCase {
         List<VerificationCase> withoutReference = new ArrayList<>();
         for (Path source : CompilerRoot.fileNameSourceHelper(TEST_MODELS.resolve(suite))) {
             VerificationCase verificationCase = of(suite, source);
-            (verificationCase.mode == Mode.WITH_REFERENCE ? withReference : withoutReference).add(verificationCase);
+            if(verificationCase.mode == Mode.WITH_REFERENCE){
+                withReference.add(verificationCase);
+            } else {
+                withoutReference.add(verificationCase);
+            }
         }
         withReference.addAll(withoutReference);
         return withReference;
