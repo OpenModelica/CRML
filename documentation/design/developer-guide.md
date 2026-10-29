@@ -384,6 +384,202 @@ A `Reference<T>` names a type, an extended class or a function in one of two way
 
 [design/reference-resolution.md](design/reference-resolution.md) explains this design.
 
+### Metamodel structure
+
+Every class extends the abstract `ModelicaElement`. Those inheritance arrows are left out of the diagrams below. Filled diamonds mean containment: the child belongs to exactly one parent. The one cross-reference is `Reference.target`.
+
+**Classes, components and bodies.** A generated `.mo` file is a single `ClassDefinition` tree:
+
+```mermaid
+classDiagram
+    direction LR
+    class ClassDefinition {
+        String name
+        ClassKind kind
+        Boolean partial
+        String comment
+    }
+    class ExtendsClause
+    class ComponentDeclaration {
+        String name
+        Visibility visibility
+        Causality causality
+        Variability variability
+        String comment
+    }
+    class ArrayDimension
+    class ModificationElement {
+        String name
+    }
+    class Equation {
+        String comment
+    }
+    class Statement {
+        String comment
+    }
+    class Placeholder {
+        String message
+    }
+    class Reference~T~ {
+        String rawText
+        RawReason reason
+    }
+    class Expression {
+        <<abstract>>
+        see next diagram
+    }
+    class ComponentReference
+
+    ClassDefinition *-- "0..*" ClassDefinition : nestedClasses
+    ClassDefinition *-- "0..*" ExtendsClause : extendsClauses
+    ClassDefinition *-- "0..*" ComponentDeclaration : components
+    ClassDefinition *-- "0..*" Equation : equations
+    ClassDefinition *-- "0..*" Statement : statements
+    ClassDefinition *-- "0..*" Placeholder : placeholders
+    ExtendsClause *-- "1" Reference : superClass
+    ComponentDeclaration *-- "1" Reference : declaredType
+    ComponentDeclaration *-- "0..*" ArrayDimension : arrayDimensions
+    ComponentDeclaration *-- "0..*" ModificationElement : modifications
+    ComponentDeclaration *-- "0..1" Expression : binding
+    ArrayDimension *-- "0..1" Expression : size
+    ModificationElement *-- "1" Expression : value
+    Equation *-- "2" Expression : lhs, rhs
+    Statement *-- "1" ComponentReference : target
+    Statement *-- "1" Expression : value
+    Reference ..> ClassDefinition : target (when resolved)
+```
+
+The enumerations used here:
+
+| Enum | Literals |
+|---|---|
+| `ClassKind` | `MODEL`, `RECORD`, `BLOCK`, `FUNCTION`, `PACKAGE` |
+| `Visibility` | `PUBLIC`, `PROTECTED` |
+| `Causality` | `NONE`, `INPUT`, `OUTPUT` |
+| `Variability` | `CONTINUOUS`, `CONSTANT` |
+| `RawReason` | `UNRESOLVED` (a defect), `EXTERNAL_LIBRARY` (`CRMLtoModelica.*`), `MODELICA_BUILTIN`, `STANDARD_LIBRARY` (MSL) |
+
+**Expressions.** All expression children are contained, so an expression is always a tree. The diagram lists them as fields to keep it readable:
+
+```mermaid
+classDiagram
+    direction TB
+    class Expression {
+        <<abstract>>
+    }
+    class ComponentReference {
+        ReferencePart[] parts
+    }
+    class ReferencePart {
+        String name
+        Expression[] subscripts
+    }
+    class BinaryExpression {
+        BinaryOperatorKind operator
+        Expression lhs
+        Expression rhs
+    }
+    class UnaryExpression {
+        UnaryOperatorKind operator
+        Expression operand
+    }
+    class FunctionCall {
+        Reference~ClassDefinition~ function
+        Expression[] arguments
+    }
+    class IfExpression {
+        Expression condition
+        Expression thenExpression
+        Expression elseExpression
+    }
+    class ArrayConstructor {
+        Expression[] elements
+    }
+    class ParenthesizedExpression {
+        Expression inner
+    }
+    class IntegerLiteral {
+        Integer value
+    }
+    class RealLiteral {
+        String literal
+        Double value
+    }
+    class StringLiteral {
+        String value
+    }
+    class BooleanLiteral {
+        Boolean value
+    }
+
+    Expression <|-- ComponentReference
+    Expression <|-- BinaryExpression
+    Expression <|-- UnaryExpression
+    Expression <|-- FunctionCall
+    Expression <|-- IfExpression
+    Expression <|-- ArrayConstructor
+    Expression <|-- ParenthesizedExpression
+    Expression <|-- IntegerLiteral
+    Expression <|-- RealLiteral
+    Expression <|-- StringLiteral
+    Expression <|-- BooleanLiteral
+    ComponentReference *-- "1..*" ReferencePart : parts
+```
+
+- `BinaryOperatorKind`: `ADD`, `SUB`, `MUL`, `DIV`, `POW`, `AND`, `OR`, `EQ`, `NEQ`, `LT`, `LE`, `GT`, `GE`.
+- `UnaryOperatorKind`: `PLUS`, `MINUS`, `NOT` (Modelica's two-valued `not`, never CRML's `not`).
+
+### Which Modelica classes a CRML construct needs
+
+This table shows what crmlcv2 builds for each CRML construct today. Use it as a starting point when you add or change a translation. The helpers are the `default` methods of `crml.modelica.build.Modelica`.
+
+| CRML construct | Modelica metamodel elements | Helpers | Built in |
+|---|---|---|---|
+| `Model` | Root `ClassDefinition` (`MODEL`), `partial` when a variable has no binding | `model` | `ModelTransformer` |
+| `Class` | Nested `ClassDefinition` (`MODEL`, never `RECORD`). A superclass becomes an `ExtendsClause` with a resolved `Reference`. Variable definitions become `Equation`s. | `model`, `extendsClause(resolvedRef(...))`, `eq` | `ClassTransformer` |
+| `Variable` | `ComponentDeclaration`. `declaredType` comes from `TypeResolver`. The definition becomes the `binding`. `constant` sets `Variability.CONSTANT`. A set-valued variable gets an `ArrayDimension`. | `component`, `dimension` | `VariableTransformer` |
+| CRML type | `Reference`: resolved for a CRML class, raw `MODELICA_BUILTIN` for `Real`/`Integer`/`String`, raw `EXTERNAL_LIBRARY` for `Boolean4`, `CRMLClock`, `Event`, `CRMLPeriod(s)` | `resolvedRef`, `builtinRef`, `libraryRef` | `TypeResolver` |
+| `Template` / `UserOperator` (pure body) | Nested `ClassDefinition` (`FUNCTION`) with `INPUT`/`OUTPUT` components and a `Statement` `out := expr`. A call becomes a `FunctionCall` with a resolved `Reference`. | `function`, `input`, `output`, `assign`, `call` | `OperatorTransformer` |
+| `Template` / `UserOperator` (body hoists components) | Nested `ClassDefinition` (`BLOCK`) with an `Equation` `out = expr`. A call becomes an instance `ComponentDeclaration`, input `Equation`s, and a `ComponentReference` to `.out`. | `block`, `eq`, `component`, `ref` | `OperatorTransformer` |
+| `VariableReference`, `time` | `ComponentReference` | `ref` | `ValueTransformer` |
+| `RealConstant`, `IntegerConstant`, `StringConstant` | `RealLiteral`, `IntegerLiteral`, `StringLiteral` | `real`, `integer`, `string` | `ValueTransformer` |
+| `BooleanConstant` | `ComponentReference` to `CRMLtoModelica.Types.Boolean4.true4` (and so on). **Not** `BooleanLiteral`: CRML Booleans are four-valued. | `ref` | `ValueTransformer` |
+| `IfValue` | `IfExpression` whose condition is `BinaryExpression(EQ, cond, Boolean4.true4)` | `ifExpr`, `binary` | `ValueTransformer` |
+| `+ - * / ^` on numbers | `BinaryExpression`; `mod` becomes a `FunctionCall` to the builtin `mod` | `binary`, `call(builtinRef("mod"))` | `BinaryOperatorTransformer` |
+| `and`, `or`, `not`, and `+ *` on Booleans | `FunctionCall` to `Functions.and4`, `or4`, `not4`, `add4`, `mul4` | `call(libraryRef(...))` | `Binary/UnaryOperatorTransformer` |
+| Comparisons | `FunctionCall` to `cvBooleanToBoolean4` around a `BinaryExpression`; event comparisons call `lEV`/`gEV` | `call`, `binary` | `BinaryOperatorTransformer` |
+| Unary `+`/`-`, `( … )` | `UnaryExpression`, `ParenthesizedExpression` | `unary`, `parens` | `UnaryOperatorTransformer` |
+| `sin`, `cos`, `log`, `exp`, … | `FunctionCall` to `Modelica.Math.*` | `call(mslRef(...))` | `UnaryOperatorTransformer` |
+| `start`, `end` of a period | `FunctionCall` to `Functions.PStart`/`PEnd` | `call(libraryRef(...))` | `UnaryOperatorTransformer` |
+| Stateful operators (`filter`, `integrate`, `card`, `tick`) | Block instance `ComponentDeclaration`, input `Equation`s, and a `ComponentReference` to `nameN.out` as the result | `component`, `eq`, `ref` | `BlockInstantiation` |
+| `new` / constructors, clocks, events, periods | Record `ComponentDeclaration` with `ModificationElement`s, plus its `_build` companion block | `component`, `mod` | `ConstructorTransformer`, `RecordBuild` |
+| `Set` | `ArrayConstructor` `{a, b, c}`, or an array component with an `ArrayDimension` | `array`, `dimension` | `SetTransformer` |
+| Anything unsupported | `Placeholder` in the enclosing class, plus a `Diagnostic` | `placeholder` (via `ctx.reportWithPlaceholder`) | `TransformationContext` |
+
+**Example.** Inside a class, `Boolean b is x > 2;` produces this tree, which prints as `CRMLtoModelica.Types.Boolean4 b = CRMLtoModelica.Functions.cvBooleanToBoolean4(x > 2);`:
+
+```mermaid
+flowchart TD
+    CD["ComponentDeclaration<br/>name = b"]
+    T["Reference (raw, EXTERNAL_LIBRARY)<br/>CRMLtoModelica.Types.Boolean4"]
+    FC["FunctionCall"]
+    F["Reference (raw, EXTERNAL_LIBRARY)<br/>CRMLtoModelica.Functions.cvBooleanToBoolean4"]
+    BE["BinaryExpression<br/>operator = GT"]
+    CR["ComponentReference"]
+    RP["ReferencePart<br/>name = x"]
+    IL["IntegerLiteral<br/>value = 2"]
+
+    CD -- declaredType --> T
+    CD -- binding --> FC
+    FC -- function --> F
+    FC -- "arguments[0]" --> BE
+    BE -- lhs --> CR
+    CR -- "parts[0]" --> RP
+    BE -- rhs --> IL
+```
+
+When a translation needs a Modelica construct that is not in these diagrams (for example `when` equations, `for` loops or nested modifications), you must extend `modelica.xcore` first. Follow the development flow at the end of this section.
+
 ### Important classes
 
 | Class | Purpose |
