@@ -5,8 +5,13 @@
 )
 package crml.model.language
 
-
+/*
+ * Entities in a CRML model.
+ */
 abstract class NamedEntity {
+    /*
+     * Unique identifier of the entity.
+     */
     id String name
 }
 
@@ -14,6 +19,9 @@ abstract class NamedEntity {
 // ??????????????????????? //
 ///////////////////////////// 
 
+/*
+ * 
+ */
 abstract class Element extends NamedEntity{
     // TODO: must have a domain
     // TODO: must have a name
@@ -36,8 +44,17 @@ abstract class Object extends Element {
     contains Period frame //Optional to have
 }
 
+/*
+ * Assignment that binds an {@link Element} to a {@link Value}.
+ */
 class Binding {
+    /*
+     * {@link Element} that receives the value.
+     */
     refers Element element
+    /*
+     * {@link Value} to be assigned to the element.
+     */
     contains Value value
 }
 
@@ -45,84 +62,222 @@ class Binding {
 // Templates and Operators //
 /////////////////////////////
 
+/*
+ * Superclass of all CRML Operators.
+ */
 abstract class Operator extends NamedEntity{
+    /*
+     * Return type of the {@link Operator}.
+     */
     contains TypeReference domain
     //override getName() {
     //    return "Placeholder operator name";
     //}
 }
 
+/*
+ * Built-in unary operations in CRML.
+ */
 enum BuiltinUnaryOperatorKind {
+    /*
+     * Parity operator.
+     */
     PAR = 14
-    PRE = 16 //?? 
+    /*
+     * 
+     */
+    PRE = 16 
+    /*
+     * Negation for Boolean4.
+     */
     NOT = 17
+    /*
+     * Cardinality operator for sets.
+     */
     CARD = 18
+    /*
+     * Base 10 logarithm.
+     */
     LOG10 = 24
+    /*
+     * Cosine operator.
+     */
     COS = 25
     ACOS = 26
     SIN = 27
     ASIN = 28
     START = 29   // right_op: exp 'start'
     END = 30     // right_op: exp 'end'
+    /*
+     * Parentesis for operators.
+     */
     SUBEXPRESSION = 31
+    /*
+     * Exponent operator for Euler's constant.
+     */
     EXP_OP = 101
+    /*
+     * Subtraction from 0.
+     */
     SUB = 102 // has both unary and binary form
+    /*
+     * Addition to 0.
+     */
     ADD = 103 // has both unary and binary form
+    /*
+     * Natural logarithm. (ln)
+     */
     LOG = 104 // has both unary and binary form
     TICK = 51
 }
 
+/*
+ * Built-in {@link Operator} with one argument.
+ */
 class UnaryOperator extends Operator, Value {
+    /*
+     * Type of operation.
+     */
     BuiltinUnaryOperatorKind optype
+    /*
+     * Input of operation.
+     */
     contains Value value
-
 }
-
+/*
+ * Built-in binary operations.
+ */
 enum BuiltinBinaryOperatorKind {
+    /*
+     * Conjunction.
+     */
     AND = 0
+    /*
+     * Multiplication.
+     */
     MUL = 1
+    /*
+     * Addition.
+     */
     ADD = 2
+    /*
+     * Subtraction.
+     */
     SUB = 3
+    /*
+     * Division.
+     */
     DIV = 4
     WITH = 5
     MASTER = 6
     ON = 7
     FILTER = 8
+    /*
+     * Less or equal than ({@code <=}).
+     * At most.
+     */
     LE = 9
+    /*
+     * Less than ({@code <}).
+     */
     LT = 10
+    /*
+     * Greater or equal than({@code >=}).
+     * At least.
+     */
     GE = 11
+    /*
+     * Greater than ({@code >}).
+     */
     GT = 12
+    /*
+     * Not equals.
+     */
     NEQ = 13
     PAR = 14
+    /*
+     * Equals.
+     */
     EQ = 15
+    /*
+     * Disjunction.
+     */
     OR = 19
+    /*
+     * Power.
+     */
     POW = 20
+    /*
+     * Modulo.
+     */
     MOD = 21
+    /*
+     * Logarithm.
+     */
     LOG = 23
     AT = 101
 }
 
+
+/*
+ * Built-in {@link Operator} with two arguments.
+ */
 class BinaryOperator extends Operator, Value {
+    /*
+     * Type of operation.
+     */
     BuiltinBinaryOperatorKind optype
+    /*
+     * Second argument of the operator (right hand side).
+     */
     contains Value rhs
+    /*
+     * First argument of the operator (left hand side).
+     */
     contains Value lhs
 }
+
+/*
+ * Call to {@link Operator} defined in CRML.
+ */
 abstract class CustomOperator extends Operator {
+    /*
+     * Signature elements of an operator.
+     * Alternating sequence of {@link Variable} and {@link Keyword} objects.
+     */
     contains OperatorHeaderElement[] header
+    /*
+     * Computation method of the operator.
+     */
     contains Value definition
 
+    /*
+     * Keywords of the {@link CustomOperator} header.
+     */
     op Keyword[] getKeywords() {
         header.filter(Keyword).toEList
     }
+    /*
+     * Variables declared in the {@link CustomOperator} header.
+     */
     op Variable[] getVariables() {
         header.filter(Variable).toEList
     }
+    /*
+     * Number of arguments of the {@link CustomOperator}.
+     */
     op int getArity() {
         header.filter(Variable).size
     }
+    /*
+     * True if the first {@link #getHeader() header} element is a {@link Variable}.
+     */
     op boolean startsWithValue() {
         !header.isEmpty && header.head instanceof Variable
     }
+    /*
+     * True if the last {@link #getHeader() header} element is a {@link Variable}.
+     */
     op boolean endsWithValue() {
         !header.isEmpty && header.get(header.size - 1) instanceof Variable
     }
@@ -139,10 +294,6 @@ class UserOperator extends CustomOperator {
 abstract class OperatorHeaderElement {
 
 }
-
-//class Parameter extends OperatorHeaderElement {
-//    contains Variable variable
-//}
 
 class Keyword extends OperatorHeaderElement{
     String keyword

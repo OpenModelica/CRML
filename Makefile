@@ -41,6 +41,19 @@ test-forml:
 build:
 	$(GRADLE_CMD) build
 
+# Output: submodules/<module>/build/docs/javadoc/index.html
+javadoc:
+	$(GRADLE_CMD) javadoc
+
+# All the projects in one site, build/docs/javadoc/index.html
+javadoc-all:
+	$(GRADLE_CMD) javadocAll
+
+# Serves the javadoc-all site with the JDK's HTTP server until Ctrl+C,
+# on http://localhost:8001/ unless PORT is given, e.g. make serve-javadoc PORT=9000
+serve-javadoc:
+	$(GRADLE_CMD) serveJavadoc $(if $(PORT),-Pport=$(PORT))
+
 cleanall: clean
 clean:
 	rm -rf build bin generated
