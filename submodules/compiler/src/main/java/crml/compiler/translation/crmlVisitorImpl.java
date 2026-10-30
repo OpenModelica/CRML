@@ -6,12 +6,16 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.antlr.v4.runtime.Token;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import crml.compiler.translation.CRMLTranslationException.InvalidUserTypeOpException;
+import crml.compiler.translation.CRMLTranslationException.SIUnitMismatchException;
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser;
+import crml.language.grammar.crmlParser.AliasContext;
 import crml.language.grammar.crmlParser.Category_pairContext;
 import crml.language.grammar.crmlParser.Class_var_defContext;
 import crml.language.grammar.crmlParser.DependencyContext;
@@ -26,6 +30,12 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	// type mapping from CRML built-in to Modelica
 	private HashMap<String, String> types_mapping;
+
+	private HashMap<String, UserType> user_types;
+
+	private HashMap<String, String> alias_to_user_type;
+
+	private HashMap<String, String> var_to_val;
 
 	// operator mapping CRML built-in to Modelica
 	private HashMap<String, List<Signature>> operators_map;
@@ -91,6 +101,12 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		types_mapping.put("Integer", "Integer");
 		types_mapping.put("String", "String");
 
+		user_types = new HashMap<String, UserType>();
+
+		alias_to_user_type = new HashMap<String, String>();
+
+		var_to_val = new HashMap<String, String>();
+
 		operators_map = OperatorMapping.get_operator_map();
 
 		category_map = new CategoryMapping();
@@ -152,6 +168,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (ctx.class_def() != null)
 			return visit(ctx.class_def());
 
+		// the element is a type definition
+		if (ctx.type_def() != null)
+			return visit(ctx.type_def());
+
 		// the element is a category
 		if (ctx.category() != null)
 			return visit(ctx.category());
@@ -160,7 +180,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (ctx.uninstantiated_def() != null)
 			return visit(ctx.uninstantiated_def());
 
-		// TODO sets, comments, type
+		// TODO sets, comments
 
 		throw new ParseCancellationException("Unable to translate in element_def : " + ctx.getText() + '\n');
 	}
@@ -247,7 +267,12 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 		prefix += ctx.id(0).getText();
 
-		buffer.append("model " + ctx.id(0).getText());
+		String classPrefix = "";
+		if (ctx.class_prefix() != null) {
+			classPrefix = ctx.class_prefix().getText() + " ";
+		}
+
+		buffer.append(classPrefix + "model " + ctx.id(0).getText());
 
 		if (ctx.class_var_def() != null)// parse class variables
 			buffer.append("\n");
@@ -290,6 +315,151 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			throw new ParseCancellationException("unable to translate class: " + ctx.var_def().getText() + '\n');
 
 		return value;
+	}
+
+	@Override
+	public Value visitType_def(crmlParser.Type_defContext ctx) {
+		Value value = null;
+
+		String SIUnit = null;
+		String userUnit = null;
+		Double rate = 1.0;
+		Double offset = 0.0;
+		Double u = null;
+
+		String parent = null;
+		String name = null;
+		String alias = null;
+
+		Integer rateIndex = null;
+
+		for (int i = 0; i < ctx.type_param().size(); ++i) {
+			value = visitType_param(ctx.type_param(i));
+			switch (value.type) {
+				case "SIUnit":
+					SIUnit = value.getValue();
+					break;
+				case "userUnit":
+					userUnit = value.getValue();
+					break;
+				case "rate":
+					rate = Double.parseDouble(value.getValue());
+					rateIndex = i;
+					break;
+				case "offset":
+					offset = Double.parseDouble(value.getValue());
+					break;
+				case "u":
+					u = Double.parseDouble(value.getValue());
+					break;
+			}
+		}
+
+		name = ctx.id(0).getText();
+		parent = ctx.id(1).getText();
+
+		if (ctx.type_alias() != null) {
+			if (ctx.class_prefix() != null && ctx.class_prefix().getText().equals("partial")) {
+				String errorMessage = "Type '" + Utilities.blue(name) + "' is partial and cannot have an alias";
+				ArrayList<Range> ranges = new ArrayList<Range>();
+				ranges.add(getRange(ctx.class_prefix().getStart(), ctx.class_prefix().getStop()));
+				ranges.add(getRange(ctx.type_alias().getStart(), ctx.type_alias().getStop()));
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, ranges);
+			}
+			else if (ctx.type_alias().prefix == null) {
+				String errorMessage = "Prefix '" + Utilities.blue("alias") + "' missing from alias definition";
+				Range range = getRange(ctx.type_alias().getStart(), ctx.type_alias().getStop());
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+			}
+			else if (ctx.type_alias().alias() == null) {
+				String errorMessage = "Missing alias (e.g. '" + Utilities.blue("alias [s]") + "') in alias definition";
+				Range range = getRange(ctx.type_alias().getStart(), ctx.type_alias().getStop());
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+			}
+			else {
+				alias = ctx.type_alias().alias().getText();
+				throwIfAliasBracketMissing(ctx.type_alias().alias());
+			}
+		}
+
+		if (!parent.equals("Quantity") && !this.user_types.containsKey(parent)) {
+			String errorMessage = "Type '" + Utilities.blue(name) + "' declared before parent type '" + Utilities.blue(parent) + "'";
+			ArrayList<Range> ranges = new ArrayList<Range>();
+			ranges.add(getRange(ctx.id(0).getStart(), ctx.id(0).getStop()));
+			ranges.add(getRange(ctx.id(1).getStart(), ctx.id(1).getStop()));
+			Utilities.throwCompilerError(ctx.getStart(), errorMessage, ranges);
+		}
+
+		if (rate != null && rate == 0) {
+			String errorMessage = "Rate for type '" + Utilities.blue(name) + "' was set to zero which is not allowed";
+			Range range = getRange(ctx.type_param(rateIndex).getStart(), ctx.type_param(rateIndex).getStop());
+			Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+		}
+
+		if (SIUnit == null) {
+			if (parent.equals("Quantity")) {
+				String errorMessage = "Type '" + Utilities.blue(name) + "' has no parent and no SIUnit defined";
+				Range range = getRange(ctx.type_param(0).getStart(), ctx.type_param(ctx.type_param().size() - 1).getStop());
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+			}
+			SIUnit = this.user_types.get(parent).SIUnit;
+		}
+
+		Boolean uniqueTypeName = true;
+		Boolean isPartial = ctx.class_prefix() != null && ctx.class_prefix().getText().equals("partial");
+		UserType newType = new UserType(SIUnit, userUnit, rate, offset, u, parent, alias, isPartial, ctx);
+		if (this.user_types.containsKey(name)) {
+			if(!newType.equals(this.user_types.get(name))) {
+				String errorMessage = "Non-matching definition of type '" + Utilities.blue(name) + "'";
+
+				crmlParser.Type_defContext prevDef = this.user_types.get(this.alias_to_user_type.get(alias)).source;
+
+				String prevDefinedMessage = "'" + Utilities.cyan(name) + "' previously defined here";
+				Utilities.throwCompilerErrorWithNote(ctx.getStart(), errorMessage, prevDef.getStart(), prevDefinedMessage);
+			}
+			uniqueTypeName = false;
+		}
+
+		this.user_types.put(name, newType);
+
+		if (alias != null) {
+			if (uniqueTypeName && this.alias_to_user_type.containsKey(alias)) {
+				String errorMessage = "Redefinition of alias '" + Utilities.blue(alias) + "'";
+				crmlParser.AliasContext actx = ctx.type_alias().alias();
+				Range range = getRange(actx.getStart(), actx.getStop());
+
+				crmlParser.Type_defContext prevDef = this.user_types.get(this.alias_to_user_type.get(alias)).source;
+
+				String prevDefinedMessage = "'" + Utilities.cyan(alias) + "' previously defined here";
+
+
+				crmlParser.AliasContext pactx = prevDef.type_alias().alias();
+				Range noteRange = getRange(pactx.getStart(), pactx.getStop());
+
+				Utilities.throwCompilerErrorWithNote(ctx.getStart(), errorMessage, range, prevDef.getStart(), prevDefinedMessage, noteRange);
+			}
+			this.alias_to_user_type.put(alias, name);
+		}
+
+		if (isPartial)
+			return new Value("", "PartialType_Definition");
+
+		return new Value("type " + name + " = Real(final quantity=" + newType.SIUnit + ", final unit=" + newType.userUnit + ", displayUnit=" + newType.userUnit + ");\n", "Type_Definition");
+	}
+
+	@Override
+	public Value visitType_param(crmlParser.Type_paramContext ctx) {
+		String key = "";
+		String value = "";
+		if (ctx.string() != null) {
+			key = ctx.type_param_string_prefix().getText();
+			value = ctx.string().getText();
+		}
+		else if (ctx.number() != null) {
+			key = ctx.type_param_number_prefix().getText();
+			value = ctx.number().getText();
+		}
+		return new Value(value, key);
 	}
 
 	@Override
@@ -433,21 +603,105 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	@Override
 	public Value visitVar_def(crmlParser.Var_defContext ctx) {
-		String var_t, mapped_t;
+		String var_t, mapped_t = null;
 		StringBuffer buffer = new StringBuffer();
-		Value v;
-		Boolean isSet = false;
+		Value v = null;
+		String alias = null;
+		AliasContext aliasCtx = null;
+		Boolean isSet = (ctx.type().empty_set() != null);
 
 		var_t = ctx.type().getText();
 
 		if (types_mapping.containsKey(var_t))
 			mapped_t = types_mapping.get(var_t);
-		else
+		else {
+			if (this.user_types.get(var_t) == null && !isSet) {
+				String errorMessage = "Type declaration '" + Utilities.blue(var_t) + "' has not been defined";
+				Range range = getRange(ctx.type().getStart(), ctx.type().getStop());
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+			}
 			mapped_t = var_t;
+		}
 
-		isSet = (ctx.type().empty_set() != null);
 		if (isSet)
 			mapped_t += " [:] ";
+
+		if (ctx.exp() != null) {
+			v = visit(ctx.exp());
+		}
+
+		if (v != null && v.aliasInfo != null && v.aliasInfo.alias != null) {
+			alias = v.aliasInfo.alias;
+			aliasCtx = v.aliasInfo.context;
+		}
+		else if (ctx.is_external != null && ctx.alias() != null) {
+			alias = ctx.alias().getText();
+			aliasCtx = ctx.alias();
+		}
+
+		if (alias != null) {
+			throwIfAliasBracketMissing(aliasCtx);
+			if (!this.alias_to_user_type.containsKey(alias)) {
+				String errorMessage = "Type with alias '" + Utilities.blue(alias) + "' has not been defined";
+				Range range = getRange(aliasCtx.getStart(), aliasCtx.getStop());
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+			}
+			else if (this.types_mapping.containsKey(var_t)) {
+				String errorMessage = "Built-in type '" + Utilities.blue(var_t)
+									+ "' cannot be used in conjunction with user type '"
+									+ Utilities.blue(alias) + "'";
+
+				ArrayList<Range> ranges = new ArrayList<Range>();
+				ranges.add(getRange(ctx.type().getStart(), ctx.type().getStop()));
+				ranges.add(getRange(aliasCtx.getStart(), aliasCtx.getStop()));
+				Utilities.throwCompilerError(ctx.getStart(), errorMessage, ranges);
+			}
+			else if (v != null && this.user_types.containsKey(mapped_t) && !(mapped_t.equals(this.alias_to_user_type.get(alias)))) {
+				Boolean couldConvert;
+				if (this.user_types.get(mapped_t).isPartial) {
+					couldConvert = this.user_types.get(mapped_t).SIUnit.equals(this.user_types.get(this.alias_to_user_type.get(alias)).SIUnit);
+					if (couldConvert)
+						mapped_t = this.alias_to_user_type.get(alias);
+				}
+				else
+					couldConvert = convertValue(v, this.alias_to_user_type.get(alias), mapped_t);
+				if (!couldConvert) {
+					String error_message = "Type' " + Utilities.blue(mapped_t + " (" + this.user_types.get(mapped_t).SIUnit + ")")
+											+ "' and alias '"
+											+ Utilities.blue(alias + " (" + this.user_types.get(this.alias_to_user_type.get(alias)).SIUnit + ")") + "' do not share SIUnit";
+					ArrayList<Range> ranges = new ArrayList<Range>();
+					ranges.add(getRange(ctx.type().getStart(), ctx.type().getStop()));
+
+					ranges.add(v.aliasInfo.range);
+
+					Utilities.throwCompilerError(ctx.getStart(), error_message, ranges);
+				}
+			}
+			else {
+				mapped_t = this.alias_to_user_type.get(alias);
+			}
+		}
+		else if (this.user_types.containsKey(mapped_t) && this.user_types.get(mapped_t).isPartial) {
+			String errorMessage = "Cannot instantiate partial type '" + Utilities.blue(mapped_t) + "'";
+			Range range = getRange(ctx.type().getStart(), ctx.type().getStop());
+			Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+		}
+		else if (v != null && v.type.contains("SIUnit:")) {
+			String SIUnit = v.type.substring(v.type.indexOf("SIUnit:") + 7);
+			convertFromSIUnit(v, SIUnit, mapped_t, ctx.getStart(),
+				ctx.exp().getStart(), ctx.exp().getStop(), ctx.type().getStart(), ctx.type().getStop());
+		}
+
+		if (this.types_mapping.containsValue(mapped_t)) {
+			variableTable.putVariable(ctx.id().getText(), var_t, isSet, prefix);
+			variableTable.putlocalVariable(ctx.id().getText(), var_t, isSet);
+		} else {
+			variableTable.putVariable(ctx.id().getText(), mapped_t, isSet, prefix);
+			variableTable.putlocalVariable(ctx.id().getText(), mapped_t, isSet);
+		}
+
+		if (ctx.is_external == null)
+			var_to_val.put(ctx.id().getText(), v.getValue());
 
 		buffer.append(mapped_t + " ");
 		buffer.append(ctx.id().getText());
@@ -457,11 +711,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (saveExtrnal && ctx.is_external != null)
 			external_variables.add(mapped_t + " " + ctx.id().getText() + "\n");
 
-		variableTable.putVariable(ctx.id().getText(), var_t, isSet, prefix);
-		variableTable.putlocalVariable(ctx.id().getText(), var_t, isSet);
-
-		if (ctx.exp() != null) {
-			v = visit(ctx.exp());
+		if (v != null) {
 			if (!v.type.equals("new")) // check that it is not a constructor
 				buffer.append(" = " + v.toModelica());
 		}
@@ -521,8 +771,36 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 				}
 				left = visit(ctx.left);
 				right = visit(ctx.right);
-				Value result = apply_binary_op(op, left, right);
-				return result;
+				try {
+					Value result = apply_binary_op(op, left, right);
+					if (result.type.contains("implicitConversion:")) {
+						String warningMessage = "Operation implicitly converts '"
+											  + Utilities.blue(left.type + " (" + this.user_types.get(left.type).alias + ")")
+											  + "' and '"
+											  + Utilities.blue(right.type + " (" + this.user_types.get(right.type).alias + ")")
+											  + "' to their shared SIUnit '" + Utilities.blue(this.user_types.get(left.type).SIUnit) + "'";
+
+						ArrayList<Range> ranges = new ArrayList<Range>();
+						ranges.add(getRange(ctx.left.getStart(), ctx.left.getStop()));
+						ranges.add(getRange(ctx.right.getStart(), ctx.right.getStop()));
+
+						Range range = getRange(ctx.left.getStart(), ctx.right.getStop());
+
+						Utilities.reportCompilerWarning(ctx.getStart(), warningMessage, range);
+					}
+					return result;
+				} catch (CRMLTranslationException.SIUnitMismatchException e) {
+					String errorMessagge = "Incompatible SIUnits on operation, '"
+											+ Utilities.blue(left.type + " (" + this.user_types.get(left.type).SIUnit + ")")
+											+ "' vs '"
+											+ Utilities.blue(right.type + " (" + this.user_types.get(right.type).SIUnit + ")") + "'";
+					Range range = getRange(ctx.left.getStart(), ctx.right.getStop());
+					Utilities.throwCompilerError(ctx.getStart(), errorMessagge, range);
+				} catch (CRMLTranslationException.InvalidUserTypeOpException e) {
+					String errorMessage = "Invalid operation on user types (supported operations are + -)";
+					Range range = getRange(ctx.builtin_op().getStart(), ctx.builtin_op().getStop());
+					Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
+				}
 			} else if (ctx.lunary != null) {
 				left = visit(ctx.left);
 				Value result = apply_lunary_op(op, left);
@@ -543,8 +821,21 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		}
 
 		// if the expression is in parenthesis
-		if (ctx.sub_exp() != null)
-			return visit(ctx.sub_exp().exp());
+		if (ctx.sub_exp() != null) {
+			ExpContext exp = ctx.sub_exp().exp();
+			AliasContext aliasCtx = ctx.sub_exp().alias();
+			Value v = visit(exp);
+			v.setAliasInfo(aliasCtx);
+			if (aliasCtx != null && v.type.contains("SIUnit:")) {
+				throwIfAliasBracketMissing(aliasCtx);
+				String SIUnit = v.type.substring(v.type.indexOf("SIUnit:") + 7);
+				String userTypeName = this.alias_to_user_type.get(aliasCtx.getText());
+				convertFromSIUnit(v, SIUnit, userTypeName, ctx.getStart(),
+					exp.getStart(), exp.getStop(), aliasCtx.getStart(), aliasCtx.getStop());
+				v.type = userTypeName;
+			}
+			return v;
+		}
 
 		if (ctx.period_op() != null)
 			return visit(ctx.period_op());
@@ -750,7 +1041,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (ctx.exp() == null && ctx.arg_list()==null)
 			return new Value("", "new");
 
-		if(ctx.arg_list()!=null)
+		if(ctx.arg_list() != null)
 			throw new CRMLTranslationException("Translation of constructor with argument list is not implemented.");
 		
 		if(ctx.exp() != null){
@@ -960,6 +1251,9 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		private Value apply_binary_op(String op, Value left, Value right) {
 			// check if predefined operator maps to Modelica operator
 			
+			if (this.user_types.containsKey(left.type) && this.user_types.containsKey(right.type))
+				return performOperationOnUserTypes(op, left.getValue(), left.type, right.getValue(), right.type);
+
 			Signature op_t = OperatorMapping.is_defined(operators_map, op, left.type, right.type, left.isSet, right.isSet);
 			
 			if (op_t== null) 
@@ -1035,11 +1329,22 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (ctx.string() != null)
 			return new Value(ctx.string().getText(), "String");
 
-		if (ctx.number() != null)
+		if (ctx.number() != null) {
+			Value v = new Value(ctx.number().getText(), "Undefined", ctx.alias());
 			if (ctx.number().getText().contains("."))
-				return new Value(ctx.number().getText(), "Real");
+				v.type = "Real";
 			else
-				return new Value(ctx.number().getText(), "Integer");
+				v.type = "Integer";
+			if (ctx.alias() != null) {
+				throwIfAliasBracketMissing(ctx.alias());
+				if (!this.alias_to_user_type.containsKey(v.aliasInfo.alias)) {
+					String errorMessage = "Type with alias '" + Utilities.blue(v.aliasInfo.alias) + "' has not been defined";
+					Utilities.throwCompilerError(ctx.getStart(), errorMessage, v.aliasInfo.range);
+				}
+				v.type = this.alias_to_user_type.get(v.aliasInfo.alias);
+			}
+			return v;
+		}
 
 		if (ctx.time() != null)
 			return new Value("time", "Real");
@@ -1070,6 +1375,117 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 		}
 
+	}
+
+	private void throwIfAliasBracketMissing(AliasContext ctx) {
+		String alias = ctx.getText();
+		String potential_missing = null;
+		if (alias.contains("missing '['") || !alias.startsWith("["))
+			potential_missing = "[";
+		else if (alias.contains("missing ']'") || !alias.endsWith("]"))
+			potential_missing = "]";
+
+		if (potential_missing != null) {
+			Range range = getRange(ctx.getStart(), ctx.getStop());
+			String error_message = "'" + Utilities.blue(potential_missing) + "' missing for alias";
+			Utilities.throwCompilerError(ctx.getStart(), error_message, range);
+		}
+	}
+
+	private Boolean convertValue(Value value, String from, String to) {
+		Double currentVal = Double.parseDouble(value.getValue());
+		UserType fromType = this.user_types.get(from);
+		UserType toType = this.user_types.get(to);
+
+		if (fromType.SIUnit.equals(toType.SIUnit)) {
+			currentVal = toType.SIToUser(fromType.userToSI(currentVal));
+			value.setValue(currentVal.toString());
+			return true;
+		}
+
+		return false;
+	}
+
+	private void convertFromSIUnit(Value value, String SIUnit, String to, Token lineToken,
+								   Token fromStartToken, Token fromStopToken,
+								   Token toStartToken, Token toStopToken
+	) {
+		Double currentVal = Double.parseDouble(value.getValue());
+		UserType toType = this.user_types.get(to);
+
+		if (!SIUnit.equals(toType.SIUnit)) {
+			String errorMessage = "Incompatible conversion of SIUnit '" + Utilities.blue(SIUnit)
+								+ "' and user unit '"
+								+ Utilities.blue(to + " (" + this.user_types.get(to).SIUnit + ")") + "'";
+
+			ArrayList<Range> ranges = new ArrayList<Range>();
+			ranges.add(getRange(fromStartToken, fromStopToken));
+			ranges.add(getRange(toStartToken, toStopToken));
+
+			Utilities.throwCompilerError(lineToken, errorMessage, ranges);
+		}
+
+		currentVal = toType.SIToUser(currentVal);
+		value.setValue(currentVal.toString());
+	}
+
+	private Value performOperationOnUserTypes(String op, String leftVar, String leftType, String rightVar, String rightType) {
+		String SIUnit = this.user_types.get(leftType).SIUnit;
+		if (!SIUnit.equals(this.user_types.get(rightType).SIUnit))
+			throw new CRMLTranslationException.SIUnitMismatchException("SIUnit");
+
+		Double leftVal;
+		Boolean leftValDerivedFromVar = false;
+		if (this.var_to_val.containsKey(leftVar)) {
+			leftValDerivedFromVar = true;
+			leftVal = this.user_types.get(leftType).userToSI(Double.parseDouble(this.var_to_val.get(leftVar)));
+		}
+		else if (isNumeric(leftVar))
+			leftVal = this.user_types.get(leftType).userToSI(Double.parseDouble(leftVar));
+		else
+			throw new ParseCancellationException("Unable to convert " + leftVar + " to double");
+
+		Double rightVal;
+		Boolean rightValDerivedFromVar = false;
+		if (this.var_to_val.containsKey(rightVar)) {
+			rightValDerivedFromVar = true;
+			rightVal = this.user_types.get(rightType).userToSI(Double.parseDouble(this.var_to_val.get(rightVar)));
+		}
+		else if (isNumeric(rightVar))
+			rightVal = this.user_types.get(rightType).userToSI(Double.parseDouble(rightVar));
+		else
+			throw new ParseCancellationException("Unable to convert " + rightVar + " to double");
+
+		String implicitConversionInfo = "";
+		if ((leftValDerivedFromVar || rightValDerivedFromVar) && !leftType.equals(rightType)) {
+			implicitConversionInfo = "implicitConversion:";
+		}
+
+		Double res = 0.0;
+		switch (op) {
+			case "+":
+				res = leftVal + rightVal;
+				break;
+			case "-":
+				res = leftVal - rightVal;
+				break;
+			default:
+				throw new CRMLTranslationException.InvalidUserTypeOpException("SIUnit op");
+		}
+		return new Value(res.toString(), implicitConversionInfo + "SIUnit:" + SIUnit);
+	}
+
+	private Range getRange(Token startToken, Token stopToken) {
+		return new Range(startToken.getCharPositionInLine(), stopToken.getCharPositionInLine() + stopToken.getText().length());
+	}
+
+	private Boolean isNumeric(String str) {
+		try {
+			Double.parseDouble(str);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	public void dump_userOperators() {
