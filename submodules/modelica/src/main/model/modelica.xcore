@@ -5,6 +5,9 @@
 )
 package crml.model.modelica
 
+/*
+ * Superclass of all elements of the Modelica object model.
+ */
 abstract class ModelicaElement {
 }
 
@@ -12,18 +15,49 @@ abstract class ModelicaElement {
 // References  //
 /////////////////
 
+/*
+ * Why a {@link Reference} has no {@link Reference#getTarget() target} and is
+ * printed from its {@link Reference#getRawText() raw text}.
+ */
 enum RawReason {
-    UNRESOLVED = 0 // A lookup was attempted and found nothing. Unlike the others, a defect.
-    EXTERNAL_LIBRARY = 1 // A member of CRMLtoModelica.mo, which this compiler never parses.
-    MODELICA_BUILTIN = 2 // Part of the Modelica language: Real, Integer, String, mod, integer, time.
-    // The Modelica Standard Library, which CRMLtoModelica.mo does not itself
-    // depend on - a model using these needs MSL on the load path.
+    /*
+     * A lookup was attempted and found nothing. Unlike the others, a defect.
+     */
+    UNRESOLVED = 0
+    /*
+     * A member of CRMLtoModelica.mo, which this compiler never parses.
+     */
+    EXTERNAL_LIBRARY = 1
+    /*
+     * Part of the Modelica language: Real, Integer, String, mod, integer, time.
+     */
+    MODELICA_BUILTIN = 2
+    /*
+     * The Modelica Standard Library, which CRMLtoModelica.mo does not itself
+     * depend on - a model using these needs MSL on the load path.
+     */
     STANDARD_LIBRARY = 3
 }
 
+/*
+ * Reference to a named Modelica element. Either it points to an element of the
+ * generated model ({@link #getTarget() target}), and the printer derives its name
+ * from where the target is, or it is a name that is outside the generated model
+ * ({@link #getRawText() rawText}), and {@link #getReason() reason} says why.
+ * {@code T} is the type of the referenced element.
+ */
 class Reference<T extends ModelicaElement> extends ModelicaElement {
+    /*
+     * The referenced element of the generated model, or null for a raw reference.
+     */
     refers T target
+    /*
+     * The name as printed, for a reference without {@link #getTarget() target}.
+     */
     String rawText
+    /*
+     * Why the reference has no {@link #getTarget() target}.
+     */
     RawReason reason
 }
 
@@ -31,36 +65,100 @@ class Reference<T extends ModelicaElement> extends ModelicaElement {
 // Classes //
 /////////////
 
+/*
+ * Kind of a Modelica class, the keyword that it is declared with.
+ */
 enum ClassKind {
+    /*
+     * {@code model}.
+     */
     MODEL = 0
+    /*
+     * {@code record}.
+     */
     RECORD = 1
+    /*
+     * {@code block}.
+     */
     BLOCK = 2
+    /*
+     * {@code function}.
+     */
     FUNCTION = 3
+    /*
+     * {@code package}.
+     */
     PACKAGE = 4
 }
 
+/*
+ * Modelica class definition: a model, record, block, function or package.
+ */
 class ClassDefinition extends ModelicaElement {
+    /*
+     * Name of the class.
+     */
     String name
+    /*
+     * Kind of the class.
+     */
     ClassKind kind
+    /*
+     * True if the class is declared {@code partial}, so it cannot be
+     * instantiated on its own.
+     */
     Boolean partial
+    /*
+     * Description string of the class, or null for none.
+     */
     String comment
 
+    /*
+     * The {@code extends} clauses of the class.
+     */
     contains ExtendsClause[] extendsClauses
+    /*
+     * Classes defined inside the class.
+     */
     contains ClassDefinition[] nestedClasses
+    /*
+     * Components declared in the class, both public and protected.
+     */
     contains ComponentDeclaration[] components
 
+    /*
+     * The {@code equation} section.
+     */
     contains Equation[] equations
+    /*
+     * The {@code algorithm} section.
+     */
     contains Statement[] statements
+    /*
+     * Comments for the parts of the source that could not be translated,
+     * printed at the end of the class.
+     */
     contains Placeholder[] placeholders
 }
 
+/*
+ * An {@code extends} clause.
+ */
 class ExtendsClause extends ModelicaElement {
+    /*
+     * The class extended.
+     */
     contains Reference<ClassDefinition> superClass
 }
 
-// The only raw-text node. Prints as a Modelica line comment, so it can never
-// produce executable Modelica; it makes a diagnosed gap visible in the .mo.
+/*
+ * The only raw-text node. Prints as a Modelica line comment, so it can never
+ * produce executable Modelica; it makes a diagnosed gap visible in the .mo.
+ */
 class Placeholder extends ModelicaElement {
+    /*
+     * Text of the comment.
+     */
     String message
 }
 
@@ -68,52 +166,123 @@ class Placeholder extends ModelicaElement {
 // Components //
 ////////////////
 
+/*
+ * Section of a class that a component is declared in.
+ */
 enum Visibility {
+    /*
+     * {@code public}.
+     */
     PUBLIC = 0
+    /*
+     * {@code protected}.
+     */
     PROTECTED = 1
 }
 
+/*
+ * Causality prefix of a component.
+ */
 enum Causality {
+    /*
+     * No prefix.
+     */
     NONE = 0
+    /*
+     * {@code input}.
+     */
     INPUT = 1
+    /*
+     * {@code output}.
+     */
     OUTPUT = 2
 }
 
+/*
+ * Variability prefix of a component.
+ */
 enum Variability {
+    /*
+     * No prefix.
+     */
     CONTINUOUS = 0
+    /*
+     * {@code constant}.
+     */
     CONSTANT = 1
 }
 
+/*
+ * Component declaration: {@code prefixes Type name[dims](modifications) = binding "comment";}.
+ */
 class ComponentDeclaration extends ModelicaElement {
+    /*
+     * Name of the component.
+     */
     String name
-    // Resolved to a generated class, or raw for a library or builtin type.
-    // "declaredType" rather than "type": type is a reserved word in Xcore.
+    /*
+     * Type of the component.
+     * Resolved to a generated class, or raw for a library or builtin type.
+     * "declaredType" rather than "type": type is a reserved word in Xcore.
+     */
     contains Reference<ClassDefinition> declaredType
+    /*
+     * Section the component is declared in.
+     */
     Visibility visibility
+    /*
+     * Causality prefix of the component.
+     */
     Causality causality
+    /*
+     * Variability prefix of the component.
+     */
     Variability variability
 
-    // Empty means a scalar component.
+    /*
+     * Array dimensions of the component. Empty means a scalar component.
+     */
     contains ArrayDimension[] arrayDimensions
-    // The "(a = x, b = y)" part.
+    /*
+     * The "(a = x, b = y)" part.
+     */
     contains ModificationElement[] modifications
-    // The "= expr" part. Kept separate from the modifications even though
-    // Modelica's grammar folds them together: generators want "declare x of
-    // type T equal to e", and the printer re-joins the two.
+    /*
+     * The "= expr" part. Kept separate from the modifications even though
+     * Modelica's grammar folds them together: generators want "declare x of
+     * type T equal to e", and the printer re-joins the two.
+     */
     contains Expression binding
+    /*
+     * Description string of the component, or null for none.
+     */
     String comment
 }
 
-// A null size prints as ":".
+/*
+ * Array dimension of a component.
+ */
 class ArrayDimension extends ModelicaElement {
+    /*
+     * Size of the dimension. A null size prints as ":".
+     */
     contains Expression size
 }
 
-// Flat: a modification binds one member to one expression. Modelica allows
-// nesting - T t(m(start = 0)) - but CRML cannot express it, because a Binding
-// refers to a single Element and so has no dotted member path.
+/*
+ * Modification of a component: {@code name = value}.
+ * Flat: a modification binds one member to one expression. Modelica allows
+ * nesting - T t(m(start = 0)) - but CRML cannot express it, because a Binding
+ * refers to a single Element and so has no dotted member path.
+ */
 class ModificationElement extends ModelicaElement {
+    /*
+     * Name of the modified member.
+     */
     String name
+    /*
+     * Value of the modified member.
+     */
     contains Expression value
 }
 
@@ -121,17 +290,40 @@ class ModificationElement extends ModelicaElement {
 // Sections and bodies  //
 //////////////////////////
 
+/*
+ * Equation: {@code lhs = rhs "comment";}.
+ */
 class Equation extends ModelicaElement {
+    /*
+     * Left-hand side of the equation.
+     */
     contains Expression lhs
+    /*
+     * Right-hand side of the equation.
+     */
     contains Expression rhs
+    /*
+     * Description string of the equation, or null for none.
+     */
     String comment
 }
 
-// An assignment: "target := value". The only statement kind the transformation
-// produces, for the algorithm body of an operator compiled to a function.
+/*
+ * An assignment: "target := value". The only statement kind the transformation
+ * produces, for the algorithm body of an operator compiled to a function.
+ */
 class Statement extends ModelicaElement {
+    /*
+     * The assigned component.
+     */
     contains ComponentReference target
+    /*
+     * The assigned value.
+     */
     contains Expression value
+    /*
+     * Description string of the statement, or null for none.
+     */
     String comment
 }
 
@@ -139,91 +331,243 @@ class Statement extends ModelicaElement {
 // Expressions //
 /////////////////
 
+/*
+ * Modelica expression.
+ */
 abstract class Expression extends ModelicaElement {
 }
 
-// A dotted, optionally subscripted name: a.b[1].c
+/*
+ * A dotted, optionally subscripted name: a.b[1].c
+ */
 class ComponentReference extends Expression {
+    /*
+     * The dot-separated parts of the name.
+     */
     contains ReferencePart[] parts
 }
 
+/*
+ * Part of a {@link ComponentReference} between two dots: a name with optional subscripts.
+ */
 class ReferencePart extends ModelicaElement {
+    /*
+     * The name.
+     */
     String name
+    /*
+     * The array subscripts. Empty means no subscripts.
+     */
     contains Expression[] subscripts
 }
 
+/*
+ * Binary operators of Modelica.
+ */
 enum BinaryOperatorKind {
+    /*
+     * Addition ({@code +}).
+     */
     ADD = 0
+    /*
+     * Subtraction ({@code -}).
+     */
     SUB = 1
+    /*
+     * Multiplication ({@code *}).
+     */
     MUL = 2
+    /*
+     * Division ({@code /}).
+     */
     DIV = 3
+    /*
+     * Power ({@code ^}).
+     */
     POW = 4
+    /*
+     * Conjunction ({@code and}).
+     */
     AND = 5
+    /*
+     * Disjunction ({@code or}).
+     */
     OR = 6
+    /*
+     * Equals ({@code ==}).
+     */
     EQ = 7
+    /*
+     * Not equals ({@code <>}).
+     */
     NEQ = 8
+    /*
+     * Less than ({@code <}).
+     */
     LT = 9
+    /*
+     * Less or equal than ({@code <=}).
+     */
     LE = 10
+    /*
+     * Greater than ({@code >}).
+     */
     GT = 11
+    /*
+     * Greater or equal than ({@code >=}).
+     */
     GE = 12
 }
 
+/*
+ * Unary operators of Modelica.
+ */
 enum UnaryOperatorKind {
+    /*
+     * Unary plus ({@code +}).
+     */
     PLUS = 0
+    /*
+     * Negation ({@code -}).
+     */
     MINUS = 1
-    NOT = 2 // This is Modelica NOT, different from CRML's not
+    /*
+     * Modelica's Boolean {@code not}. Different from CRML's not, which is on
+     * four-valued Booleans and is translated to a library call.
+     */
+    NOT = 2
 }
 
+/*
+ * Expression with a binary operator: {@code lhs operator rhs}.
+ */
 class BinaryExpression extends Expression {
+    /*
+     * The operator.
+     */
     BinaryOperatorKind operator
+    /*
+     * Left operand.
+     */
     contains Expression lhs
+    /*
+     * Right operand.
+     */
     contains Expression rhs
 }
 
+/*
+ * Expression with a unary operator: {@code operator operand}.
+ */
 class UnaryExpression extends Expression {
+    /*
+     * The operator.
+     */
     UnaryOperatorKind operator
+    /*
+     * The operand.
+     */
     contains Expression operand
 }
 
-// Flat name, positional arguments. Every call the transformation emits is
-// positional, and Modelica builtins (pre, edge, time, integer, String, ...) are
-// ordinary calls here - the printer treats them identically.
+/*
+ * Function call: {@code f(a, b)}.
+ * Flat name, positional arguments. Every call the transformation emits is
+ * positional, and Modelica builtins (pre, edge, time, integer, String, ...) are
+ * ordinary calls here - the printer treats them identically.
+ */
 class FunctionCall extends Expression {
+    /*
+     * The called function.
+     */
     contains Reference<ClassDefinition> function
+    /*
+     * The arguments, in order.
+     */
     contains Expression[] arguments
 }
 
-// Flat: CRML's IfValue has exactly one condition, and elseif chains arise from
-// nesting rather than from a branch list.
+/*
+ * Conditional expression: {@code if condition then a else b}.
+ * Flat: CRML's IfValue has exactly one condition, and elseif chains arise from
+ * nesting rather than from a branch list.
+ */
 class IfExpression extends Expression {
+    /*
+     * The condition.
+     */
     contains Expression condition
+    /*
+     * The value if the condition is true.
+     */
     contains Expression thenExpression
+    /*
+     * The value if the condition is false.
+     */
     contains Expression elseExpression
 }
 
-// {a, b, c}
+/*
+ * Array constructor: {a, b, c}
+ */
 class ArrayConstructor extends Expression {
+    /*
+     * The elements of the array, in order.
+     */
     contains Expression[] elements
 }
 
+/*
+ * Expression in parentheses. Only produced where the CRML source has
+ * parentheses; the printer adds the parentheses that precedence needs.
+ */
 class ParenthesizedExpression extends Expression {
+    /*
+     * The expression in the parentheses.
+     */
     contains Expression inner
 }
 
+/*
+ * Integer literal.
+ */
 class IntegerLiteral extends Expression {
+    /*
+     * The value of the literal.
+     */
     Integer value
 }
 
+/*
+ * Real literal.
+ */
 class RealLiteral extends Expression {
-    // The source spelling, when there was one; otherwise value is printed.
+    /*
+     * The source spelling, when there was one; otherwise value is printed.
+     */
     String literal
+    /*
+     * The value of the literal.
+     */
     Double value
 }
 
+/*
+ * String literal.
+ */
 class StringLiteral extends Expression {
+    /*
+     * The value of the literal, without quotes and escapes.
+     */
     String value
 }
 
+/*
+ * Boolean literal: {@code true} or {@code false}.
+ */
 class BooleanLiteral extends Expression {
+    /*
+     * The value of the literal.
+     */
     Boolean value
 }

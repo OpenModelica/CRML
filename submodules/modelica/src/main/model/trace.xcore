@@ -7,26 +7,88 @@ package crml.model.trace
 
 import org.eclipse.emf.ecore.EObject
 
+/*
+ * Trace of a CRML to Modelica translation. It records, for each element of
+ * the generated Modelica model, the CRML element it was generated from.
+ */
 class TraceModel {
+    /*
+     * The links of the trace, one per generated element.
+     */
     contains TraceLink[] links
 }
 
+/*
+ * Kind of a {@link TraceLink}: what kind of CRML element was translated to
+ * what kind of Modelica element.
+ */
 enum TraceLinkKind {
+    /*
+     * A CRML {@code Model} to the Modelica model class generated for it.
+     */
     MODEL_TO_CLASS = 0
+    /*
+     * A CRML {@code Class} to the Modelica model generated for it.
+     */
     CLASS_TO_MODEL = 1
+    /*
+     * A CRML operator or template to a Modelica function: its body is a
+     * pure expression over its parameters.
+     */
     OPERATOR_TO_FUNCTION = 2
+    /*
+     * A CRML operator or template to a Modelica block: its body needs
+     * components or equations, which a function cannot have.
+     */
     OPERATOR_TO_BLOCK = 3
+    /*
+     * A CRML {@code Variable} to a component declaration.
+     */
     VARIABLE_TO_COMPONENT = 4
+    /*
+     * A CRML {@code Variable} to an equation.
+     */
     VARIABLE_TO_EQUATION = 5
+    /*
+     * A CRML expression to a component declaration, such as an instance of a
+     * library block that computes it.
+     */
     VALUE_TO_COMPONENT = 6
+    /*
+     * A CRML expression to an equation, such as one that sets an input of a
+     * library block.
+     */
     VALUE_TO_EQUATION = 7
+    /*
+     * A CRML {@code Set} to a component declaration.
+     */
     SET_TO_COMPONENT = 8
+    /*
+     * A CRML element that could not be translated to the placeholder comment
+     * left for it in the generated model.
+     */
     UNSUPPORTED = 9
 }
 
+/*
+ * Link from an element of the CRML model to an element of the Modelica model
+ * generated from it.
+ */
 class TraceLink {
+    /*
+     * The source element, in the CRML model.
+     */
     refers EObject crml
+    /*
+     * The generated element, in the Modelica model.
+     */
     refers EObject modelica
+    /*
+     * Kind of the link.
+     */
     TraceLinkKind kind
+    /*
+     * Free-text remark on the link, or null for none.
+     */
     String note
 }
