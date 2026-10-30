@@ -10,16 +10,16 @@ public class CRMLTranslationException extends RuntimeException{
 	public CRMLTranslationException(String errorMessage) {
 		super(errorMessage);
 	}
-}
 
-class SIUnitMismatchException extends RuntimeException{
-	public SIUnitMismatchException(String errorMessage) {
-		super(errorMessage);
+	public static class SIUnitMismatchException extends RuntimeException {
+		public SIUnitMismatchException(String errorMessage) {
+			super(errorMessage);
+		}
 	}
-}
 
-class InvalidUserTypeOpException extends RuntimeException{
-	public InvalidUserTypeOpException(String errorMessage) {
-		super(errorMessage);
+	public static class InvalidUserTypeOpException extends RuntimeException {
+		public InvalidUserTypeOpException(String errorMessage) {
+			super(errorMessage);
+		}
 	}
 }

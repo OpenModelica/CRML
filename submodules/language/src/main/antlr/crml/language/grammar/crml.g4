@@ -39,6 +39,8 @@ category_pair : '(' op ',' op ')';
  
 var_def : var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external' alias?))?';' ;
 
+// Both square brackets are optional so that the parses sees the id as an
+// alias if any or both are missing, and can then inform the user about it.
 alias : '['? id ']'?;
 
 operator : 'Operator' '[' type ']' operator_def ';' ;

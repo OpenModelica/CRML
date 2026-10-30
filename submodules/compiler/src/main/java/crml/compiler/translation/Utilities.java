@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.antlr.v4.runtime.Token;
 
 public class Utilities {
     public static final String ANSI_RED = "\u001B[1;31m";
@@ -42,7 +43,7 @@ public class Utilities {
         return ANSI_COLOR + input + ANSI_RESET;
     }
 
-    private static void reportMessage(org.antlr.v4.runtime.Token token, String message, ArrayList<Range> ranges, String messageType, String ANSI_COLOR) {
+    private static void reportMessage(Token token, String message, ArrayList<Range> ranges, String messageType, String ANSI_COLOR) {
         LineInfo lineInfo = getLineInfo(token);
 
         ranges.sort(Comparator.comparingInt(Range::getStart));
@@ -78,31 +79,31 @@ public class Utilities {
         System.out.println(marker);
     }
 
-    public static void throwCompilerError(org.antlr.v4.runtime.Token token, String errorMessage, Range range) {
+    public static void throwCompilerError(Token token, String errorMessage, Range range) {
         ArrayList<Range> ranges = new ArrayList<Range>();
         ranges.add(range);
 
         throwCompilerError(token, errorMessage, ranges);
     }
 
-    public static void throwCompilerError(org.antlr.v4.runtime.Token token, String errorMessage, ArrayList<Range> ranges) {
+    public static void throwCompilerError(Token token, String errorMessage, ArrayList<Range> ranges) {
         reportMessage(token, errorMessage, ranges, "error", ANSI_RED);
         throw new CompilerThrowException();
     }
 
-    public static void reportCompilerWarning(org.antlr.v4.runtime.Token token, String warningMessage, Range range) {
+    public static void reportCompilerWarning(Token token, String warningMessage, Range range) {
         ArrayList<Range> ranges = new ArrayList<Range>();
         ranges.add(range);
 
         reportCompilerWarning(token, warningMessage, ranges);
     }
 
-    public static void reportCompilerWarning(org.antlr.v4.runtime.Token token, String warningMessage, ArrayList<Range> ranges) {
+    public static void reportCompilerWarning(Token token, String warningMessage, ArrayList<Range> ranges) {
         reportMessage(token, warningMessage, ranges, "warning", ANSI_PURPLE);
     }
 
-    public static void throwCompilerErrorWithNote(org.antlr.v4.runtime.Token errorToken, String errorMessage, Range errorRange,
-                                                  org.antlr.v4.runtime.Token noteToken, String noteMessage, Range noteRange) {
+    public static void throwCompilerErrorWithNote(Token errorToken, String errorMessage, Range errorRange,
+                                                  Token noteToken, String noteMessage, Range noteRange) {
         LineInfo errorLineInfo = getLineInfo(errorToken);
         LineInfo noteLineInfo = getLineInfo(noteToken);
 
@@ -130,8 +131,8 @@ public class Utilities {
         throw new CompilerThrowException();
     }
 
-    public static void throwCompilerErrorWithNote(org.antlr.v4.runtime.Token errorToken, String errorMessage,
-                                                  org.antlr.v4.runtime.Token noteToken, String noteMessage) {
+    public static void throwCompilerErrorWithNote(Token errorToken, String errorMessage,
+                                                  Token noteToken, String noteMessage) {
         LineInfo errorLineInfo = getLineInfo(errorToken);
         LineInfo noteLineInfo = getLineInfo(noteToken);
         
@@ -153,7 +154,7 @@ public class Utilities {
         return new String(new char[count]).replace("\0", s);
     }
 
-    public static LineInfo getLineInfo(org.antlr.v4.runtime.Token token) {
+    public static LineInfo getLineInfo(Token token) {
         LineInfo lineInfo = new LineInfo();
         final String[] filePath = token.getInputStream().getSourceName().split("/");
         lineInfo.fileName = filePath[filePath.length - 1];

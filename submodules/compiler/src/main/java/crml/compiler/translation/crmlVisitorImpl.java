@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.antlr.v4.runtime.Token;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import crml.compiler.translation.CRMLTranslationException.InvalidUserTypeOpException;
+import crml.compiler.translation.CRMLTranslationException.SIUnitMismatchException;
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser;
 import crml.language.grammar.crmlParser.AliasContext;
@@ -369,7 +372,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
 			}
 			else if (ctx.type_alias().alias() == null) {
-				String errorMessage = "Missing alias (e.g. '" + Utilities.blue("alias [s]") + "')in alias definition";
+				String errorMessage = "Missing alias (e.g. '" + Utilities.blue("alias [s]") + "') in alias definition";
 				Range range = getRange(ctx.type_alias().getStart(), ctx.type_alias().getStop());
 				Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
 			}
@@ -446,17 +449,17 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	@Override
 	public Value visitType_param(crmlParser.Type_paramContext ctx) {
-		String prefix = "";
+		String key = "";
 		String value = "";
 		if (ctx.string() != null) {
-			prefix = ctx.type_param_string_prefix().getText();
+			key = ctx.type_param_string_prefix().getText();
 			value = ctx.string().getText();
 		}
 		else if (ctx.number() != null) {
-			prefix = ctx.type_param_number_prefix().getText();
+			key = ctx.type_param_number_prefix().getText();
 			value = ctx.number().getText();
 		}
-		return new Value(value, prefix);
+		return new Value(value, key);
 	}
 
 	@Override
@@ -786,14 +789,14 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 						Utilities.reportCompilerWarning(ctx.getStart(), warningMessage, range);
 					}
 					return result;
-				} catch (SIUnitMismatchException e) {
+				} catch (CRMLTranslationException.SIUnitMismatchException e) {
 					String errorMessagge = "Incompatible SIUnits on operation, '"
 											+ Utilities.blue(left.type + " (" + this.user_types.get(left.type).SIUnit + ")")
 											+ "' vs '"
 											+ Utilities.blue(right.type + " (" + this.user_types.get(right.type).SIUnit + ")") + "'";
 					Range range = getRange(ctx.left.getStart(), ctx.right.getStop());
 					Utilities.throwCompilerError(ctx.getStart(), errorMessagge, range);
-				} catch (InvalidUserTypeOpException e) {
+				} catch (CRMLTranslationException.InvalidUserTypeOpException e) {
 					String errorMessage = "Invalid operation on user types (supported operations are + -)";
 					Range range = getRange(ctx.builtin_op().getStart(), ctx.builtin_op().getStop());
 					Utilities.throwCompilerError(ctx.getStart(), errorMessage, range);
@@ -824,6 +827,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			Value v = visit(exp);
 			v.setAliasInfo(aliasCtx);
 			if (aliasCtx != null && v.type.contains("SIUnit:")) {
+				throwIfAliasBracketMissing(aliasCtx);
 				String SIUnit = v.type.substring(v.type.indexOf("SIUnit:") + 7);
 				String userTypeName = this.alias_to_user_type.get(aliasCtx.getText());
 				convertFromSIUnit(v, SIUnit, userTypeName, ctx.getStart(),
@@ -1402,9 +1406,9 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		return false;
 	}
 
-	private void convertFromSIUnit(Value value, String SIUnit, String to, org.antlr.v4.runtime.Token lineToken,
-								   org.antlr.v4.runtime.Token fromStartToken, org.antlr.v4.runtime.Token fromStopToken,
-								   org.antlr.v4.runtime.Token toStartToken, org.antlr.v4.runtime.Token toStopToken
+	private void convertFromSIUnit(Value value, String SIUnit, String to, Token lineToken,
+								   Token fromStartToken, Token fromStopToken,
+								   Token toStartToken, Token toStopToken
 	) {
 		Double currentVal = Double.parseDouble(value.getValue());
 		UserType toType = this.user_types.get(to);
@@ -1428,7 +1432,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 	private Value performOperationOnUserTypes(String op, String leftVar, String leftType, String rightVar, String rightType) {
 		String SIUnit = this.user_types.get(leftType).SIUnit;
 		if (!SIUnit.equals(this.user_types.get(rightType).SIUnit))
-			throw new SIUnitMismatchException("SIUnit");
+			throw new CRMLTranslationException.SIUnitMismatchException("SIUnit");
 
 		Double leftVal;
 		Boolean leftValDerivedFromVar = false;
@@ -1466,12 +1470,12 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 				res = leftVal - rightVal;
 				break;
 			default:
-				throw new InvalidUserTypeOpException("SIUnit op");
+				throw new CRMLTranslationException.InvalidUserTypeOpException("SIUnit op");
 		}
 		return new Value(res.toString(), implicitConversionInfo + "SIUnit:" + SIUnit);
 	}
 
-	private Range getRange(org.antlr.v4.runtime.Token startToken, org.antlr.v4.runtime.Token stopToken) {
+	private Range getRange(Token startToken, Token stopToken) {
 		return new Range(startToken.getCharPositionInLine(), stopToken.getCharPositionInLine() + stopToken.getText().length());
 	}
 
