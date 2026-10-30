@@ -1,0 +1,27 @@
+# 7. Bibliography
+
+* 88Solutions Corporation *et al.*, *Kernel Modeling Language (KerML)*. Object Management Group, Inc. (OMG), 2021.
+* 88Solutions Corporation *et al.*, *OMG Systems Modeling Language™*. Object Management Group, Inc. (OMG), 2021.
+* E. Azzouzi, "Multi-faceted modelling of multi-energy systems: Stakeholders coordination," Ph.D. dissertation, Université Paris-Saclay, 2021.
+* E. Azzouzi, D. Bouskela, A. Jardin, F. Mhenni, and J.-Y. Choley, "A new contract formalism for the coordination of large systems of systems," *J. Adv. Eng. Informat.*, Elsevier, 2022, under submission.
+* E. Azzouzi, A. Jardin, D. Bouskela, F. Mhenni, and J.-Y. Choley, "Towards a rigourous approach to coordinate stakeholders of a multi-energy cyber-physical system," in *Advances in Integrated Design and Production (CPI 2019)*, 2019.
+* E. Azzouzi, J. Jardin, D. Bouskela, F. Mhenni, and J.-Y. Choley, "A survey on systems engineering methodologies for large multi-energy cyber-physical systems," in *Proc. 2019 IEEE Int. Syst. Conf. (SysCon)*, 2019, pp. 1–8.
+* M. Bouissou and L. Buffoni, "Generic method to transform a Modelica simulation model into a dynamic reliability model," in *22e Congrès de Maîtrise des Risques et Sûreté de Fonctionnement (λμ22)*, 2020.
+* M. Bouquerel, E. Kremers, J. van der Kamp, T. Nguyen, and A. Jardin, "Requirements modelling to help decision makers to efficiently renovate energy systems of urban districts," in *Proc. 2019 Summer Simulation Conf.*, Soc. Comput. Simul. Int., 2019, p. 44.
+* D. Bouskela and J. Jardin, "ETL: A new temporal language for the verification of cyber-physical systems," in *Proc. 2018 Annu. IEEE Int. Syst. Conf. (SysCon)*, 2018, pp. 1–8. doi: [10.1109/SysCon.2018.8369502](https://doi.org/10.1109/SysCon.2018.8369502).
+* D. Bouskela, T. Nguyen, and A. Jardin, "Toward a rigorous approach for verifying cyber-physical systems against requirements," *Can. J. Elect. Comput. Eng.*, 2017.
+* M. Chechik, B. Devereux, S. Easterbrook, and A. Gurfinkel, "Multi-valued symbolic model-checking," *ACM Trans. Softw. Eng. Methodol.*, vol. 12, no. 4, pp. 371–408, 2003. doi: [10.1145/990010.990011](https://doi.org/10.1145/990010.990011).
+* R. Darimont and A. van Lamsweerde, "Formal refinement patterns for goal-driven requirements elaboration," in *Proc. 4th ACM SIGSOFT Symp. Found. Softw. Eng. (SIGSOFT '96)*, 1996, pp. 179–190. doi: [10.1145/239098.239131](https://doi.org/10.1145/239098.239131).
+* A. Fuxman, L. Liu, J. Mylopoulos, M. Pistore, M. Roveri, and P. Traverso, "Specifying and analyzing early requirements in Tropos," *Requirements Eng.*, vol. 9, no. 2, pp. 132–150, 2004. doi: [10.1007/s00766-004-0191-7](https://doi.org/10.1007/s00766-004-0191-7).
+* A. Garro *et al.*, "On formal cyber physical system properties modeling: A new temporal logic language and a Modelica-based solution," in *Proc. 2016 IEEE Int. Symp. Syst. Eng. (ISSE)*, 2016. doi: [10.1109/SysEng.2016.7753137](https://doi.org/10.1109/SysEng.2016.7753137).
+* B. Kanso and S. Taha, "Temporal constraint support for OCL," in *Proc. Software Language Engineering (SLE 2012)*, Dresden, Germany, Sep. 2012, pp. 83–103, hal-00762150.
+* F.-L. Li, J. Horkoff, A. Borgida, G. Guizzardi, L. Liu, and J. Mylopoulos, "From stakeholder requirements to formal specifications through refinement," in *Requirements Engineering: Foundation for Software Quality (REFSQ 2015)*, Lecture Notes in Computer Science, 2015, pp. 164–180. doi: [10.1007/978-3-319-16101-3_11](https://doi.org/10.1007/978-3-319-16101-3_11).
+* T. Nguyen, "Formal requirements and constraints modelling in FORM-L for the engineering of complex socio-technical systems," in *Proc. 2019 IEEE 27th Int. Requirements Eng. Conf. Workshops (REW)*, Sep. 2019, pp. 123–132.
+* T. Nguyen, "The BASAALT (Behaviour Analysis & Simulation All Along Life Time) systems engineering method, and the FORM-L language (Formal Requirements Modelling Language)," EDF R&D, Tech. Rep. 6125-3113-2019-03969-EN, 2021.
+* T. Nguyen and M. Bouissou, "Early integration of dependability studies in the design of cyber-physical systems," in *Proc. 30th Eur. Saf. Rel. Conf. (ESREL)*, Singapore: Research Publishing, 2020.
+* C. Ponsard and X. Devroey, "Generating high-level Event-B system models from KAOS requirements models," in *Actes du XXIXème Congrès INFORSID*, 2011, pp. 317–332.
+* C. A. Santos, A. H. Saleh, T. Schrijvers, and M. Nicolai, "CONDEnSe: Contract-based design synthesis," in *Proc. 2019 ACM/IEEE 22nd Int. Conf. Model Driven Eng. Lang. Syst. (MODELS)*, IEEE, 2019.
+* E. Stachtiari, A. Mavridou, P. Katsaros, S. Bliudze, and J. Sifakis, "Early validation of system requirements and design through correctness-by-construction," *J. Syst. Softw.*, vol. 145, pp. 52–78, 2018. doi: [10.1016/j.jss.2018.07.053](https://doi.org/10.1016/j.jss.2018.07.053).
+* D. Walden, G. Roedler, K. Forsberg, D. Hamelin, and T. Shortell, *INCOSE Systems Engineering Handbook: A Guide for System Life Cycle Processes and Activities*, 4th ed. INCOSE, ISBN 978-1-118-99940-0.
+* J. Whittle, N. Bencomo, B. Cheng, and J.-M. Bruel, "RELAX: A language to address uncertainty in self-adaptive systems requirement," *Requirements Eng.*, vol. 15, no. 2, pp. 177–196, 2010. doi: [10.1007/s00766-010-0101-0](https://doi.org/10.1007/s00766-010-0101-0).
+* H. Zhang, F. Dufour, Y. Dutuit, and K. Gonzalez, "Piecewise deterministic Markov processes," *Proc. Inst. Mech. Eng., Part O: J. Risk Rel.*, vol. 222, 2008.

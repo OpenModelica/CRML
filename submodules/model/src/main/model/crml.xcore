@@ -1,0 +1,1074 @@
+@GenModel(
+    bundleManifest="false",
+    modelDirectory="crml-model/src-gen",
+    complianceLevel="8.0"
+)
+package crml.model.language
+
+/*
+ * Entity of a CRML model that has a name.
+ */
+abstract class NamedEntity {
+    /*
+     * Unique identifier of the entity.
+     */
+    id String name
+}
+
+/////////////////////////////
+// ??????????????????????? //
+/////////////////////////////
+
+/*
+ * Named element of a CRML model, such as a variable, that may have a value.
+ * The value is either given by a {@link #getDefinition() definition} or
+ * provided from outside the model (external).
+ */
+abstract class Element extends NamedEntity{
+    // TODO: must have a domain
+    // TODO: must have a name
+    // TODO: name must be unique in the class
+    /*
+     * Value of the element, from its {@code is} clause.
+     * Null when the element is declared without a value.
+     */
+    contains Value definition
+    /*
+     * True if the value of the element is provided from outside the
+     * requirement model ({@code is external}).
+     */
+    Boolean external // TODO mutually exclusive with definition
+}
+
+/*
+ * Typed variable. Declared in a {@link Model} or a {@link Class}, or
+ * as a parameter in the {@link CustomOperator#getHeader() header} of an operator.
+ */
+class Variable extends Element, OperatorHeaderElement {
+    /*
+     * Type of the variable.
+     */
+    contains TypeReference domain
+    /*
+     * True if the variable is declared {@code constant}.
+     */
+    Boolean constant
+
+}
+
+/*
+ * Instance of a {@link Class}.
+ * Not produced by the parser yet.
+ */
+abstract class Object extends Element {
+    /*
+     * {@link Class} of the object.
+     */
+    refers Class domain
+    /*
+     * Variables of the object.
+     */
+    contains Variable[] variables
+    /*
+     * Objects contained in the object.
+     */
+    contains Object[] objects
+    /*
+     * Sets contained in the object.
+     */
+    contains Set<?>[] sets
+    /*
+     * Time period in which the object is evaluated.
+     */
+    contains Period frame //Optional to have
+}
+
+/*
+ * Assignment that binds an {@link Element} to a {@link Value}.
+ * Used for the named arguments of a {@link ConstructorValue}, and for the
+ * arguments of a {@link ComputedValue}, where the element is a parameter of the
+ * called operator.
+ */
+class Binding {
+    /*
+     * {@link Element} that receives the value.
+     */
+    refers Element element
+    /*
+     * {@link Value} to be assigned to the element.
+     */
+    contains Value value
+}
+
+/////////////////////////////
+// Templates and Operators //
+/////////////////////////////
+
+/*
+ * Superclass of all CRML Operators.
+ */
+abstract class Operator extends NamedEntity{
+    /*
+     * Return type of the {@link Operator}.
+     */
+    contains TypeReference domain
+    //override getName() {
+    //    return "Placeholder operator name";
+    //}
+}
+
+/*
+ * Built-in unary operations in CRML.
+ */
+enum BuiltinUnaryOperatorKind {
+    /*
+     * Parity operator.
+     */
+    PAR = 14
+    PRE = 16
+    /*
+     * Negation for Boolean4 ({@code not}).
+     */
+    NOT = 17
+    /*
+     * Cardinality operator for sets ({@code card}).
+     * For a Clock, it is the number of ticks.
+     */
+    CARD = 18
+    /*
+     * Base 10 logarithm ({@code log10}).
+     */
+    LOG10 = 24
+    /*
+     * Cosine ({@code cos}).
+     */
+    COS = 25
+    /*
+     * Arc cosine ({@code acos}).
+     */
+    ACOS = 26
+    /*
+     * Sine ({@code sin}).
+     */
+    SIN = 27
+    /*
+     * Arc sine ({@code asin}).
+     */
+    ASIN = 28
+    /*
+     * Opening event of a Period ({@code P start}).
+     */
+    START = 29   // right_op: exp 'start'
+    /*
+     * Closing event of a Period ({@code P end}).
+     */
+    END = 30     // right_op: exp 'end'
+    /*
+     * Parentheses around an expression.
+     */
+    SUBEXPRESSION = 31
+    /*
+     * Exponential function ({@code exp}).
+     */
+    EXP_OP = 101
+    /*
+     * Negation, subtraction from 0 ({@code -}).
+     */
+    SUB = 102 // has both unary and binary form
+    /*
+     * Unary plus, addition to 0 ({@code +}).
+     */
+    ADD = 103 // has both unary and binary form
+    /*
+     * Natural logarithm ({@code log}).
+     */
+    LOG = 104 // has both unary and binary form
+    /*
+     * Event of the current tick of a Clock ({@code tick c}).
+     */
+    TICK = 51
+}
+
+/*
+ * Built-in {@link Operator} with one argument.
+ */
+class UnaryOperator extends Operator, Value {
+    /*
+     * Type of operation.
+     */
+    BuiltinUnaryOperatorKind optype
+    /*
+     * Input of operation.
+     */
+    contains Value value
+}
+/*
+ * Built-in binary operations.
+ */
+enum BuiltinBinaryOperatorKind {
+    /*
+     * Conjunction ({@code and}).
+     */
+    AND = 0
+    /*
+     * Multiplication ({@code *}).
+     */
+    MUL = 1
+    /*
+     * Addition ({@code +}).
+     */
+    ADD = 2
+    /*
+     * Subtraction ({@code -}).
+     */
+    SUB = 3
+    /*
+     * Division ({@code /}).
+     */
+    DIV = 4
+    WITH = 5
+    MASTER = 6
+    ON = 7
+    /*
+     * Ticks of a Clock for which a condition holds ({@code c filter cond}).
+     */
+    FILTER = 8
+    /*
+     * Less or equal than ({@code <=}).
+     * At most.
+     */
+    LE = 9
+    /*
+     * Less than ({@code <}).
+     */
+    LT = 10
+    /*
+     * Greater or equal than ({@code >=}).
+     * At least.
+     */
+    GE = 11
+    /*
+     * Greater than ({@code >}).
+     */
+    GT = 12
+    /*
+     * Not equals ({@code <>}).
+     */
+    NEQ = 13
+    PAR = 14
+    /*
+     * Equals ({@code ==}).
+     */
+    EQ = 15
+    /*
+     * Disjunction ({@code or}).
+     */
+    OR = 19
+    /*
+     * Power ({@code ^}).
+     */
+    POW = 20
+    /*
+     * Modulo ({@code mod}).
+     */
+    MOD = 21
+    /*
+     * Logarithm.
+     */
+    LOG = 23
+    /*
+     * Value of the left operand at the ticks of a Clock ({@code x at c}).
+     */
+    AT = 101
+}
+
+
+/*
+ * Built-in {@link Operator} with two arguments.
+ */
+class BinaryOperator extends Operator, Value {
+    /*
+     * Type of operation.
+     */
+    BuiltinBinaryOperatorKind optype
+    /*
+     * Second argument of the operator (right hand side).
+     */
+    contains Value rhs
+    /*
+     * First argument of the operator (left hand side).
+     */
+    contains Value lhs
+}
+
+/*
+ * {@link Operator} defined in CRML. Its signature is a sequence of keywords and
+ * parameters, so calls to it can be written in natural language syntax.
+ */
+abstract class CustomOperator extends Operator {
+    /*
+     * Signature elements of an operator.
+     * Sequence of {@link Variable} parameters and {@link Keyword} objects
+     * in the order they are declared.
+     */
+    contains OperatorHeaderElement[] header
+    /*
+     * Computation method of the operator: the expression after {@code =},
+     * which refers to the parameters of the {@link #getHeader() header}.
+     */
+    contains Value definition
+
+    /*
+     * Keywords of the {@link CustomOperator} header.
+     */
+    op Keyword[] getKeywords() {
+        header.filter(Keyword).toEList
+    }
+    /*
+     * Variables declared in the {@link CustomOperator} header.
+     */
+    op Variable[] getVariables() {
+        header.filter(Variable).toEList
+    }
+    /*
+     * Number of arguments of the {@link CustomOperator}.
+     */
+    op int getArity() {
+        header.filter(Variable).size
+    }
+    /*
+     * True if the first {@link #getHeader() header} element is a {@link Variable}.
+     */
+    op boolean startsWithValue() {
+        !header.isEmpty && header.head instanceof Variable
+    }
+    /*
+     * True if the last {@link #getHeader() header} element is a {@link Variable}.
+     */
+    op boolean endsWithValue() {
+        !header.isEmpty && header.get(header.size - 1) instanceof Variable
+    }
+}
+
+/*
+ * Template: a {@link CustomOperator} on Booleans.
+ * Its parameters are untyped in CRML ({@code Template a w b = ...}), so the
+ * parameters and the return type are all Boolean.
+ */
+class Template extends CustomOperator {
+
+}
+
+/*
+ * User-defined operator with typed parameters and an explicit return type
+ * ({@code Operator [T] w T1 a = ...}).
+ */
+class UserOperator extends CustomOperator {
+
+}
+
+/*
+ * Element of a {@link CustomOperator#getHeader() operator header}:
+ * either a {@link Variable} parameter or a {@link Keyword}.
+ */
+abstract class OperatorHeaderElement {
+
+}
+
+/*
+ * Word of the name of a {@link CustomOperator}, in its
+ * {@link CustomOperator#getHeader() header}.
+ */
+class Keyword extends OperatorHeaderElement{
+    /*
+     * The word as written in the source.
+     */
+    String keyword
+}
+
+///////////
+// Types //
+///////////
+/*
+ * Set of elements of the same kind.
+ */
+abstract class Domain {
+    // TODO: A domain is a finite or infinite set of elements of the same kind.
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    /*
+     * True if the domain is declared {@code partial}.
+     */
+    Boolean partial
+    // TODO: a domain can be aliased
+}
+
+/*
+ * CRML type. In CRML, "type" and "domain" are synonymous.
+ * Not used yet.
+ */
+class CRMLType {
+    // TODO: Therefore, the words ‘type’ and ‘domain’ are synonymous. (specs)
+}
+
+/*
+ * Clock: a set of time instants (ticks).
+ * Not used yet, the type is referred to as {@link BuiltinType#CLOCK}.
+ */
+class Clock {
+
+}
+
+/*
+ * Discrete clock.
+ * Not used yet.
+ */
+class DiscreteClock {
+
+}
+
+/*
+ * Single time period between an opening and a closing {@link Event}.
+ * Not used yet, the type is referred to as {@link BuiltinType#PERIOD}.
+ */
+class Period {
+    /*
+     * Opening event of the period.
+     */
+    refers Event start
+    /*
+     * Closing event of the period.
+     */
+    refers Event end
+}
+
+/*
+ * Multiple time periods.
+ * Not used yet, the type is referred to as {@link BuiltinType#PERIODS}.
+ */
+class Periods {
+    /*
+     * The time periods.
+     */
+    refers Period[] Periods
+    // TODO event based generator?
+}
+
+/*
+ * Four-valued Boolean: true, false, undecided or undefined.
+ * Not used yet, the type is referred to as {@link BuiltinType#BOOLEAN}.
+ */
+class Boolean4 {
+    /*
+     * Value of the Boolean.
+     */
+    refers BooleanConstant value // TODO??
+}
+
+/*
+ * Requirement: a {@link Boolean4} that states whether a requirement is satisfied.
+ * Not used yet, the type is referred to as {@link BuiltinType#REQUIREMENT}.
+ */
+class Requirement extends Boolean4 {
+    // TODO should this be implemented in CRML?
+}
+/*
+ * Event: the instant at which a Boolean becomes true.
+ * Not used yet, the type is referred to as {@link BuiltinType#EVENT}.
+ */
+class Event {
+    /*
+     * The Boolean that triggers the event.
+     */
+    refers Boolean4 boolean
+}
+
+//class Operator { implemented elsewhere
+//
+//}
+
+/*
+ * Category: an operator on operators, mapping each operator to another
+ * ({@code Category c = { (f1, g1), ... }}).
+ * Not produced by the parser yet, and not supported by the compiler.
+ */
+class Category extends Operator{
+    // Categories are operators on operators.
+    /*
+     * The mapped operator.
+     */
+    refers Operator f
+}
+
+/*
+ * Set of values of type {@code D}, written as {@code { e1, e2, ... }}.
+ */
+class Set<D> extends Element, Value {
+    /*
+     * Type of the elements of the set.
+     */
+    contains TypeReference domain
+    /*
+     * Elements of the set.
+     */
+    contains D[] elements
+}
+
+/*
+ * CRML class: a {@link Domain} of objects that have the same variables.
+ */
+class Class extends Domain, NamedEntity {
+    // Domain of all objects, have the same attributes but no devinition (is it really practical? default values?)
+    // TODO: A domain is a finite or infinite set of elements of the same kind.
+    // TODO: a domain can be extended
+    // TODO: a domain can be specialized
+    // TODO: a domain can be partial
+    // Boolean partial // inherits from domain
+    // TODO: a domain can be aliased
+
+    /*
+     * Classes that this class extends.
+     */
+    refers Class[] superClasses
+
+    /*
+     * Variables declared in the class.
+     */
+    contains Variable[] variables
+
+    // TODO class specialization
+}
+
+/*
+ * Set of objects of a {@link Class}.
+ * Not used yet.
+ */
+class PowerClass {
+    // sets of objects of Class c (from specs)
+    // TODO where it isu used?
+}
+
+/*
+ * CRML library: a reusable collection of classes and operators
+ * ({@code library L is { ... };}).
+ */
+class Library extends NamedEntity {
+    //contains Element[] elements // TODO derived maybe?
+    /*
+     * Libraries and models that this one is built upon ({@code L union}).
+     * Not filled in by the parser yet.
+     */
+    contains Dependency[] superlibs
+    // TODO: A library can contain domain extensions
+    // TODO: A library can contain domain specializations
+    /*
+     * Classes declared in the library.
+     */
+    contains Class[] classes
+    /*
+     * Operators and templates declared in the library.
+     */
+    contains Operator[] operators
+    //contains Template[] templates // Not in specs, but might be good to have
+    // TODO: A library can contain categories
+}
+
+/*
+ * CRML model: the root of a requirement model ({@code model M is { ... };}).
+ * In addition to the contents of a {@link Library}, it declares the variables
+ * and objects that the requirements are expressed on.
+ */
+class Model extends Library {
+    /*
+     * Objects declared in the model.
+     */
+    contains Object[] objects
+    /*
+     * Variables declared in the model.
+     */
+    contains Variable[] variables
+    /*
+     * Sets declared in the model.
+     */
+    contains Set<?>[] sets
+    /*
+     * Time period in which the model is evaluated.
+     */
+    contains Period frame
+}
+
+/*
+ * CRML package: a hierarchy of libraries and models.
+ * Not supported by the parser yet.
+ */
+class Package {
+    /*
+     * Packages nested in this package.
+     */
+    contains Package[] subpackages
+    /*
+     * Libraries in this package.
+     */
+    contains Library[] libraries
+    /*
+     * Models in this package.
+     */
+    contains Model[] models
+}
+
+/////////////////////
+// Primitive times //
+/////////////////////
+
+/*
+ * Values of a four-valued Boolean.
+ */
+enum BooleanLiteral {
+    /*
+     * {@code true}.
+     */
+    TRUE = 0
+    /*
+     * {@code false}.
+     */
+    FALSE = 1
+    /*
+     * {@code undecided}: the value cannot be decided yet.
+     */
+    UNDECIDED = 2
+    /*
+     * {@code undefined}: the value is not defined.
+     */
+    UNDEFINED = 3
+}
+
+/*
+ * Natural number.
+ * Not used yet.
+ */
+class NaturalNumber {
+
+}
+
+// EInteger?
+//class Integer {
+//
+//}
+
+/*
+ * Real number.
+ * Not used yet, the type is referred to as {@link BuiltinType#REAL}.
+ */
+class Real {
+
+}
+
+/*
+ * Complex number.
+ * Not used yet.
+ */
+class ComplexNumber {
+
+}
+
+// EString?
+//class String {
+//
+//}
+
+///////////////////////
+// Ideas for values and Expressions
+/////////////////////////
+
+/*
+ * Expression in a CRML model.
+ */
+abstract class Value {
+    /*
+     * Type of the value of the expression.
+     * Set by the parser for constants only, null otherwise.
+     */
+    contains TypeReference returnType
+}
+
+/*
+ * Reference to a {@link Variable} by its name.
+ */
+class VariableReference extends Value {
+    /*
+     * The referenced variable.
+     */
+    refers Variable variable
+}
+
+/*
+ * Call to a {@link CustomOperator}.
+ * The parser produces it from a {@link Sequence}, by matching the keywords
+ * and arguments against the headers of the operators in scope.
+ */
+class ComputedValue extends Value {
+    /*
+     * The called operator.
+     */
+    refers CustomOperator operator
+    /*
+     * Arguments of the call, bound to the parameters of the
+     * {@link #getOperator() operator}.
+     */
+    contains Binding[] bindings
+}
+
+/*
+ * Time period between two events, written {@code [e1, e2]}.
+ * A {@code [} on the left or a {@code ]} on the right includes that end.
+ */
+class PeriodsValue extends Value {
+    /*
+     * True if the period includes its start ({@code [e1, ...}).
+     */
+    Boolean isStartInclusive
+    /*
+     * True if the period includes its end ({@code ..., e2]}).
+     */
+    Boolean isEndInclusive
+    /*
+     * Opening event of the period.
+     */
+    contains Value startValue
+    /*
+     * Closing event of the period.
+     */
+    contains Value endValue
+}
+
+/*
+ * Integration of a value over time periods ({@code integrate x on P}).
+ */
+class IntegrateValue extends Value {
+    /*
+     * Integrated value.
+     */
+    contains Value integrand
+    /*
+     * Time periods to integrate over.
+     */
+    contains Value interval
+}
+
+/*
+ * Duration for which a Boolean is true within time periods
+ * ({@code duration b on P}).
+ */
+class DurationValue extends Value {
+    /*
+     * The Boolean whose duration is measured.
+     */
+    contains Value exp1
+    /*
+     * Time periods in which the duration is measured.
+     */
+    contains Value exp2
+}
+
+/*
+ * Projection of an event or clock on a clock ({@code e proj c}),
+ * optionally bounded ({@code e proj(d) c}).
+ */
+class ProjectionValue extends Value {
+    /*
+     * Projected event or clock (left of {@code proj}).
+     */
+    contains Value p1
+    /*
+     * Clock to project on (right of {@code proj}).
+     */
+    contains Value p2
+    /*
+     * Bound of the projection, in parentheses after {@code proj}.
+     * Null for an unbounded projection.
+     */
+    contains Value opt
+}
+
+/*
+ * Conditional expression ({@code if c then a else b}).
+ */
+class IfValue extends Value {
+    /*
+     * The condition.
+     */
+    contains Value condition
+    /*
+     * The value if the condition is true.
+     */
+    contains Value then
+    /*
+     * The value if the condition is false.
+     */
+    contains Value othervise
+}
+
+/*
+ * Construction of a value of a type ({@code new T ...}). Either
+ * <ul>
+ * <li>{@code new T (a = x, b = y)}: the {@link #getBindings() bindings} are set,</li>
+ * <li>{@code new T x}: the {@link #getValue() value} is set, or</li>
+ * <li>{@code new T}: neither is set, it is the default constructor.</li>
+ * </ul>
+ */
+class ConstructorValue extends Value {
+    /*
+     * Type of the constructed value.
+     */
+    contains TypeReference domain
+
+    //TODO: (validation) bindings and value should be mutually exclusive
+    /*
+     * Values of the variables of the constructed type, by name.
+     */
+    contains Binding[] bindings
+    /*
+     * Value to convert to the constructed type.
+     */
+    contains Value value
+
+}
+
+/*
+ * Literal value in the source.
+ */
+abstract class ConstantValue extends Value {
+
+}
+
+/*
+ * Boolean literal ({@code true}, {@code false}, {@code undecided} or {@code undefined}).
+ */
+class BooleanConstant extends ConstantValue {
+    /*
+     * The literal.
+     */
+    BooleanLiteral value
+}
+
+/*
+ * Integer literal.
+ */
+class IntegerConstant extends ConstantValue {
+    /*
+     * The value of the literal.
+     */
+    Integer value
+}
+
+/*
+ * Real literal.
+ */
+class RealConstant extends ConstantValue {
+    /*
+     * The literal as written in the source.
+     */
+    String literal
+    /*
+     * The value of the literal.
+     */
+    Double value
+}
+
+/*
+ * The current time ({@code time}).
+ */
+class TimeValue extends ConstantValue{
+    // in the grammar this is handled as a constant. not sure why
+}
+
+/*
+ * String literal.
+ */
+class StringConstant extends ConstantValue {
+    /*
+     * The string without the enclosing quotes. Escape sequences are kept as written.
+     */
+    String rawString
+}
+
+// Sequences are raw containers for natural language operator calls
+// An object model shall be free of any Sequence
+// Sequences should be transformed to function calls
+/*
+ * Linked list of the keywords and values of a natural language operator call,
+ * as parsed before the called operator is known.
+ * Sequences are replaced by {@link ComputedValue} calls, a model must not
+ * contain any after parsing.
+ */
+abstract class Sequence extends Value {
+    /*
+     * The next element of the sequence, or null for the last one.
+     */
+    op Sequence getNext()
+    /*
+     * Sets the next element of the sequence. Throws an
+     * {@link IllegalArgumentException} if this element cannot be followed by {@code next}.
+     */
+    op void setNext2(Sequence next)
+
+
+    /*
+     * The last element of the sequence.
+     */
+    op Sequence tail() {
+        if (getNext() === null) {
+            return this
+        } else {
+            return getNext().tail()
+        }
+    }
+}
+
+/*
+ * Value in a {@link Sequence}. It can only be followed by a {@link SequenceKeyword}.
+ */
+class SequenceValue extends Sequence {
+    /*
+     * The next element of the sequence.
+     */
+    contains SequenceKeyword next
+    /*
+     * The value.
+     */
+    contains Value value
+
+    op void setNext2(Sequence next) {
+        if (next instanceof SequenceKeyword) {
+            setNext(next as SequenceKeyword)
+        } else {
+            throw new IllegalArgumentException(
+                "Incompatible type for next: " + next.eClass().getName())
+        }
+
+    }
+}
+
+/*
+ * Keyword in a {@link Sequence}.
+ */
+class SequenceKeyword extends Sequence {
+    /*
+     * The next element of the sequence.
+     */
+    contains Sequence next
+    /*
+     * The keyword as written in the source.
+     */
+    String keyword
+
+    op void setNext2(Sequence next) {
+        setNext(next)
+    }
+}
+///////////
+// Types //
+///////////
+
+/*
+ * Reference to a type.
+ */
+abstract class TypeReference {
+
+}
+
+/*
+ * Reference to a type through another {@link TypeReference}.
+ * Not produced by the parser yet.
+ */
+class IndirectTypeReference extends TypeReference {
+    /*
+     * The referred type reference.
+     */
+    refers TypeReference referredType
+}
+
+/*
+ * Reference to a {@link BuiltinType}.
+ */
+class BuiltinTypeReference extends TypeReference {
+    /*
+     * The referred built-in type.
+     */
+    BuiltinType builtinType
+}
+
+/*
+ * Types built into CRML.
+ */
+enum BuiltinType { // TODO: Change string literal to modelica connector names
+    /*
+     * {@code String}.
+     */
+    STRING = 0,
+    /*
+     * {@code Boolean}, a four-valued Boolean.
+     */
+    BOOLEAN = 1,
+    /*
+     * {@code Integer}.
+     */
+    INTEGER = 2,
+    /*
+     * {@code Real}.
+     */
+    REAL = 3,
+    /*
+     * {@code Event}.
+     */
+    EVENT = 4,
+    /*
+     * {@code Clock}.
+     */
+    CLOCK = 5,
+    /*
+     * {@code Period}, a single time period.
+     */
+    PERIOD = 6,
+    /*
+     * {@code Periods}, multiple time periods.
+     */
+    PERIODS = 7,
+    /*
+     * {@code Requirement}.
+     */
+    REQUIREMENT = 8
+}
+
+/*
+ * Reference to a user-defined type, such as a {@link Class}, by its name.
+ */
+class UserTypereference extends TypeReference {
+    /*
+     * The referred type.
+     */
+    refers Domain domain
+}
+
+//////////////////
+// Dependencies //
+//////////////////
+
+/*
+ * Dependency of a {@link Library} on another library or model.
+ */
+abstract class Dependency {
+
+}
+
+/*
+ * Dependency on a {@link Model}.
+ * Not produced by the parser yet, and not supported by the compiler.
+ */
+class ModelDependency extends Dependency {
+    /*
+     * The model depended on.
+     */
+    refers Model referedModel
+}

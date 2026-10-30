@@ -9,8 +9,11 @@ import static j2html.TagCreator.p;
 import static j2html.TagCreator.pre;
 import static j2html.TagCreator.summary;
 
+import j2html.tags.specialized.DetailsTag;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +43,7 @@ import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
 //import crml.language.util.ErrorListener.CRMLSyntaxResults;
 import crml.util.NaturalCompare;
+import crml.util.SafeResource;
 
 import static com.aventstack.extentreports.Status.FAIL;
 
@@ -64,12 +68,36 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     // Shared parameters (both paths)
     private static final Map<String, Map<String, ? extends Object>> SHARED = new HashMap<>();
 
+    /**
+     * {@code content} inside a {@code <details>} element, closed by default, so
+     * code, logs and tree dumps do not dominate the report. The summary line
+     * shows the key and, when given, a short note such as the size.
+     */
+    private static DetailsTag collapsed(String key, String note, Object content) {
+        return details(
+            summary(note == null || note.isEmpty() ? key : key + " (" + note + ")"),
+            join(content));
+    }
+
     private static synchronized void initReport() {
         if (!reportInitialized) {
-            reporter = new ExtentSparkReporter("build" + java.io.File.separator + "test_report.html");
+            // A task running a separate suite names its own report, so it does
+            // not overwrite the one the test task wrote.
+            reporter = new ExtentSparkReporter(System.getProperty("crml.test.report",
+                "build" + java.io.File.separator + "test_report.html"));
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
             extentReport.setAnalysisStrategy(AnalysisStrategy.SUITE);
+            try {
+                reporter.config().setCss(new String(
+                        Files.readAllBytes(SafeResource.get("testreport.css")),
+                        StandardCharsets.UTF_8
+                ));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
             reportInitialized = true;
         }
     }
@@ -191,12 +219,17 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         final ExtentTest node = testKlass.createNode(name);
         for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
             if (entry.getValue() instanceof Path) {
+                // A file's contents are collapsed; its link stays visible.
                 Path path = (Path) entry.getValue();
                 try { 
                     String fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                    if (fileContent.indexOf('\0') >= 0) {
+                        // Binary, such as a simulation result: only the link is useful.
+                        throw new IOException(path + " is not a text file");
+                    }
                     node.info(join(
-                        p(join(entry.getKey(), br())),
-                        pre(code(fileContent)),
+                        collapsed(entry.getKey(), FormatUtil.lineCount(fileContent) + " lines",
+                            pre(FormatUtil.numcode(fileContent))),
                         p(a(path.toString()).withHref(path.toUri().toString()))
                     ).render());
                 } catch (Exception e) {
@@ -206,12 +239,22 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                     ).render());
                 }     
             } else if (entry.getValue() instanceof CustomHtmlReporter) {
-                CustomHtmlReporter syntax = (CustomHtmlReporter) entry.getValue();
-                node.info(join(
-                    p(join(entry.getKey(), br())),
-                    syntax.report()
-                    //join(syntax.errors().stream().map(Object::toString).map(e -> p(e)).toArray())
-                ).render());
+                CustomHtmlReporter reporter = (CustomHtmlReporter) entry.getValue();
+                Object report;
+                try {
+                    report = reporter.report();
+                } catch (Exception e) {
+                    report = "<" + e.getClass().getSimpleName() + " while rendering report: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
+                if (reporter.collapsible()) {
+                    node.info(collapsed(entry.getKey(), reporter.summary(), report).render());
+                } else {
+                    node.info(join(
+                        p(join(entry.getKey(), br())),
+                        report
+                    ).render());
+                }
             } else if (entry.getValue() instanceof String && "AST".equals(entry.getKey())) {
                     String ast = (String) entry.getValue();
                     node.info(details(
@@ -219,8 +262,15 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         pre(code(ast))
                     ).render());
             } else {
+                String value;
+                try {
+                    value = entry.getValue().toString();
+                } catch (Exception e) {
+                    value = "<" + e.getClass().getSimpleName() + " while rendering value: " + e.getMessage() + ">";
+                    node.log(FAIL, e);
+                }
                 node.info(join(p(join(entry.getKey(), br())),
-                        p(entry.getValue().toString())).render());
+                        p(value)).render());
             }
         }
 
