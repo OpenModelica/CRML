@@ -4,7 +4,9 @@ import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
 import crml.model.language.BuiltinType;
 import crml.model.language.BuiltinTypeReference;
+import crml.model.language.ComputedValue;
 import crml.model.language.ConstructorValue;
+import crml.model.language.CustomOperator;
 import crml.model.language.Domain;
 import crml.model.language.IndirectTypeReference;
 import crml.model.language.TypeReference;
@@ -116,12 +118,14 @@ public class TypeResolver implements Modelica {
      * a reference to a variable of a known domain still reports "unknown". Where
      * a decision genuinely depends on the type - not merely on it being
      * compatible - this looks through the reference to the variable's declared
-     * domain, and through a constructor to the domain it constructs.
+     * domain, through a constructor to the domain it constructs, and through a
+     * user operator or template call to the operator's result type.
      *
-     * <p>Deliberately not used by the operator transformers: their type dispatch
-     * is written around "known-or-unknown" predicates and was verified against
-     * typeinference.csv in that form. Making inference sharper there is a
-     * separate change with its own consequences.
+     * <p>Used sparingly by the operator transformers: their type dispatch is
+     * written around "known-or-unknown" predicates and was verified against
+     * typeinference.csv in that form. Only the dispatches where an unknown
+     * operand picks the wrong branch (filter, Event comparisons, multiplication)
+     * look through; sharpening the rest is a separate change.
      */
     public static BuiltinType inferBuiltin(Value value){
         if (value == null) {
@@ -137,6 +141,12 @@ public class TypeResolver implements Modelica {
         }
         if (value instanceof ConstructorValue) {
             return resolveBuiltin(((ConstructorValue) value).getDomain());
+        }
+        if (value instanceof ComputedValue) {
+            // A call to a user operator or template has the operator's declared
+            // result type; the parser gives templates a Boolean domain.
+            CustomOperator operator = ((ComputedValue) value).getOperator();
+            return operator == null ? null : resolveBuiltin(operator.getDomain());
         }
         if (value instanceof UnaryOperator) {
             // The operators whose result is an Event whatever their operand:

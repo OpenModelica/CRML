@@ -159,6 +159,10 @@ public final class BinaryOperatorTransformer implements Modelica {
 
     private Expression transformMul(BinaryOperator op, BuiltinBinaryOperatorKind opType,
             Expression lhs, Expression rhs, BuiltinType lt, BuiltinType rt) {
+        // Looked through: a Boolean variable or operator call carries no return
+        // type, and two unknowns would otherwise become Modelica's * on Boolean4.
+        lt = TypeResolver.inferBuiltin(op.getLhs());
+        rt = TypeResolver.inferBuiltin(op.getRhs());
         if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return binary(BinaryOperatorKind.MUL, lhs, rhs);
         } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
