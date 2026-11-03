@@ -144,10 +144,6 @@ tasks.shadowJar {
     from(thirdPartyLicenses) {
         into("META-INF/licenses")
     }
-    from(rootProject.file("OSMC-License.txt")) {
-        into("META-INF")
-        rename { "LICENSE" }
-    }
 }
 
 // The old AST-based translation pipeline (crmlVisitorImpl/CRMLC and its ctests)

@@ -2,11 +2,6 @@ import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.file.Files
 
-plugins {
-    id("java")
-    id("com.gradleup.shadow") version "9.2.0"
-}
-
 group = "crml"
 version = "1.0-SNAPSHOT"
 
@@ -53,18 +48,34 @@ subprojects {
 
 // Compile with any JDK that can run Gradle (17+), but emit Java 8 bytecode
 // against the Java 8 API, since the compiler must run on a Java 8 JRE.
-// allprojects, so the root project's java plugin is held to 8 as well.
+// allprojects, so that javadocAll in the root project gets the same options.
 allprojects {
-    plugins.withType<JavaPlugin> {
-        tasks.withType<JavaCompile>().configureEach {
-            options.release.set(8)
+    tasks.withType<JavaCompile>().configureEach {
+        options.release.set(8)
+    }
+    // Much of the API is EMF-generated: skip its @generated/@model tags and
+    // don't fail on the missing @param/@return that doclint reports for it.
+    tasks.withType<Javadoc>().configureEach {
+        (options as StandardJavadocDocletOptions).apply {
+            tags("generated:X", "model:X", "ordered:X")
+            addStringOption("Xdoclint:none", "-quiet")
         }
-        // Much of the API is EMF-generated: skip its @generated/@model tags and
-        // don't fail on the missing @param/@return that doclint reports for it.
-        tasks.withType<Javadoc>().configureEach {
-            (options as StandardJavadocDocletOptions).apply {
-                tags("generated:X", "model:X", "ordered:X")
-                addStringOption("Xdoclint:none", "-quiet")
+    }
+}
+
+// Every jar, compiler-all.jar included, carries the CRML license, and so does
+// every distribution archive of the application projects.
+subprojects {
+    tasks.withType<Jar>().configureEach {
+        metaInf {
+            from(rootProject.file("OSMC-License.txt"))
+            rename("OSMC-License.txt", "LICENSE")
+        }
+    }
+    plugins.withType<DistributionPlugin> {
+        extensions.getByType<DistributionContainer>().configureEach {
+            contents {
+                from(rootProject.file("OSMC-License.txt")) { rename { "LICENSE" } }
             }
         }
     }
