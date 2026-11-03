@@ -39,9 +39,7 @@ val xtextVersion:      String by rootProject.extra
 // ─────────────────────────────────────────────
 //  Dependencies
 // ─────────────────────────────────────────────
-dependencies { 
-    implementation("org.eclipse.emf:org.eclipse.emf.codegen.ecore:$emfCodegenVersion")
-
+dependencies {
     // ── Xcore language support (build-time only) ──────────────────────────
     xtextLanguages("org.eclipse.emf:org.eclipse.emf.ecore.xcore:$xcoreVersion")
     xtextLanguages("org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:$xcoreLibVersion")
@@ -110,6 +108,21 @@ sourceSets {
     }
 }
 
+// GenModel generation, kept out of main because EMF codegen pulls in the
+// Eclipse platform and JDT, which must not reach the runtime classpath of
+// :compiler and so its distributed jar. Only generateGenModel uses it.
+sourceSets.create("genmodel") {
+    compileClasspath += sourceSets["main"].output
+    runtimeClasspath += sourceSets["main"].output
+}
+
+configurations["genmodelImplementation"].extendsFrom(configurations["implementation"])
+configurations["genmodelRuntimeOnly"].extendsFrom(configurations["runtimeOnly"])
+
+dependencies {
+    "genmodelImplementation"("org.eclipse.emf:org.eclipse.emf.codegen.ecore:$emfCodegenVersion")
+}
+
 tasks.test {
     useJUnitPlatform()
     testLogging {
@@ -125,7 +138,7 @@ tasks.register<JavaExec>("generateGenModel") {
 
     outputs.file(outputFile)
 
-    classpath = sourceSets.main.get().runtimeClasspath
+    classpath = sourceSets["genmodel"].runtimeClasspath
     mainClass.set("crml.modelica.GenmodelMain")
 
     args = listOf(

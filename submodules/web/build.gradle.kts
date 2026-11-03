@@ -42,11 +42,10 @@ dependencies {
     compileOnly("org.teavm:teavm-extension-spi:0.16.0")
 }
 
-// modelica puts the EMF code generator, with the Eclipse platform and JDT, on
-// its runtime classpath; none of it runs in a browser.
-configurations.all {
-    exclude(group = "org.eclipse.emf", module = "org.eclipse.emf.codegen.ecore")
-    exclude(group = "org.eclipse.emf", module = "org.eclipse.emf.codegen")
+// The antlr plugin makes api extend antlr, which would put the whole tool,
+// with ICU4J, ST4 and antlr 3, on the classpath that TeaVM compiles from.
+configurations.api {
+    setExtendsFrom(extendsFrom.filter { it.name != "antlr" })
 }
 
 sourceSets {

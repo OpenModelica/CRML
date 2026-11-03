@@ -111,6 +111,42 @@ tasks.jar {
     }
 }
 
+// The license and notice files of the libraries. They have the same paths in
+// every jar (META-INF/LICENSE, META-INF/NOTICE, about.html, ...), so merged
+// into compiler-all.jar all but the first would be lost. Instead each library
+// keeps its own under META-INF/licenses/<group>/<module>-<version>/.
+val licenseFiles = listOf(
+    "META-INF/LICENSE*", "META-INF/LICENCE*", "META-INF/NOTICE*", "META-INF/COPYING*",
+    "LICENSE*", "NOTICE*", "about.html", "about_*.html", "about_files/**"
+)
+
+val thirdPartyLicenses by tasks.registering(Sync::class) {
+    description = "Collects the license and notice files of the runtime libraries"
+    val runtimeClasspath = configurations.runtimeClasspath.get()
+    inputs.files(runtimeClasspath)
+    into(layout.buildDirectory.dir("third-party-licenses"))
+    runtimeClasspath.incoming.artifacts.resolvedArtifacts.get()
+        .filter { it.id.componentIdentifier is ModuleComponentIdentifier }
+        .forEach { artifact ->
+            val id = artifact.id.componentIdentifier as ModuleComponentIdentifier
+            from(zipTree(artifact.file)) {
+                include(licenseFiles)
+                into("${id.group}/${id.module}-${id.version}")
+            }
+        }
+}
+
+tasks.shadowJar {
+    exclude(licenseFiles)
+    from(thirdPartyLicenses) {
+        into("META-INF/licenses")
+    }
+    from(rootProject.file("OSMC-License.txt")) {
+        into("META-INF")
+        rename { "LICENSE" }
+    }
+}
+
 // The old AST-based translation pipeline (crmlVisitorImpl/CRMLC and its ctests)
 // predates the current ANTLR grammar and no longer compiles against it. It is
 // being superseded by the OM-based omcv2 pipeline; kept on disk for reference
