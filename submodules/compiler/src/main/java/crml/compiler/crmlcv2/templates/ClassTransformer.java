@@ -3,8 +3,7 @@ package crml.compiler.crmlcv2.templates;
 import crml.compiler.crmlcv2.Diagnostic;
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
-import crml.compiler.crmlcv2.util.TypeResolver;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.Variable;
 import crml.model.modelica.ClassDefinition;
 import crml.model.modelica.ComponentDeclaration;
@@ -81,7 +80,7 @@ public final class ClassTransformer implements Modelica {
         if (variable.getDefinition() != null && !ValueTransformer.isDeclarationOnly(variable.getDefinition())) {
             try {
                 definition = transformer.values().transform(ctx, variable.getDefinition());
-            } catch (UnsupportedConstruct e) {
+            } catch (CRMLCompilerException.UnsupportedConstruct e) {
                 Diagnostic cause = e.diagnostic();
                 ctx.reportWithPlaceholder(new Diagnostic(cause.severity(), cause.constructKind(),
                     "member '" + variable.getName() + "' was dropped: " + cause.message(),

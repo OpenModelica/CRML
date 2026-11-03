@@ -3,12 +3,8 @@ package crml.compiler.crmlcv2.templates;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
-import crml.compiler.crmlcv2.templates.value.BinaryOperatorTransformer;
 import crml.compiler.crmlcv2.templates.value.ConstructorTransformer;
-import crml.compiler.crmlcv2.templates.value.IntegrateTransformer;
-import crml.compiler.crmlcv2.templates.value.PeriodsTransformer;
-import crml.compiler.crmlcv2.templates.value.UnaryOperatorTransformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.BinaryOperator;
 import crml.model.language.BooleanConstant;
 import crml.model.language.ComputedValue;
@@ -51,7 +47,7 @@ public final class ValueTransformer implements Modelica {
 
     public Expression transform(TransformationContext ctx, Value value) {
         if (value == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("Value",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("Value",
                 "a value is missing from the object model", null));
         }
         if (value instanceof VariableReference) {
@@ -105,19 +101,19 @@ public final class ValueTransformer implements Modelica {
             // these with ComputedValue - is not called from anywhere, so calls like
             // "b1 'or' b2" arrive here verbatim. Resolving them is a prerequisite
             // for operator support (M3).
-            throw new UnsupportedConstruct(Diagnostics.notYetImplemented("Sequence",
+            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Sequence",
                 "an unresolved mixfix operator call reached the generator: MixfixParser is "
                 + "never invoked, so this Sequence was not replaced with a ComputedValue (M3)", value));
         }
         if (value instanceof DurationValue) {
-            throw new UnsupportedConstruct(Diagnostics.libraryGap("DurationValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("DurationValue",
                 "CRMLtoModelica.mo has no duration implementation", value));
         }
         if (value instanceof ProjectionValue) {
-            throw new UnsupportedConstruct(Diagnostics.libraryGap("ProjectionValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("ProjectionValue",
                 "CRMLtoModelica.mo has no projection implementation", value));
         }
-        throw new UnsupportedConstruct(Diagnostics.error(value.eClass().getName(),
+        throw CRMLCompilerException.unsupported(Diagnostics.error(value.eClass().getName(),
             "no Modelica mapping for value kind " + value.eClass().getName(), value));
     }
 
@@ -139,7 +135,7 @@ public final class ValueTransformer implements Modelica {
             case UNDECIDED: return ref("CRMLtoModelica.Types.Boolean4.undecided");
             case UNDEFINED: return ref("CRMLtoModelica.Types.Boolean4.undefined");
             default:
-                throw new UnsupportedConstruct(Diagnostics.error("BooleanConstant",
+                throw CRMLCompilerException.unsupported(Diagnostics.error("BooleanConstant",
                     "unknown boolean literal: " + constant.getValue(), constant));
         }
     }

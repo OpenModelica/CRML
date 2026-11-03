@@ -2,8 +2,8 @@ package crml.compiler.crmlcv2.templates.value;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
 import crml.compiler.crmlcv2.templates.Transformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.BuiltinType;
 import crml.model.language.PeriodsValue;
@@ -61,7 +61,7 @@ public final class PeriodsTransformer implements Modelica {
 
     public Expression transform(TransformationContext ctx, PeriodsValue periods) {
         if (periods.getStartValue() == null || periods.getEndValue() == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("PeriodsValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("PeriodsValue",
                 "a period literal is missing one of its boundary conditions", periods));
         }
 

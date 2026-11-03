@@ -2,7 +2,7 @@ package crml.compiler.crmlcv2.templates;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.CustomOperator;
 import crml.model.language.Model;
 import crml.model.language.Operator;
@@ -63,7 +63,7 @@ public final class ModelTransformer implements Modelica {
             if (operator instanceof CustomOperator) {
                 try {
                     transformer.operators().declare(ctx, (CustomOperator) operator);
-                } catch (UnsupportedConstruct e) {
+                } catch (CRMLCompilerException.UnsupportedConstruct e) {
                     ctx.reportWithPlaceholder(e.diagnostic());
                 }
             } else {

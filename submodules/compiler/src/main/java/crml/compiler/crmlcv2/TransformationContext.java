@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.eclipse.emf.ecore.EObject;
 
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.CustomOperator;
 import crml.model.language.Model;
 import crml.model.language.Value;
@@ -39,8 +40,8 @@ public final class TransformationContext implements Modelica {
             new LinkedHashMap<CustomOperator, GeneratedOperator>();
         final Set<CustomOperator> visiting = new HashSet<CustomOperator>();
         /** Operators whose class could not be generated, so each is diagnosed once. */
-        final Map<CustomOperator, UnsupportedConstruct> operatorFailures =
-            new HashMap<CustomOperator, UnsupportedConstruct>();
+        final Map<CustomOperator, CRMLCompilerException.UnsupportedConstruct> operatorFailures =
+            new HashMap<CustomOperator, CRMLCompilerException.UnsupportedConstruct>();
         /** Class names already used, so generated names never collide. */
         final Set<String> classNames = new HashSet<String>();
         /**
@@ -202,11 +203,11 @@ public final class TransformationContext implements Modelica {
     }
 
     /** The failure already recorded for {@code operator}, or null. */
-    public UnsupportedConstruct operatorFailure(CustomOperator operator) {
+    public CRMLCompilerException.UnsupportedConstruct operatorFailure(CustomOperator operator) {
         return session.operatorFailures.get(operator);
     }
 
-    public void recordOperatorFailure(CustomOperator operator, UnsupportedConstruct failure) {
+    public void recordOperatorFailure(CustomOperator operator, CRMLCompilerException.UnsupportedConstruct failure) {
         session.operatorFailures.put(operator, failure);
     }
 

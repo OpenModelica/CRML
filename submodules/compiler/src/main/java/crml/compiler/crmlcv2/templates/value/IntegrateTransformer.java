@@ -5,8 +5,8 @@ import java.util.Map;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
 import crml.compiler.crmlcv2.templates.Transformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.IntegrateValue;
 import crml.model.modelica.Expression;
 import crml.modelica.build.Modelica;
@@ -29,7 +29,7 @@ public final class IntegrateTransformer implements Modelica {
 
     public Expression transform(TransformationContext ctx, IntegrateValue integrate) {
         if (integrate.getIntegrand() == null || integrate.getInterval() == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("IntegrateValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("IntegrateValue",
                 "an integration is missing its integrand or its interval", integrate));
         }
         Map<String, Expression> inputs = new LinkedHashMap<String, Expression>();

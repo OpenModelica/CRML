@@ -11,8 +11,8 @@ import crml.compiler.crmlcv2.Diagnostic;
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.GeneratedOperator;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
-import crml.compiler.crmlcv2.util.TypeResolver;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
+import crml.compiler.crmlcv2.util.CRMLCompilerException.UnsupportedConstruct;
 import crml.model.language.Binding;
 import crml.model.language.ComputedValue;
 import crml.model.language.CustomOperator;
@@ -79,17 +79,17 @@ public final class OperatorTransformer implements Modelica {
         }
         // An operator that already failed is not retried: the gap is recorded
         // once, however many call sites there are.
-        UnsupportedConstruct failure = ctx.operatorFailure(operator);
+        CRMLCompilerException.UnsupportedConstruct failure = ctx.operatorFailure(operator);
         if (failure != null) {
             throw failure;
         }
         if (!ctx.beginVisiting(operator)) {
-            throw new UnsupportedConstruct(Diagnostics.error("CustomOperator",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("CustomOperator",
                 "operator '" + describe(operator) + "' is defined in terms of itself", operator));
         }
         try {
             return generate(ctx, operator);
-        } catch (UnsupportedConstruct e) {
+        } catch (CRMLCompilerException.UnsupportedConstruct e) {
             ctx.recordOperatorFailure(operator, e);
             throw e;
         } finally {
@@ -103,7 +103,7 @@ public final class OperatorTransformer implements Modelica {
         String name = owner.allocateClassName(modelicaName(operator));
 
         if (operator.getDefinition() == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("CustomOperator",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("CustomOperator",
                 "operator '" + describe(operator) + "' has no definition to translate", operator));
         }
 
@@ -155,7 +155,7 @@ public final class OperatorTransformer implements Modelica {
             crml.model.language.Class clazz = (crml.model.language.Class) container;
             ClassDefinition definition = ctx.generatedClass(clazz);
             if (definition == null) {
-                throw new UnsupportedConstruct(Diagnostics.error("CustomOperator",
+                throw CRMLCompilerException.unsupported(Diagnostics.error("CustomOperator",
                     "operator '" + describe(operator) + "' is a member of class '" + clazz.getName()
                     + "', which has no generated counterpart", operator));
             }
@@ -179,12 +179,12 @@ public final class OperatorTransformer implements Modelica {
     private Reference<ClassDefinition> resolve(TransformationContext ctx,
             crml.model.language.TypeReference type, CustomOperator operator, String what) {
         if (type == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("CustomOperator",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("CustomOperator",
                 "the " + what + " of operator '" + describe(operator) + "' has no declared type", operator));
         }
         Reference<ClassDefinition> reference = transformer.types().resolve(ctx, type);
         if (reference.getTarget() == null && reference.getReason() == RawReason.UNRESOLVED) {
-            throw new UnsupportedConstruct(Diagnostics.error("CustomOperator",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("CustomOperator",
                 "cannot resolve the type of the " + what + " of operator '" + describe(operator) + "'",
                 operator));
         }
@@ -196,7 +196,7 @@ public final class OperatorTransformer implements Modelica {
     public Expression transformCall(TransformationContext ctx, ComputedValue call) {
         CustomOperator operator = call.getOperator();
         if (operator == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("ComputedValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("ComputedValue",
                 "the call does not refer to any operator", call));
         }
         GeneratedOperator generated = declare(ctx, operator);
@@ -230,14 +230,14 @@ public final class OperatorTransformer implements Modelica {
             if (binding.getElement() == parameter) {
                 Value value = binding.getValue();
                 if (value == null) {
-                    throw new UnsupportedConstruct(Diagnostics.error("ComputedValue",
+                    throw CRMLCompilerException.unsupported(Diagnostics.error("ComputedValue",
                         "parameter '" + parameter.getName() + "' of operator '" + describe(operator)
                         + "' is bound to nothing", call));
                 }
                 return transformer.values().transform(ctx, value);
             }
         }
-        throw new UnsupportedConstruct(Diagnostics.error("ComputedValue",
+        throw CRMLCompilerException.unsupported(Diagnostics.error("ComputedValue",
             "no argument bound to parameter '" + parameter.getName() + "' of operator '"
             + describe(operator) + "'", call));
     }

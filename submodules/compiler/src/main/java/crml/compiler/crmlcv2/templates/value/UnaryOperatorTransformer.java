@@ -10,8 +10,8 @@ import java.util.Map;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
 import crml.compiler.crmlcv2.templates.Transformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.BuiltinType;
 import crml.model.language.BuiltinUnaryOperatorKind;
@@ -76,7 +76,7 @@ public final class UnaryOperatorTransformer implements Modelica {
                 // ("Real {} S" arrives as a Real), so the two cannot be told
                 // apart here beyond "this is not a clock".
                 if (!isClockOrUnknown(TypeResolver.inferBuiltin(op.getValue()))) {
-                    throw new UnsupportedConstruct(Diagnostics.libraryGap("UnaryOperator.CARD",
+                    throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("UnaryOperator.CARD",
                         "card over anything but a Clock - set cardinality - has no implementation "
                         + "in CRMLtoModelica.mo", op));
                 }
@@ -87,7 +87,7 @@ public final class UnaryOperatorTransformer implements Modelica {
                 return transformClockBlock(ctx, op, opType, operand,
                     "CRMLtoModelica.Blocks.ClockTick", "tick");
             default:
-                throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+                throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                     "this operator kind is not produced by the current AST builders", op));
         }
     }
@@ -105,7 +105,7 @@ public final class UnaryOperatorTransformer implements Modelica {
         // must be rejected, not quietly wired to CardClock.
         BuiltinType t = TypeResolver.inferBuiltin(op.getValue());
         if (!isClockOrUnknown(t)) {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, t, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
         }
         Map<String, Expression> inputs = new LinkedHashMap<String, Expression>();
         inputs.put("r1", operand);
@@ -118,7 +118,7 @@ public final class UnaryOperatorTransformer implements Modelica {
         if (isNumericOrUnknown(t)) {
             return unary(sign, operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, t, op));
+        throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
     }
 
     private Expression transformNot(UnaryOperator op, BuiltinUnaryOperatorKind opType,
@@ -126,7 +126,7 @@ public final class UnaryOperatorTransformer implements Modelica {
         if (isBooleanOrUnknown(t)) {
             return call(libraryRef("CRMLtoModelica.Functions.not4"), operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, t, op));
+        throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
     }
 
     private Expression transformMath(TransformationContext ctx, UnaryOperator op,
@@ -141,7 +141,7 @@ public final class UnaryOperatorTransformer implements Modelica {
                 + "load path", op));
             return call(mslRef(function), operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, t, op));
+        throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
     }
 
     private Expression transformPeriodEndpoint(UnaryOperator op, BuiltinUnaryOperatorKind opType,
@@ -149,6 +149,6 @@ public final class UnaryOperatorTransformer implements Modelica {
         if (isPeriodOrUnknown(t)) {
             return call(libraryRef(function), operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, t, op));
+        throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
     }
 }

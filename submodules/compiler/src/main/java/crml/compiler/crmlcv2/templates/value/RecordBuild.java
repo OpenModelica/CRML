@@ -88,11 +88,11 @@ public final class RecordBuild implements Modelica {
             EObject crmlSource) {
         String name = ctx.allocateName(prefix);
 
-        ComponentDeclaration record = component(libraryRef(recordType), name);
+        ComponentDeclaration recordComponent = component(libraryRef(recordType), name);
         for (crml.model.modelica.ModificationElement modification : modifications) {
-            record.getModifications().add(modification);
+            recordComponent.getModifications().add(modification);
         }
-        ctx.declare(record, crmlSource);
+        ctx.declare(recordComponent, crmlSource);
 
         ComponentDeclaration companion = component(libraryRef(buildType), name + "_init");
         // A fresh reference per use: these are contained objects, so handing the

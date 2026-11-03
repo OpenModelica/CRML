@@ -3,8 +3,8 @@ package crml.compiler.crmlcv2.templates.value;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
 import crml.compiler.crmlcv2.templates.Transformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.Binding;
 import crml.model.language.BuiltinType;
@@ -42,7 +42,7 @@ public final class ConstructorTransformer implements Modelica {
             return instantiate(ctx, constructor);
         }
         if (constructor.getValue() == null) {
-            throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue",
+            throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue",
                 "default constructor ('new') has no expression to translate; a variable "
                 + "declared with it is emitted as a plain declaration instead", constructor));
         }
@@ -69,10 +69,10 @@ public final class ConstructorTransformer implements Modelica {
             if (constructor.getValue() instanceof PeriodsValue) {
                 return operand;
             }
-            throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue." + domain,
+            throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue." + domain,
                 "a " + domain + " can only be constructed from a period literal", constructor));
         } else {
-            throw new UnsupportedConstruct(Diagnostics.notYetImplemented("ConstructorValue." + domain,
+            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("ConstructorValue." + domain,
                 "no constructor mapping for domain " + domain, constructor));
         }
     }
@@ -89,11 +89,11 @@ public final class ConstructorTransformer implements Modelica {
         for (Binding binding : constructor.getBindings()) {
             Element member = binding.getElement();
             if (member == null || member.getName() == null) {
-                throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue.bindings",
+                throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.bindings",
                     "a constructor argument does not name the member it binds", constructor));
             }
             if (binding.getValue() == null) {
-                throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue.bindings",
+                throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.bindings",
                     "member '" + member.getName() + "' is bound to nothing", constructor));
             }
             instance.getModifications().add(
@@ -109,7 +109,7 @@ public final class ConstructorTransformer implements Modelica {
             // here, which does not exist: the library's complete function set is
             // cvBooleanToBoolean4, add4, mul4, or4, not4, and4, PStart, PEnd, gEV,
             // lEV, Event2Boolean.
-            throw new UnsupportedConstruct(Diagnostics.libraryGap("ConstructorValue.STRING",
+            throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("ConstructorValue.STRING",
                 "String(Boolean4) needs CRMLtoModelica.Functions.Bool4toString, which does not exist "
                 + "in CRMLtoModelica.mo", constructor));
         }
@@ -127,7 +127,7 @@ public final class ConstructorTransformer implements Modelica {
                 || sourceType == BuiltinType.REQUIREMENT || sourceType == BuiltinType.INTEGER) {
             return call(builtinRef("Integer"), operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue.INTEGER",
+        throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.INTEGER",
             "Modelica's Integer() converts enumerations and Real only; operand type is " + sourceType, constructor));
     }
 
@@ -139,7 +139,7 @@ public final class ConstructorTransformer implements Modelica {
         if (sourceType == null || sourceType == BuiltinType.REAL || sourceType == BuiltinType.INTEGER) {
             return operand;
         }
-        throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue.REAL",
+        throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.REAL",
             "Modelica has no conversion to Real from " + sourceType, constructor));
     }
 
@@ -152,7 +152,7 @@ public final class ConstructorTransformer implements Modelica {
         if (sourceType == null || sourceType == BuiltinType.EVENT) {
             return call(libraryRef("CRMLtoModelica.Functions.Event2Boolean"), operand);
         }
-        throw new UnsupportedConstruct(Diagnostics.error("ConstructorValue.BOOLEAN",
+        throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.BOOLEAN",
             "the Boolean constructor is only defined for an Event operand (got " + sourceType + ")", constructor));
     }
 }

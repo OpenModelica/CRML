@@ -6,7 +6,7 @@ import java.util.List;
 import crml.compiler.crmlcv2.Diagnostic;
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.BuiltinType;
 import crml.model.language.Set;
@@ -39,7 +39,7 @@ public final class SetTransformer implements Modelica {
         List<Expression> elements = new ArrayList<Expression>();
         for (Object element : set.getElements()) {
             if (!(element instanceof Value)) {
-                throw new UnsupportedConstruct(Diagnostics.error("Set",
+                throw CRMLCompilerException.unsupported(Diagnostics.error("Set",
                     "a set element is not a value: " + element, set));
             }
             elements.add(transformer.values().transform(ctx, (Value) element));
@@ -87,7 +87,7 @@ public final class SetTransformer implements Modelica {
         ArrayConstructor elements;
         try {
             elements = literal(ctx, set);
-        } catch (UnsupportedConstruct e) {
+        } catch (CRMLCompilerException.UnsupportedConstruct e) {
             Diagnostic cause = e.diagnostic();
             ctx.reportWithPlaceholder(new Diagnostic(cause.severity(), cause.constructKind(),
                 "set '" + set.getName() + "' was dropped: " + cause.message(),

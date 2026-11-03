@@ -11,8 +11,8 @@ import java.util.Map;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
-import crml.compiler.crmlcv2.UnsupportedConstruct;
 import crml.compiler.crmlcv2.templates.Transformer;
+import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.BinaryOperator;
 import crml.model.language.BuiltinBinaryOperatorKind;
@@ -92,11 +92,11 @@ public final class BinaryOperatorTransformer implements Modelica {
                 // and BooleanAtEvent.crml exercises it with a verification harness -
                 // so the semantics are defined; CRMLtoModelica.mo simply has no
                 // implementation to call.
-                throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+                throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                     "CRMLtoModelica.mo has no implementation for 'at', although CRML defines it "
                     + "and the test corpus exercises it", op));
             default:
-                throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+                throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                     "this operator kind is not produced by the current AST builders", op));
         }
     }
@@ -114,7 +114,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         // typeinference.csv's only FILTER row is CLOCK|BOOLEAN.
         lt = TypeResolver.inferBuiltin(op.getLhs());
         if (!isClockOrUnknown(lt) || !isBooleanOrUnknown(rt)) {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
         Map<String, Expression> inputs = new LinkedHashMap<String, Expression>();
         inputs.put("r1", lhs);
@@ -135,12 +135,12 @@ public final class BinaryOperatorTransformer implements Modelica {
             // Modelica's + concatenates String.
             return binary(BinaryOperatorKind.ADD, lhs, rhs);
         } else if (involvesClockOrPeriod(lt) || involvesClockOrPeriod(rt)) {
-            throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Clock/Period addition needs CRMLtoModelica.Blocks.ClockAdd, whose equation "
                 + "section is empty; a Period left operand and the Clock+Integer tick delay "
                 + "have no block at all", op));
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -149,11 +149,11 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return binary(BinaryOperatorKind.SUB, lhs, rhs);
         } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
-            throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Boolean4 subtraction has no implementation in CRMLtoModelica.mo (there is no "
                 + "diff4 function, despite the legacy OperatorMapping table)", op));
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -168,7 +168,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
             return call(libraryRef("CRMLtoModelica.Functions.mul4"), lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -177,7 +177,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return binary(BinaryOperatorKind.DIV, lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -186,7 +186,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return binary(BinaryOperatorKind.POW, lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -195,7 +195,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
             return call(builtinRef("mod"), lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -206,7 +206,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
             return call(libraryRef("CRMLtoModelica.Functions.and4"), lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -215,7 +215,7 @@ public final class BinaryOperatorTransformer implements Modelica {
         if (isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
             return call(libraryRef("CRMLtoModelica.Functions.or4"), lhs, rhs);
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 
@@ -235,22 +235,22 @@ public final class BinaryOperatorTransformer implements Modelica {
             return call(libraryRef("CRMLtoModelica.Functions.cvBooleanToBoolean4"), binary(modelicaOp, lhs, rhs));
         } else if (eventSupported && events) {
             if (eventFunction == null) {
-                throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+                throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                     "no CRMLtoModelica.Functions implementation exists for a strict Event "
                     + symbol + " comparison (only lEV/gEV exist)", op));
             }
             return call(libraryRef(eventFunction), lhs, rhs);
         } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
-            throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Boolean4 " + symbol + " comparison has no implementation in CRMLtoModelica.mo "
                 + "(the Logical4 package referenced by the legacy OperatorMapping table does not exist)", op));
         } else if (periodSupported
                 && ((lt == BuiltinType.REAL && rt == BuiltinType.PERIOD) || (lt == BuiltinType.PERIOD && rt == BuiltinType.REAL))) {
-            throw new UnsupportedConstruct(Diagnostics.unsupported(opType,
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Real/Period " + symbol + " comparison has no implementation in CRMLtoModelica.mo "
                 + "(realPeriodeq/realPeriodleq do not exist)", op));
         } else {
-            throw new UnsupportedConstruct(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
         }
     }
 }
