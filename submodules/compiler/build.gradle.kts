@@ -117,6 +117,7 @@ tasks.jar {
 // keeps its own under META-INF/licenses/<group>/<module>-<version>/.
 val licenseFiles = listOf(
     "META-INF/LICENSE*", "META-INF/LICENCE*", "META-INF/NOTICE*", "META-INF/COPYING*",
+    "META-INF/DEPENDENCIES*",
     "LICENSE*", "NOTICE*", "about.html", "about_*.html", "about_files/**"
 )
 
@@ -124,6 +125,8 @@ val thirdPartyLicenses by tasks.registering(Sync::class) {
     description = "Collects the license and notice files of the runtime libraries"
     val runtimeClasspath = configurations.runtimeClasspath.get()
     inputs.files(runtimeClasspath)
+    // The patterns of the nested from() specs are not seen as inputs.
+    inputs.property("licenseFiles", licenseFiles)
     into(layout.buildDirectory.dir("third-party-licenses"))
     runtimeClasspath.incoming.artifacts.resolvedArtifacts.get()
         .filter { it.id.componentIdentifier is ModuleComponentIdentifier }
