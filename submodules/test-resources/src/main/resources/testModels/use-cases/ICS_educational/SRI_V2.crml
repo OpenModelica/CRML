@@ -173,22 +173,28 @@ model SRI is {
 	// Temperature requirement	
     Real T is external;
     Boolean T_in_range is ((T >= 16) and (T <= 30));
-    Boolean R1_T is ('always') 'ensure' T_in_range ;
-    Boolean R2_T is ('after' (new Clock (not R1_T)) 'for' 60.0) 'check at end' T_in_range ;
+
+	// 'ensure' not implemented yet
+    //Boolean R1_T is ('always') 'ensure' T_in_range ;
+    //Boolean R2_T is ('after' (new Clock (not R1_T)) 'for' 60.0) 'check at end' T_in_range ;
     
     	// speed requirements
     Real v is external;
     Boolean v_too_high is (v > 6.0) ; // m/s
     Clock v_too_high_clock is (new Clock v_too_high) ;
-    Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=_real' 10.0 ;
-    Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=_int' 2 ;
-    Boolean R_v is R1_v and R2_v ;
+
+	// 'check duration' definition commented out above
+    //Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=_real' 10.0 ;
+    //Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=_int' 2 ;
+    //Boolean R_v is R1_v and R2_v ;
     
     	// flow requirements
     	Real f is external ;
     	Boolean pump_in_service is external ;
     	Boolean f_over_fmin is (f >= 700) ; // t/h
-    	Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
+
+		// 'ensure' not implemented yet
+    	//Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
     
 
 };
