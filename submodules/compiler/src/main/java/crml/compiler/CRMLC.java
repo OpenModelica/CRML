@@ -63,7 +63,7 @@ public class CRMLC {
           if (test.endsWith(".crml")) {
             logger.trace("Translating test: " + test);
             parse_file(Paths.get(test), cmd.outputDir, cmd.stacktrace, cmd.printAST,
-                cmd.generateExternal, cmd.within, cmd.causal);
+                cmd.generateExternal, cmd.within, cmd.causal, cmd.externalsJson);
             if (cmd.simulate != null) {
               OMCmsg msg;
               try {
@@ -82,7 +82,7 @@ public class CRMLC {
         String stripped_file_name = Utilities.stripNameEndingAndPath(path);
         Path outputDir = cmd.outputDir.resolve(stripped_file_name);
         parse_file(path, outputDir, cmd.stacktrace,
-            cmd.printAST, cmd.generateExternal, cmd.within, cmd.causal);
+            cmd.printAST, cmd.generateExternal, cmd.within, cmd.causal, cmd.externalsJson);
         if (cmd.simulate != null) {
           OMCmsg msg;
           try {
@@ -107,6 +107,16 @@ public class CRMLC {
       Boolean generateExternal,
       String within,
       Boolean causal) throws Exception {
+    parse_file(fullName, gen_dir, testMode, printAST, generateExternal, within, causal, false);
+  }
+
+  public static void parse_file(
+      Path fullName,
+      Path gen_dir, Boolean testMode, Boolean printAST,
+      Boolean generateExternal,
+      String within,
+      Boolean causal,
+      Boolean externalsJson) throws Exception {
 
     try {
       ParserResult model = new Parser().parse(fullName);
@@ -116,6 +126,14 @@ public class CRMLC {
 
       if (printAST) {
         logger.trace("\nThe AST for the program: \n" + model.toPrettyTree());
+      }
+
+      if (externalsJson && model.ast() != null) {
+        File json_file = gen_dir.resolve(Utilities.stripNameEndingAndPath(fullName) + "_externals.json").toFile();
+        json_file.getParentFile().mkdirs();
+        ExternalsExport export = new ExternalsExport((crml.language.grammar.crmlParser.DefinitionContext) model.ast());
+        writeToFile(json_file, "", export.toJson(fullName.getFileName().toString()));
+        logger.trace("Externals saved in: " + json_file);
       }
 
       List<String> external_var = new ArrayList<String>();

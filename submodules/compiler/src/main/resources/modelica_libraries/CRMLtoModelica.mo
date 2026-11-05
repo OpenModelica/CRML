@@ -572,13 +572,16 @@ end cvBooleanToBoolean4;
 
     end ClockAdd;
 
-    model setAnd
+    model setAnd "Conjunction of a set of Boolean4: false if one element is false, true if at least one is true and none is false, else undefined"
     
     input Types.Boolean4 [:] r1;
     
     output Types.Boolean4 out;
-    equation
-
+    algorithm
+      out := Types.Boolean4.undefined;
+      for i in 1:size(r1, 1) loop
+        out := Functions.and4(out, r1[i]);
+      end for;
     end setAnd;
 
 
