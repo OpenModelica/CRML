@@ -65,6 +65,17 @@ application {
     mainClass.set("crml.compiler.CRMLC")
 }
 
+/**
+ * The CRML libraries (libraries/crml) are resources of the compiler, so that
+ * a model can use 'ETL' union 'FORML' union { ... } without --library-path.
+ */
+tasks.processResources {
+    from(rootProject.file("libraries/crml")) {
+        include("*.crml")
+        into("crml/libraries")
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     testLogging {
