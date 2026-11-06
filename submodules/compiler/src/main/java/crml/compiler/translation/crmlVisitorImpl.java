@@ -438,7 +438,8 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		Value v;
 		Boolean isSet = false;
 
-		var_t = ctx.type().getText();
+		// the element type, without the set marker {} of a set declaration
+		var_t = ctx.type().builtin_type() != null ? ctx.type().builtin_type().getText() : ctx.type().id().getText();
 
 		if (types_mapping.containsKey(var_t))
 			mapped_t = types_mapping.get(var_t);
@@ -446,16 +447,23 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			mapped_t = var_t;
 
 		isSet = (ctx.type().empty_set() != null);
-		if (isSet)
-			mapped_t += " [:] ";
-
-		buffer.append(mapped_t + " ");
-		buffer.append(ctx.id().getText());
-
-		// TODO fix set variables
+		String name = ctx.id().getText();
+		if (isSet && ctx.is_external != null) {
+			// An external set is filled by the set binding of a verification configuration:
+			// the number of elements is a parameter and each element is an array element.
+			String sizeName = name + "_n";
+			buffer.append("parameter Integer " + sizeName + "(min = 0) = 0 \"Number of elements of external set "
+					+ name + "\";\n");
+			buffer.append(mapped_t + " " + name + "[" + sizeName + "]");
+		} else {
+			if (isSet)
+				mapped_t += " [:] ";
+			buffer.append(mapped_t + " ");
+			buffer.append(name);
+		}
 
 		if (saveExtrnal && ctx.is_external != null)
-			external_variables.add(mapped_t + " " + ctx.id().getText() + "\n");
+			external_variables.add(mapped_t + (isSet ? "[:]" : "") + " " + name + "\n");
 
 		variableTable.putVariable(ctx.id().getText(), var_t, isSet, prefix);
 		variableTable.putlocalVariable(ctx.id().getText(), var_t, isSet);

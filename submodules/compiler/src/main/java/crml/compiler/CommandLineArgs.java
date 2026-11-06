@@ -20,6 +20,9 @@ public class CommandLineArgs {
     @Parameter(names = {"--external", "-e"}, description = "Generate a file containing the external variables found in the CRML model. \n Used to connect the requirement model to validation models.")
     public Boolean generateExternal = false;
 
+    @Parameter(names = {"--externals-json"}, description = "Write <model>_externals.json next to the generated .mo file: the classes with their external variables and requirements, the external sets and the top level requirements. Used by the bindings editor of OMEdit.")
+    public Boolean externalsJson = false;
+
     @Parameter(names = {"--stacktrace"}, description = "Print the exception stack for errors")
     public Boolean stacktrace = false;
 
