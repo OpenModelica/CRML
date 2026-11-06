@@ -60,6 +60,19 @@ public class Value {
 		return ret;
 	}
 
+	/**
+	 * Marks the value as the vector of time periods of a FORM-L time locator
+	 * block (CRML.TimeLocators.Continuous), see FormLNativeOperators.
+	 */
+	public Value asTimeLocator(){
+		timeLocator = true;
+		return this;
+	}
+
+	public boolean isTimeLocator(){
+		return timeLocator;
+	}
+
 	public List<Value> getSetValue(){
 		return contents_set;
 	}
@@ -73,5 +86,6 @@ public class Value {
 	String type; // computed type
 	Boolean isSet;
 	List<String> setPath;
+	private boolean timeLocator = false; // the periods of a FORM-L time locator block
 
 }

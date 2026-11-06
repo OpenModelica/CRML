@@ -24,6 +24,8 @@ public class CrmlWeb {
         return "ERROR unable to parse";
       }
       crmlVisitorImpl visitor = new crmlVisitorImpl(model.parser(), false);
+      // the libraries shipped with the compiler, as the jar has them
+      visitor.setLibraryResolver(new ShippedLibraries());
       Value result = visitor.visit(model.ast());
       if (result == null) {
         return "ERROR unable to translate";

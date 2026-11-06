@@ -36,13 +36,14 @@ model ics_reqs is
 			Real v is external;
 			Boolean v_too_high is (v > 6.0) ; // m/s
 			Clock v_too_high_clock is (new Clock v_too_high) ;
-			Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=_real' 10.0 ;
-			Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=_int' 2 ;
+			Boolean R1_v is ('from' v_too_high_clock 'for' 3600.0) 'check duration' v_too_high '<=' 10.0 ;
+			Boolean R2_v is ('from' v_too_high_clock 'for' 3600.0) 'check count' v_too_high_clock '<=' 2 ;
 			Boolean R_v is R1_v and R2_v ;
 		};
 		Real v1 is external;
 		Real v2 is external;
-		Req_speed Req_speed1(v = v1), Req_speed2(v = v2);
+		Req_speed Req_speed1(v = v1);
+		Req_speed Req_speed2(v = v2);
 		Boolean R_speed_all is Req_speed1.R_v and Req_speed2.R_v ;
 		
 		// Flow requirements for pumps
@@ -50,7 +51,7 @@ model ics_reqs is
 		// SNL : When an ICS pump is in operation, the ICS system shall ensure that the flow rate associated with that pump
 		// is greater than or equal to 70 tonnes per hour.
 		class Req_flow is {
-			Real flow is external ;
+			Real f is external ;
 			Boolean pump_in_service is external ;
 			Boolean f_over_fmin is (f >= 700) ; // t/h
 			Boolean R_f is ('during' pump_in_service) 'ensure' f_over_fmin ;
@@ -61,8 +62,8 @@ model ics_reqs is
 		Real flow1 is external;
 		Real flow2 is external;
 		Real flow3 is external;
-		Req_flow Req_flow1(pump_in_service=pump_in_service1,flow=flow1);
-		Req_flow Req_flow2(pump_in_service=pump_in_service2,flow=flow2);
-		Req_flow Req_flow3(pump_in_service=pump_in_service3,flow=flow3);
+		Req_flow Req_flow1(pump_in_service=pump_in_service1,f=flow1);
+		Req_flow Req_flow2(pump_in_service=pump_in_service2,f=flow2);
+		Req_flow Req_flow3(pump_in_service=pump_in_service3,f=flow3);
 		Boolean R_flow_all is Req_flow1.R_f and Req_flow2.R_f and Req_flow3.R_f;	
 	};

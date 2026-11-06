@@ -1,0 +1,96 @@
+// FORM-L library
+// The operators of test-resources testModels/use-cases/ICS_educational/SRI_V2.crml,
+// in the syntax the compiler translates. The library files in test-resources
+// testModels/libraries use a newer syntax that the compiler does not support yet.
+// A model uses the library with: model M is 'ETL' union 'FORML' union { ... };
+// The time locators and requirement checks below are translated to the
+// blocks of the CRML Modelica library (CRML.TimeLocators.Continuous,
+// CRML.Requirements), see FormLNativeOperators in the compiler.
+library FORML is ETL union {
+    
+
+	// Operators to define time periods
+	// From events occur
+	Operator [ Periods ] 'from' Clock ev = new Periods [ ev, new Clock false ]; 
+	
+	// After events occur
+	Operator [ Periods ] 'after' Clock ev = new Periods ] ev, new Clock false ]; 
+	
+	// Before events occur
+	Operator [ Periods ] 'before' Clock ev = new Periods [ new Clock false, ev [; 
+	
+	// Until events occur
+	Operator [ Periods ] 'until' Clock ev = new Periods [ new Clock false, ev ]; 
+	
+	// While a Boolean is true
+	Operator [ Periods ] 'during' Boolean b = new Periods [ new Clock b, new Clock not b ]; 
+	
+	// After events occur and before events occur
+	Operator [ Periods ] 'after' Clock ev1 'before' Clock ev2 = new Periods ] ev1, ev2 [; 
+	
+	// After events occur and until events occur
+	Operator [ Periods ] 'after' Clock ev1 'until' Clock ev2 = new Periods ] ev1, ev2 ]; 
+	
+	// After events occur and for an elapsed time
+	Operator [ Periods ] 'after' Clock ev 'for' Real d = new Periods ] ev, ev + d ]; 
+	
+	// After events occur and within an elapsed time
+	Operator [ Periods ] 'after' Clock ev 'within' Real d = new Periods ] ev, ev + d [; 
+	
+	// From events occur and before events occur
+	Operator [ Periods ] 'from' Clock ev1 'before' Clock ev2 = new Periods [ ev1, ev2 [; 
+	
+	// From events occur and until events occur
+	Operator [ Periods ] 'from' Clock ev1 'until' Clock ev2 = new Periods [ ev1, ev2 ]; 
+	
+	// From events occur and for an elapsed time
+	Operator [ Periods ] 'from' Clock ev 'for' Real d = new Periods [ ev, ev + d ]; 
+	
+	// From events occur and within an elapsed time
+	Operator [ Periods ] 'from' Clock ev 'within' Real d = new Periods [ ev, ev + d [; 
+	
+	// When events occurs
+	Operator [ Periods ] 'when' Clock ev = new Periods [ ev, ev ];
+
+
+	// Operators for the evaluation of requirements
+	
+	// Checking that a requirement is satisfied at the end of a time period
+	Operator [ Boolean ] Periods P 'check at end' Boolean b 
+        = 'check' ('set to false' b) 'over' P;
+	
+	// Checking that a requirement is satisfied at any time instant of a time period
+	Operator [ Boolean ] Periods P 'check anytime' Boolean b 
+        = 'check' ('set to true' b) 'over' P;
+		
+  
+	// Checking that the number of event occurrences at the end of a time period is lower or higher than a threshold
+	Operator [ Boolean ] Periods P 'check count' Clock E '<' Integer n 
+		= 'check' (('count' E 'inside' P) '<_int' n) 'over' P;
+	Operator [ Boolean ] Periods P 'check count' Clock E '<=' Integer n 
+		= 'check'(('count' E 'inside' P) '<=_int' n) 'over' P;
+	Operator [ Boolean ] Periods P 'check count' Clock E '>' Integer n 
+		= 'check'(('count' E 'inside' P) '>_int' n) 'over' P;
+	Operator [ Boolean ] Periods P 'check count' Clock E '>=' Integer n 
+		= 'check'(('count' E 'inside' P) '>=_int' n) 'over' P;
+	Operator [ Boolean ] Periods P 'check count' Clock E '==' Integer n 
+		= 'check'(('count' E 'inside' P) '==_int' n) 'over' P;
+	Operator [ Boolean ] Periods P 'check count' Clock E '<>' Integer n 
+		= 'check'(('count' E 'inside' P) '<>_int' n) 'over' P;
+    
+	// Ensuring that a requirement is satisfied all along a time period
+	Operator [ Boolean ] Periods P 'ensure' Boolean b 
+		= (P 'check count' (b 'becomes true') '==' 0) and (P 'check anytime' b);
+
+
+    
+	// Checking that the duration of a condition at the end of a time period is lower or higher than a threshold 
+	Operator [ Boolean ] Periods P 'check duration' Boolean b '<' Real d 
+		= 'check' (('duration' b 'on' P) '<_real' d) 'over' P;
+	Operator [ Boolean ] Periods P 'check duration' Boolean b '<=' Real d 
+		= 'check' (('duration' b 'on' P) '<=_real' d) 'over' P;
+	Operator [ Boolean ] Periods P 'check duration' Boolean b '>' Real d 
+		= 'check' (('duration' b 'on' P) '>_real' d) 'over' P;
+	Operator [ Boolean ] Periods P 'check duration' Boolean b '>=' Real d 
+		= 'check' (('duration' b 'on' P) '>=_real' d) 'over' P;
+};

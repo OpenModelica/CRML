@@ -23,6 +23,42 @@ dependencies {
     implementation(teavm.libs.jsoApis)
 }
 
+// The CRML libraries (libraries/crml) as Java strings, for 'ETL' union ... in
+// the browser, where the translator cannot read the files that the jar ships.
+val shippedLibrariesDir = layout.buildDirectory.dir("generated/sources/shippedLibraries")
+val generateShippedLibraries by tasks.registering {
+    val libraries = rootProject.fileTree("libraries/crml") { include("*.crml") }
+    inputs.files(libraries)
+    outputs.dir(shippedLibrariesDir)
+    doLast {
+        val text = StringBuilder()
+        text.append("package crml.web;\n\n")
+        text.append("import java.util.HashMap;\n\n")
+        text.append("import crml.compiler.translation.LibraryResolver;\n\n")
+        text.append("/** Generated from libraries/crml by the generateShippedLibraries task. */\n")
+        text.append("public class ShippedLibraries implements LibraryResolver {\n")
+        text.append("  private static final HashMap<String, String> libraries = new HashMap<String, String>();\n")
+        text.append("  static {\n")
+        for (f in libraries.files.sortedBy { it.name }) {
+            val body = f.readText()
+                .replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "").replace("\n", "\\n")
+            text.append("    libraries.put(\"" + f.nameWithoutExtension + "\", \"" + body + "\");\n")
+        }
+        text.append("  }\n\n")
+        text.append("  public Library find(String name) {\n")
+        text.append("    String text = libraries.get(name);\n")
+        text.append("    return text == null ? null : new Library(name + \".crml (shipped with the compiler)\", text);\n")
+        text.append("  }\n\n")
+        text.append("  public String describe() {\n")
+        text.append("    return \"the libraries of the compiler\";\n")
+        text.append("  }\n")
+        text.append("}\n")
+        val out = shippedLibrariesDir.get().file("crml/web/ShippedLibraries.java").asFile
+        out.parentFile.mkdirs()
+        out.writeText(text.toString())
+    }
+}
+
 sourceSets {
     main {
         antlr {
@@ -31,6 +67,7 @@ sourceSets {
         java {
             srcDir("../language/src/main/java")
             srcDir("../compiler/src/main/java")
+            srcDir(generateShippedLibraries)
             include("crml/web/**", "org/apache/logging/log4j/**", "crml/language/**",
                     "crml/compiler/translation/**")
         }

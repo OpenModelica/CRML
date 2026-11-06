@@ -1,8 +1,11 @@
 package crml.compiler.translation;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -19,6 +22,8 @@ import crml.language.grammar.crmlParser.Element_defContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.IdContext;
 import crml.language.grammar.crmlParser.User_keywordContext;
+import crml.language.util.Parser;
+import crml.language.util.Parser.ParserResult;
 
 public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
@@ -33,6 +38,13 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 	private VariableData variableTable;
 
 	private HashMap<String, Signature> user_operators;
+
+	// finds the libraries a model depends on, and the libraries already translated
+	private LibraryResolver libraryResolver = null;
+	private Set<String> loadedLibraries = new HashSet<String>();
+
+	// Periods variables bound to a FORM-L time locator block: name -> block output
+	private HashMap<String, String> timeLocators = new HashMap<String, String>();
 
 	private StringBuffer localFunctionCalls;
 
@@ -112,14 +124,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (!ctx.definition_type().getText().equals("model"))
 			throw new ParseCancellationException("library and package not implemented yet");
 
-		// load libraries and packages
-		if (!ctx.dependency().isEmpty()) {
-			for (DependencyContext d : ctx.dependency()) {
-
-			}
-		}
-
 		buffer.append("model " + ctx.id().getText() + " \n");
+
+		// load libraries and packages: their operators become part of the model
+		buffer.append(loadDependencies(ctx.dependency()));
 
 		List<Element_defContext> cL = ctx.element_def();
 
@@ -131,6 +139,56 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		buffer.append("end " + ctx.id().getText() + ";\n");
 
 		return new Value(buffer.toString(), "Program");
+	}
+
+	/** Finds the libraries a model depends on ('ETL' union ...); none by default. */
+	public void setLibraryResolver(LibraryResolver resolver) {
+		libraryResolver = resolver;
+	}
+
+	private String loadDependencies(List<DependencyContext> dependencies) {
+		StringBuffer buffer = new StringBuffer();
+		for (DependencyContext d : dependencies)
+			for (crmlParser.Library_nameContext l : d.library_name())
+				buffer.append(loadLibrary(l.getText().replace("'", "")));
+		return buffer.toString();
+	}
+
+	/**
+	 * Translates the elements of a library, after its own dependencies, the first
+	 * time a model depends on it.
+	 */
+	private String loadLibrary(String name) {
+		if (loadedLibraries.contains(name))
+			return "";
+		loadedLibraries.add(name);
+
+		LibraryResolver.Library found;
+		try {
+			found = libraryResolver == null ? null : libraryResolver.find(name);
+		} catch (IOException e) {
+			throw new ParseCancellationException("Unable to read library " + name + ": " + e + '\n');
+		}
+		if (found == null)
+			throw new ParseCancellationException("Library " + name + " not found"
+					+ (libraryResolver == null ? "" : " in " + libraryResolver.describe()) + '\n');
+		String file = found.source;
+		ParserResult library = new Parser().parse(found.text);
+		if (!(library.ast() instanceof crmlParser.DefinitionContext))
+			throw new ParseCancellationException("Unable to parse library " + name + " in " + file + '\n');
+		crmlParser.DefinitionContext def = (crmlParser.DefinitionContext) library.ast();
+
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(loadDependencies(def.dependency()));
+		for (Element_defContext e : def.element_def()) {
+			try {
+				buffer.append(visit(e).toModelica());
+			} catch (RuntimeException ex) {
+				throw new ParseCancellationException("In library " + name + " (" + file + ":"
+						+ e.getStart().getLine() + "): " + ex.getMessage(), ex);
+			}
+		}
+		return buffer.toString();
 	}
 
 	@Override
@@ -247,6 +305,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 		prefix += ctx.id(0).getText();
 
+		// the blocks of the class expressions belong to the class model
+		StringBuffer store_localFunctionCalls = localFunctionCalls;
+		localFunctionCalls = new StringBuffer();
+
 		buffer.append("model " + ctx.id(0).getText());
 
 		if (ctx.class_var_def() != null)// parse class variables
@@ -256,6 +318,8 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 			buffer.append(val.toModelica());
 		}
+		buffer.append(localFunctionCalls);
+		localFunctionCalls = store_localFunctionCalls;
 
 		if (ctx.type() != null) {
 			buffer.append(" extends " + ctx.type().getText());
@@ -350,6 +414,15 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 						"Undefined Category " + ctx.operator_def().apply_category().id().getText());
 
 		user_operators.put(modelName.toString(), sig);
+
+		// A FORM-L operator with a block in the CRML library: its calls instantiate
+		// that block, so the definition is not translated (see FormLNativeOperators).
+		if (FormLNativeOperators.get(modelName.toString()) != null) {
+			variableTable.cleanLocalVariables();
+			localFunctionCalls = store_localFunctionCalls;
+			current_category = null;
+			return new Value("", "Operator");
+		}
 
 		// append body
 		Value exp = visit(ctx.operator_def().exp());
@@ -460,14 +533,42 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		variableTable.putVariable(ctx.id().getText(), var_t, isSet, prefix);
 		variableTable.putlocalVariable(ctx.id().getText(), var_t, isSet);
 
+		// an instance of a class with bindings of its variables: Req_flow r(flow = flow1)
+		if (ctx.arg_list() != null)
+			buffer.append(translateArgList(ctx.arg_list()));
+
 		if (ctx.exp() != null) {
 			v = visit(ctx.exp());
+			if (v.isTimeLocator() && !isSet) {
+				// periods of a FORM-L time locator: the variable names the block output
+				timeLocators.put(ctx.id().getText(), v.toModelica());
+				return new Value("", "Definition");
+			}
 			if (!v.type.equals("new")) // check that it is not a constructor
 				buffer.append(" = " + v.toModelica());
 		}
 		buffer.append(";\n");
 
 		return new Value(buffer.toString(), "Definition");
+	}
+
+	/** The Modelica modifiers of the bindings (id = exp, ...) of a class instance. */
+	private String translateArgList(crmlParser.Arg_listContext ctx) {
+		StringBuffer modifiers = new StringBuffer("(");
+		String name = null;
+		for (org.antlr.v4.runtime.tree.ParseTree child : ctx.children) {
+			if (child instanceof IdContext)
+				name = child.getText();
+			else if (child instanceof crmlParser.Arg_listContext || child instanceof ExpContext) {
+				if (modifiers.length() > 1)
+					modifiers.append(", ");
+				if (child instanceof crmlParser.Arg_listContext)
+					modifiers.append(name + translateArgList((crmlParser.Arg_listContext) child));
+				else
+					modifiers.append(name + " = " + visit(child).toModelica());
+			}
+		}
+		return modifiers.append(")").toString();
 	}
 
 	@Override
@@ -568,6 +669,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 			if (sig == null)
 				throw new ParseCancellationException("no definition found : " + ctx.getText() + '\n');
+
+			FormLNativeOperators.NativeOperator nativeOp = FormLNativeOperators.get(op);
+			if (nativeOp != null)
+				return apply_native_operator(op, nativeOp, uc.args);
 
 			int i = 0;
 
@@ -683,6 +788,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	@Override
 	public Value visitId(crmlParser.IdContext ctx) {
+		String timeLocator = timeLocators.get(ctx.getText());
+		if (timeLocator != null)
+			return new Value(timeLocator, "Periods").asTimeLocator();
+
 		VariableData.VariableType v_type = variableTable.getVariableInfo(ctx.getText());
 		if (v_type != null)
 			return new Value(ctx.getText(), v_type.type, v_type.isSet, v_type.setPath);
@@ -827,6 +936,74 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		current_category = previous_category; // restore
 		return new Value(name + ".out", sign.return_type);
 
+	}
+
+	/**
+	 * Translates a call of a FORM-L operator to an instance of its block in the
+	 * CRML library.
+	 *
+	 * @param op   the operator name
+	 * @param n    the block and its operands
+	 * @param args the operands of the call, last operand first
+	 */
+	private Value apply_native_operator(String op, FormLNativeOperators.NativeOperator n, List<ExpContext> args) {
+		if (args.size() != n.operands.size())
+			throw new ParseCancellationException("Operator " + op + " takes " + n.operands.size()
+					+ " operands, the call has " + args.size() + '\n');
+
+		String simpleName = n.block.substring(n.block.lastIndexOf('.') + 1);
+		String name = Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1) + counter++;
+
+		StringBuffer modifiers = new StringBuffer();
+		for (int i = 0; i < n.operands.size(); i++) {
+			FormLNativeOperators.Operand operand = n.operands.get(i);
+			ExpContext e = args.get(args.size() - i - 1);
+			Value v = visit(e);
+			String value;
+			switch (operand.kind) {
+				case BOOLEAN:
+					checkOperandType(op, e, v, "Boolean");
+					value = v.toModelica();
+					break;
+				case CLOCK:
+					checkOperandType(op, e, v, "Clock");
+					// the block input is the Boolean4 whose rising edges are the clock ticks
+					value = v.toModelica() + ".b";
+					break;
+				case PERIODS:
+					if (!v.isTimeLocator())
+						throw new ParseCancellationException("Operator " + op + ": " + e.getText()
+								+ " must be periods built by a FORM-L time locator ('during', 'from', 'after', ...)\n");
+					value = v.toModelica();
+					break;
+				case INTEGER_PARAMETER:
+					checkOperandType(op, e, v, "Integer");
+					value = v.toModelica();
+					break;
+				case REAL_INPUT:
+				case REAL_PARAMETER:
+					if (!v.type.equals("Integer"))
+						checkOperandType(op, e, v, "Real");
+					value = v.toModelica();
+					break;
+				default:
+					throw new IllegalStateException("Unknown operand kind " + operand.kind);
+			}
+			if (i > 0)
+				modifiers.append(", ");
+			modifiers.append(operand.port + " = " + value);
+		}
+
+		localFunctionCalls.append(n.block + " " + name + "(" + modifiers + ");\n");
+
+		Value result = new Value(name + "." + n.output(), n.returnType);
+		return n.returnType.equals("Periods") ? result.asTimeLocator() : result;
+	}
+
+	private void checkOperandType(String op, ExpContext e, Value v, String type) {
+		if (!type.equals(v.type))
+			throw new ParseCancellationException("Operator " + op + ": " + e.getText() + " has type " + v.type
+					+ ", expected " + type + '\n');
 	}
 
 	private Value apply_runary_op(String op, Value right) {

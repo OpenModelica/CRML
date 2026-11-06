@@ -7,7 +7,10 @@ definition : definition_type id 'is' dependency* '{'
 		(element_def)* 
 		'}'  ';' EOF;	
 
-dependency : (id |'flatten' '{' id (',' id)* '}') 'union' ;
+dependency : (library_name |'flatten' '{' library_name (',' library_name)* '}') 'union' ;
+
+// a library name, also quoted: 'ETL' union
+library_name : id | user_keyword ;
 
 definition_type : 'model' | 'package' | 'library'; // should we keep library?
 

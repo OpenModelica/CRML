@@ -63,7 +63,7 @@ public class CRMLC {
           if (test.endsWith(".crml")) {
             logger.trace("Translating test: " + test);
             parse_file(Paths.get(test), cmd.outputDir, cmd.stacktrace, cmd.printAST,
-                cmd.generateExternal, cmd.within, cmd.causal);
+                cmd.generateExternal, cmd.within, cmd.causal, libraryPath(cmd));
             if (cmd.simulate != null) {
               OMCmsg msg;
               try {
@@ -82,7 +82,7 @@ public class CRMLC {
         String stripped_file_name = Utilities.stripNameEndingAndPath(path);
         Path outputDir = cmd.outputDir.resolve(stripped_file_name);
         parse_file(path, outputDir, cmd.stacktrace,
-            cmd.printAST, cmd.generateExternal, cmd.within, cmd.causal);
+            cmd.printAST, cmd.generateExternal, cmd.within, cmd.causal, libraryPath(cmd));
         if (cmd.simulate != null) {
           OMCmsg msg;
           try {
@@ -101,12 +101,33 @@ public class CRMLC {
 
   }
 
+  private static List<Path> libraryPath(CommandLineArgs cmd) {
+    List<Path> dirs = new ArrayList<Path>();
+    for (String d : cmd.libraryPath)
+      dirs.add(Paths.get(d.replace("\"", "")).toAbsolutePath());
+    return dirs;
+  }
+
   public static void parse_file(
       Path fullName,
       Path gen_dir, Boolean testMode, Boolean printAST,
       Boolean generateExternal,
       String within,
       Boolean causal) throws Exception {
+    parse_file(fullName, gen_dir, testMode, printAST, generateExternal, within, causal, new ArrayList<Path>());
+  }
+
+  /**
+   * @param libraryPath directories searched for the libraries the model depends
+   *                    on, after the directory of the model
+   */
+  public static void parse_file(
+      Path fullName,
+      Path gen_dir, Boolean testMode, Boolean printAST,
+      Boolean generateExternal,
+      String within,
+      Boolean causal,
+      List<Path> libraryPath) throws Exception {
 
     try {
       ParserResult model = new Parser().parse(fullName);
@@ -125,6 +146,11 @@ public class CRMLC {
         visitor = new crmlVisitorImpl(model.parser(), external_var, causal);
       else
         visitor = new crmlVisitorImpl(model.parser(), causal);
+
+      List<Path> libraryDirs = new ArrayList<Path>();
+      libraryDirs.add(fullName.toAbsolutePath().getParent());
+      libraryDirs.addAll(libraryPath);
+      visitor.setLibraryResolver(new FileLibraryResolver(libraryDirs));
 
       try {
         Value result = visitor.visit(model.ast());

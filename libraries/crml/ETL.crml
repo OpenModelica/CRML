@@ -1,0 +1,80 @@
+// ETL library
+// The operators of test-resources testModels/use-cases/ICS_educational/SRI_V2.crml,
+// in the syntax the compiler translates. The library files in test-resources
+// testModels/libraries use a newer syntax that the compiler does not support yet.
+// A model uses the library with: model M is 'ETL' union 'FORML' union { ... };
+library ETL is {
+
+
+   
+
+	// Operators on Boolean
+	// Logical disjunction
+	Template b1 'or' b2 = not (not b1 and not b2);
+
+	// Exclusive logical disjunction
+	Template b1 'xor' b2 = (b1 'or' b2) and not (b1 and b2);
+  
+	// Logical inference
+	Template b1 'implies' b2 = not b1 'or' b2;
+
+	// Operators on clocks
+	// Filter clock ticks inside a time period
+	Operator [ Clock ] Clock C 'inside' Period P 
+		= C filter ((tick C >= P start) and (tick C <= P end));
+  
+	// Count the occurrences of events inside a time period
+	Operator [ Integer ] 'count' Clock C 'inside' Period P = card (C 'inside' P);
+  
+	// Operators on events
+	// Events generated when a Boolean becomes true
+	Operator [ Clock ] Boolean b 'becomes true' = new Clock b;
+  
+	// Events generated when a Boolean becomes false
+	Operator [ Clock] Boolean b 'becomes false' = not b 'becomes true';
+
+	// Events generated when a Boolean becomes true inside a time period
+	Operator [ Clock] Boolean b 'becomes true inside' Period P 
+		= (b 'becomes true') 'inside' P;
+
+	// Events generated when a Boolean becomes false inside a time period
+	Operator [ Clock] Boolean b 'becomes false inside' Period P 
+		= (b 'becomes false') 'inside' P; 
+
+	// Decide
+	// Operator 'decide' is 
+	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P 
+        = phi 'or' new Boolean (P end);
+
+	// Evaluate
+	Operator [ Boolean ] 'evaluate' Boolean phi 'over' Period P 
+		= integrate (('decide' phi 'over' P) * phi) on P;
+
+	// Operators for the evaluation of requirements
+	// Check
+	Operator [ Boolean ] 'check' Boolean phi 'over' Periods P 
+		= and ('evaluate' phi 'over' P); // not implemented yet?
+    
+	Category increasing_int = { (>, >), (>=, >=), (<, >=), (<=, >), (==, >), (<>, >) };
+	Category increasing_real = { (>, >), (>=, >=), (<, >=), (<=, >) };
+	Operator [ Boolean ]  Integer x '>_int' Integer n = apply increasing_int on ( x > n );
+	Operator [ Boolean ]  Integer x '>=_int' Integer n = apply increasing_int on ( x >= n );
+	Operator [ Boolean ]  Integer x '<_int' Integer n = apply increasing_int on ( x < n );
+	Operator [ Boolean ]  Integer x '<=_int' Integer n = apply increasing_int on ( x <= n );
+	Operator [ Boolean ]  Integer x '==_int' Integer n = apply increasing_int on ( x == n );
+	Operator [ Boolean ]  Integer x '<>_int' Integer n = apply increasing_int on ( x <> n );
+	Operator [ Boolean ]  Real x '>_real' Real d = apply increasing_real on ( x > d );
+	Operator [ Boolean ]  Real x '>=_real' Real d = apply increasing_real on ( x >= d );
+	Operator [ Boolean ]  Real x '<_real' Real d = apply increasing_real on ( x < d );
+	Operator [ Boolean ]  Real x '<=_real' Real d = apply increasing_real on ( x <= d );
+
+
+    Operator [ Boolean ] 'id' Boolean b = b;
+	Operator [ Boolean ] 'cte_false' Boolean b = false;
+	Operator [ Boolean ] 'cte_true' Boolean b = true;
+
+    Category varying1 = { ('id', 'cte_false') };
+    Category varying2 = { ('id', 'cte_true') };
+    Operator [ Boolean ] 'set to false' Boolean b = apply varying1 on ( 'id' b ); 
+    Operator [ Boolean ] 'set to true' Boolean b = apply varying2 on ( 'id' b );
+};

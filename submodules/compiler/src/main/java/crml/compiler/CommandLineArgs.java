@@ -44,6 +44,9 @@ public class CommandLineArgs {
     @Parameter(names = {"--causal"}, description = "Generates explicit input prefixes in helper blocks")
     public Boolean causal = false;
 
+    @Parameter(names = {"--library-path", "-L"}, description = "Directory searched for the libraries a model depends on ('ETL' union ...), after the directory of the model. Can be given several times.")
+    public List<String> libraryPath = new ArrayList<>();
+
 
     /**
      * Hide constructor
