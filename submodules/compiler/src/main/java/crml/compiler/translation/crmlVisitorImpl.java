@@ -1,19 +1,11 @@
 package crml.compiler.translation;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.Map.Entry;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -47,10 +39,9 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	private HashMap<String, Signature> user_operators;
 
-	// directories searched for libraries, and the libraries already translated
-	private List<Path> libraryPath = new ArrayList<Path>();
+	// finds the libraries a model depends on, and the libraries already translated
+	private LibraryResolver libraryResolver = null;
 	private Set<String> loadedLibraries = new HashSet<String>();
-	private String libraryFile; // where findLibrary found the library, for messages
 
 	// Periods variables bound to a FORM-L time locator block: name -> block output
 	private HashMap<String, String> timeLocators = new HashMap<String, String>();
@@ -150,10 +141,9 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		return new Value(buffer.toString(), "Program");
 	}
 
-	/** Directories searched for the libraries a model depends on ('ETL' union ...). */
-	public void addLibraryPath(Path dir) {
-		if (dir != null && !libraryPath.contains(dir))
-			libraryPath.add(dir);
+	/** Finds the libraries a model depends on ('ETL' union ...); none by default. */
+	public void setLibraryResolver(LibraryResolver resolver) {
+		libraryResolver = resolver;
 	}
 
 	private String loadDependencies(List<DependencyContext> dependencies) {
@@ -173,13 +163,17 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			return "";
 		loadedLibraries.add(name);
 
-		ParserResult library;
+		LibraryResolver.Library found;
 		try {
-			library = findLibrary(name);
+			found = libraryResolver == null ? null : libraryResolver.find(name);
 		} catch (IOException e) {
 			throw new ParseCancellationException("Unable to read library " + name + ": " + e + '\n');
 		}
-		String file = libraryFile;
+		if (found == null)
+			throw new ParseCancellationException("Library " + name + " not found"
+					+ (libraryResolver == null ? "" : " in " + libraryResolver.describe()) + '\n');
+		String file = found.source;
+		ParserResult library = new Parser().parse(found.text);
 		if (!(library.ast() instanceof crmlParser.DefinitionContext))
 			throw new ParseCancellationException("Unable to parse library " + name + " in " + file + '\n');
 		crmlParser.DefinitionContext def = (crmlParser.DefinitionContext) library.ast();
@@ -195,44 +189,6 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 			}
 		}
 		return buffer.toString();
-	}
-
-	/**
-	 * The library name: the .crml file in the library path that defines it, else
-	 * the library of that name shipped with the compiler (libraries/crml).
-	 */
-	private ParserResult findLibrary(String name) throws IOException {
-		Pattern header = Pattern.compile("(^|\\s)library\\s+'?" + Pattern.quote(name) + "'?\\s+is\\b");
-		for (Path dir : libraryPath) {
-			if (!Files.isDirectory(dir))
-				continue;
-			List<Path> files = new ArrayList<Path>();
-			// a directory stream also works for a model inside a jar (zip file system)
-			try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.crml")) {
-				for (Path f : stream)
-					files.add(f);
-			}
-			Collections.sort(files);
-			for (Path f : files) {
-				if (header.matcher(new String(Files.readAllBytes(f), StandardCharsets.UTF_8)).find()) {
-					libraryFile = f.toString();
-					return new Parser().parse(f);
-				}
-			}
-		}
-		InputStream shipped = crmlVisitorImpl.class.getResourceAsStream("/crml/libraries/" + name + ".crml");
-		if (shipped != null) {
-			try (InputStream in = shipped) {
-				ByteArrayOutputStream text = new ByteArrayOutputStream();
-				byte[] buffer = new byte[8192];
-				for (int n; (n = in.read(buffer)) > 0;)
-					text.write(buffer, 0, n);
-				libraryFile = name + ".crml (shipped with the compiler)";
-				return new Parser().parse(new String(text.toByteArray(), StandardCharsets.UTF_8));
-			}
-		}
-		throw new ParseCancellationException("Library " + name + " not found in the library path " + libraryPath
-				+ " (use --library-path) nor in the libraries of the compiler\n");
 	}
 
 	@Override

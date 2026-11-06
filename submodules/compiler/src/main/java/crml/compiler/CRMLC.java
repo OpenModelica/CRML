@@ -147,9 +147,10 @@ public class CRMLC {
       else
         visitor = new crmlVisitorImpl(model.parser(), causal);
 
-      visitor.addLibraryPath(fullName.toAbsolutePath().getParent());
-      for (Path dir : libraryPath)
-        visitor.addLibraryPath(dir);
+      List<Path> libraryDirs = new ArrayList<Path>();
+      libraryDirs.add(fullName.toAbsolutePath().getParent());
+      libraryDirs.addAll(libraryPath);
+      visitor.setLibraryResolver(new FileLibraryResolver(libraryDirs));
 
       try {
         Value result = visitor.visit(model.ast());
