@@ -18,7 +18,7 @@ public class BinaryExpressionBuilder {
     }
 
     public boolean test(ExpContext context){
-        return context.lhs!=null && context.rhs!=null && (
+        return (context.lhs!=null && context.rhs!=null && (
             context.bop0!=null ^ 
             context.bop1!=null ^ 
             context.bop2!=null ^ 
@@ -27,10 +27,31 @@ public class BinaryExpressionBuilder {
             context.bop5!=null ^ 
             context.bop6!=null ^
             context.bop7!=null
+        )) || (
+            context.aggrop!=null &&
+            context.rhs!=null &&
+            context.lhs==null
         );
     }
 
     public BinaryOperator get(ExpContext context){
+        if(context.aggrop==null){
+            return getBinary(context);
+        } else {
+            return getAggregator(context);
+        }
+    }
+    private BinaryOperator getAggregator(ExpContext context){
+        BinaryOperator binop = factory.createBinaryOperator();
+        binop.setOptype(resolveBinaryOpCode(context.aggrop.getText()));
+
+        SingleBuildResult<?> buildres = builder.build(context.rhs, SingleBuildResult.class);
+        binop.setRhs(buildres.<Value>result());
+
+        return binop;
+    }
+
+    private BinaryOperator getBinary(ExpContext context){
         BinaryOperator binop = factory.createBinaryOperator();
         binop.setOptype(resolveBinaryOpCode(opcode(context)));
 

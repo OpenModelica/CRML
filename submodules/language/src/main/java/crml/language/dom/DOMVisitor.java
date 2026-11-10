@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import crml.language.dom.builders.ClassBuilder;
 import crml.language.dom.builders.ConstantBuilder;
 import crml.language.dom.builders.ExpressionBuilder;
+import crml.language.dom.builders.LiftBuilder;
 import crml.language.dom.builders.RootBuilder;
 import crml.language.dom.builders.TemplateBuilder;
 import crml.language.dom.builders.TypeReferenceBuilder;
@@ -118,6 +119,9 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
      * needs the operator declarations resolved. A Sequence that names no
      * operator in scope is left as it is, so a consumer can report it rather
      * than silently receiving a wrong tree.
+     *
+     * <p>Afterwards links every ScatteredValue ({@code x.element}) to its
+     * enclosing Liftable.
      */
     public void resolveOperatorCalls(){
         if (builtRoot instanceof Model) {
@@ -128,6 +132,9 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
             return;
         }
         modify();
+        // Only now are the ComputedValue calls in the tree, so a ScatteredValue
+        // can find the Liftable that encloses it.
+        LiftBuilder.linkAll(builtRoot);
     }
 
     @Override

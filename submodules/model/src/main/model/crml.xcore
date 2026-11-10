@@ -54,6 +54,8 @@ class Variable extends Element, OperatorHeaderElement {
      */
     Boolean constant
 
+    Boolean collection
+
 }
 
 /*
@@ -201,6 +203,15 @@ class UnaryOperator extends Operator, Value {
      * Input of operation.
      */
     contains Value value
+
+    /*
+     * Denote that the operator is called on a set and behaves differently
+     * Unary operators behave as element-wise operators producing a set
+     * TODO: should be infered from the value
+     */
+    op Boolean isCollection() {
+        getValue().isCollection()
+    }
 }
 /*
  * Built-in binary operations.
@@ -299,6 +310,11 @@ class BinaryOperator extends Operator, Value {
      * First argument of the operator (left hand side).
      */
     contains Value lhs
+
+    op Boolean isAggregator() {
+        getLhs()==null && getRhs().isCollection()
+    }
+
 }
 
 /*
@@ -681,6 +697,10 @@ class ComplexNumber {
 // Ideas for values and Expressions
 /////////////////////////
 
+abstract class Liftable {
+    refers ScatteredValue lifts opposite method
+}
+
 /*
  * Expression in a CRML model.
  */
@@ -690,6 +710,13 @@ abstract class Value {
      * Set by the parser for constants only, null otherwise.
      */
     contains TypeReference returnType
+
+    /* 
+     * Denotes whether a value is a collection of values (set)
+     */
+    op Boolean isCollection() {
+        false
+    }
 }
 
 /*
@@ -700,6 +727,10 @@ class VariableReference extends Value {
      * The referenced variable.
      */
     refers Variable variable
+
+    op Boolean isCollection() {
+        getVariable().getCollection()
+    }
 }
 
 /*
@@ -707,7 +738,7 @@ class VariableReference extends Value {
  * The parser produces it from a {@link Sequence}, by matching the keywords
  * and arguments against the headers of the operators in scope.
  */
-class ComputedValue extends Value {
+class ComputedValue extends Value, Liftable {
     /*
      * The called operator.
      */
@@ -717,6 +748,12 @@ class ComputedValue extends Value {
      * {@link #getOperator() operator}.
      */
     contains Binding[] bindings
+}
+
+class ScatteredValue extends Value {
+    contains Value data
+
+    refers Liftable method opposite lifts
 }
 
 /*

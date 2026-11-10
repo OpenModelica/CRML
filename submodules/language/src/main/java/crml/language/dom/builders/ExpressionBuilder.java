@@ -31,6 +31,7 @@ public class ExpressionBuilder {
     private final EClass varref;
     private final BinaryExpressionBuilder binary;
     private final UnaryExpressionBuilder unary;
+    private final LiftBuilder lifter;
     
     
     public ExpressionBuilder(BuildContext builder) { 
@@ -39,6 +40,7 @@ public class ExpressionBuilder {
         this.varref = builder.metamodel().getVariableReference();
         this.binary = new BinaryExpressionBuilder(builder);
         this.unary = new UnaryExpressionBuilder(builder);
+        this.lifter = new LiftBuilder(builder);
     }
 
     public Value value(ExpContext context){
@@ -82,6 +84,8 @@ public class ExpressionBuilder {
             return periods;
         } else if (unary.test(context)) {
             return unary.get(context);
+        } else if(context.collection!=null) {
+            return lifter.get(context);
         } else if (binary.test(context)) {
             return binary.get(context);
         } else if (context.keyword!=null && (context.lhs!=null || context.rhs!=null)) {

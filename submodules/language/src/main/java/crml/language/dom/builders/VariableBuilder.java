@@ -20,6 +20,8 @@ public class VariableBuilder {
     public Variable variable(Var_defContext context){
         //TODO: what is fixed qualifier?
         Variable var = factory.createVariable();
+
+        var.setCollection(false);
         
         var.setName(context.id().getText());
 

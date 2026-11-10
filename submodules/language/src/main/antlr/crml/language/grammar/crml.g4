@@ -128,7 +128,8 @@ exp
 	| trim //# TrimExpression
 	| p1=exp 'proj' ('(' opt=exp ')')?  p2=exp 
 	| period_op //# PoeriodOperationExpression
-	| iterator //# IteratorExpression
+//	| iterator //# IteratorExpression
+	| collection=exp '.''element'
 	//| 'apply' cat=id 'on' '(' exp ')'
 //TODO: with master on pre
 // Unary operations
@@ -137,6 +138,8 @@ exp
 	| uop2=('cos' | 'acos' | 'sin' | 'asin' ) rhs=exp
 	| uop3=('exp' | 'log' | 'log10' | 'card') rhs=exp
 	| uop4=('not' | 'tick' ) rhs=exp
+// Binary operaotrs on sets (aggregators)
+	| aggrop=('and'|'or'|'+'|'-'|'*') rhs=exp
 // Binary operations
 	| <assoc=right> lhs=exp bop0='^' rhs=exp
 	| lhs=exp bop1=('*'|'/'|'mod') rhs=exp
@@ -212,7 +215,7 @@ string : STRING;
 
 IDENT : NONDIGIT ( DIGIT | NONDIGIT )* ;
 
-ITERATOR : NONDIGIT ( DIGIT | NONDIGIT )* '.element';
+//ITERATOR : NONDIGIT ( DIGIT | NONDIGIT )* '.element';
 
 USER_KEYWORD : '\'' (NONDIGIT|SYMBOL) (NONDIGIT|' '|SYMBOL|DIGIT)* '\'';
 
