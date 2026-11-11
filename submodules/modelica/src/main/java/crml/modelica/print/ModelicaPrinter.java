@@ -20,6 +20,7 @@ import crml.model.modelica.ComponentReference;
 import crml.model.modelica.Equation;
 import crml.model.modelica.Expression;
 import crml.model.modelica.ExtendsClause;
+import crml.model.modelica.ForEquation;
 import crml.model.modelica.FunctionCall;
 import crml.model.modelica.IfExpression;
 import crml.model.modelica.IntegerLiteral;
@@ -30,6 +31,7 @@ import crml.model.modelica.Placeholder;
 import crml.model.modelica.Reference;
 import crml.model.modelica.RealLiteral;
 import crml.model.modelica.ReferencePart;
+import crml.model.modelica.SimpleEquation;
 import crml.model.modelica.Statement;
 import crml.model.modelica.StringLiteral;
 import crml.model.modelica.UnaryExpression;
@@ -251,6 +253,8 @@ public final class ModelicaPrinter {
         StringBuilder builder = new StringBuilder();
         if (component.getVariability() == Variability.CONSTANT) {
             builder.append("constant ");
+        } else if (component.getVariability() == Variability.PARAMETER) {
+            builder.append("parameter ");
         }
         if (component.getCausality() == Causality.INPUT) {
             builder.append("input ");
@@ -322,6 +326,17 @@ public final class ModelicaPrinter {
     }
 
     private void printEquation(Equation equation) {
+        if (equation instanceof SimpleEquation) {
+            printSimpleEquation((SimpleEquation) equation);
+        } else if (equation instanceof ForEquation) {
+            printForEquation((ForEquation) equation);
+        } else {
+            throw new IllegalArgumentException(
+                "No Modelica syntax for " + equation.eClass().getName());
+        }
+    }
+
+    private void printSimpleEquation(SimpleEquation equation) {
         StringBuilder builder = new StringBuilder()
             .append(expression(equation.getLhs()))
             .append(" = ")
@@ -329,6 +344,29 @@ public final class ModelicaPrinter {
         appendComment(builder, equation.getComment());
         builder.append(';');
         writer.line(builder.toString());
+    }
+
+    private void printForEquation(ForEquation loop) {
+        writer.line("for " + Identifiers.quote(loop.getIterator()) + " in "
+            + rangeBound(loop.getStart()) + ":" + rangeBound(loop.getStop()) + " loop");
+        writer.indent();
+        for (Equation equation : loop.getEquations()) {
+            printEquation(equation);
+        }
+        writer.outdent();
+        StringBuilder end = new StringBuilder("end for");
+        appendComment(end, loop.getComment());
+        end.append(';');
+        writer.line(end.toString());
+    }
+
+    /**
+     * A bound of a range. The ":" binds looser than every operator, so only an
+     * if-expression needs parentheses.
+     */
+    private String rangeBound(Expression bound) {
+        String text = expression(bound);
+        return Precedence.rangeBoundNeedsParens(bound) ? "(" + text + ")" : text;
     }
 
     private void printStatement(Statement statement) {

@@ -194,7 +194,7 @@ enum BuiltinUnaryOperatorKind {
 /*
  * Built-in {@link Operator} with one argument.
  */
-class UnaryOperator extends Operator, Value {
+class UnaryOperator extends Operator, Value, Liftable {
     /*
      * Type of operation.
      */
@@ -297,7 +297,7 @@ enum BuiltinBinaryOperatorKind {
 /*
  * Built-in {@link Operator} with two arguments.
  */
-class BinaryOperator extends Operator, Value {
+class BinaryOperator extends Operator, Value, Liftable {
     /*
      * Type of operation.
      */
@@ -697,8 +697,15 @@ class ComplexNumber {
 // Ideas for values and Expressions
 /////////////////////////
 
+/*
+ * An application of an operator that {@code .element} operands can lift: it is
+ * evaluated once for each combination of the elements of its {@link #getLifts() lifts}.
+ */
 abstract class Liftable {
-    refers ScatteredValue lifts opposite method
+    /*
+     * The {@link ScatteredValue} operands that lift this application, in operand order.
+     */
+    refers ScatteredValue[] lifts opposite method
 }
 
 /*
@@ -750,6 +757,10 @@ class ComputedValue extends Value, Liftable {
     contains Binding[] bindings
 }
 
+/*
+ * {@code data.element}. With a {@link #getMethod() method}, one axis of that
+ * application; without one, the set of elements of {@code data}.
+ */
 class ScatteredValue extends Value {
     contains Value data
 

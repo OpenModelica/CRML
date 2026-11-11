@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.model.language.CustomOperator;
@@ -20,6 +21,7 @@ import crml.model.modelica.ClassKind;
 import crml.model.modelica.ComponentDeclaration;
 import crml.model.modelica.ComponentReference;
 import crml.model.modelica.Equation;
+import crml.model.modelica.Expression;
 import crml.model.modelica.ModelicaElement;
 import crml.model.modelica.Placeholder;
 import crml.model.trace.TraceFactory;
@@ -63,17 +65,65 @@ public final class TransformationContext implements Modelica {
      * names depended on how many models had been compiled earlier in the same
      * JVM.
      */
-    private final Map<String, Integer> counters = new HashMap<String, Integer>();
+    private final Map<String, Integer> counters;
     /**
      * Every name already spoken for in the target class. A generated name must
      * avoid the CRML variables' names too, including those not declared yet -
      * otherwise a model with its own variable "c1" gets "c1 = c1".
      */
-    private final Set<String> usedNames = new HashSet<String>();
+    private final Set<String> usedNames;
+    /**
+     * The context this one is the lifted mode of, or null in normal mode. See
+     * {@link #lifted}.
+     */
+    private final TransformationContext outer;
+    /** Where a lifted-mode context buffers what it declares; null in normal mode. */
+    private final Lifter.LoopFrame frame;
 
     private TransformationContext(Session session, ClassDefinition target) {
         this.session = session;
         this.target = target;
+        this.counters = new HashMap<String, Integer>();
+        this.usedNames = new HashSet<String>();
+        this.outer = null;
+        this.frame = null;
+    }
+
+    /** The lifted mode of {@code outer}: same class, same names, buffered output. */
+    private TransformationContext(TransformationContext outer, Lifter.LoopFrame frame) {
+        this.session = outer.session;
+        this.target = outer.target;
+        this.counters = outer.counters;
+        this.usedNames = outer.usedNames;
+        this.outer = outer;
+        this.frame = frame;
+    }
+
+    /**
+     * The <em>lifted mode</em> of this context, in which the per-element part of
+     * a lifted application ({@code x.element}) is generated. It targets the same
+     * class and shares its names, but nothing it produces reaches the class
+     * directly:
+     *
+     * <ul>
+     * <li>{@link #declare} turns the component into an array with one entry per
+     *     slot of the region, and returns a reference to the entry of the
+     *     current slot;
+     * <li>{@link #equate} puts the equation into the body of the region's loop.
+     * </ul>
+     *
+     * Both are buffered in {@code frame}, and {@link Lifter#close} adds them to
+     * the class at once. Everything else behaves as in normal mode, and
+     * {@link #root()} and {@link #nested} always give normal-mode contexts: a
+     * class is never generated per slot. Only {@link Lifter} creates one.
+     */
+    TransformationContext lifted(Lifter.LoopFrame frame) {
+        return new TransformationContext(this, frame);
+    }
+
+    /** True in the {@link #lifted lifted mode}. */
+    public boolean isLifted() {
+        return frame != null;
     }
 
     /** Starts a fresh translation targeting {@code target}. */
@@ -102,17 +152,61 @@ public final class TransformationContext implements Modelica {
     /**
      * Adds a component to the target class and returns a reference to it, so an
      * expression that needed something hoisted can go on being an expression.
+     *
+     * <p>In {@link #lifted lifted mode} the component becomes an array over the
+     * slots of the region and the reference is to the current slot's entry. A
+     * binding is moved into the loop body, as an equation for that entry. A
+     * component with modifications is not supported there
+     * ({@code Lift.BodyModification}).
      */
     public ComponentReference declare(ComponentDeclaration declaration, EObject crmlSource) {
+        if (frame != null) {
+            return declareLifted(declaration, crmlSource);
+        }
         reserveName(declaration.getName());
         target.getComponents().add(declaration);
         link(crmlSource, declaration, componentKind(crmlSource));
         return ref(declaration.getName());
     }
 
-    /** Adds an equation to the target class. */
+    private ComponentReference declareLifted(ComponentDeclaration declaration, EObject crmlSource) {
+        if (!declaration.getModifications().isEmpty()) {
+            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Lift.BodyModification",
+                "component '" + declaration.getName() + "' has modifications, which cannot be "
+                + "written per element of a lifted application yet", crmlSource));
+        }
+        reserveName(declaration.getName());
+        ComponentDeclaration copy = EcoreUtil.copy(declaration);
+        // The slot dimension comes first, so name[p] selects one slot whatever
+        // dimensions the component has of its own.
+        copy.getArrayDimensions().add(0, dimension(frame.size()));
+        Expression binding = copy.getBinding();
+        copy.setBinding(null);
+        frame.components.add(copy);
+        if (binding != null) {
+            frame.equations.add(eq(subscripted(ref(copy.getName()), frame.index()), binding));
+        }
+        return subscripted(ref(copy.getName()), frame.index());
+    }
+
+    /**
+     * Adds an equation to the target class; in {@link #lifted lifted mode}, to
+     * the body of the region's loop.
+     */
     public void equate(Equation equation, EObject crmlSource) {
+        if (frame != null) {
+            frame.equations.add(equation);
+            return;
+        }
         target.getEquations().add(equation);
+        link(crmlSource, equation, equationKind(crmlSource));
+    }
+
+    /**
+     * Records the trace link of an equation that is not added to the class
+     * itself: one in the body of a loop. Used by {@link Lifter#close}.
+     */
+    void linkNestedEquation(Equation equation, EObject crmlSource) {
         link(crmlSource, equation, equationKind(crmlSource));
     }
 
@@ -186,8 +280,15 @@ public final class TransformationContext implements Modelica {
         return new TransformationContext(session, newTarget);
     }
 
-    /** A context targeting the top-level class of this translation. */
+    /**
+     * A context targeting the top-level class of this translation. Always in
+     * normal mode, also when asked of a {@link #lifted lifted-mode} context, so
+     * an operator class is never generated in lifted mode.
+     */
     public TransformationContext root() {
+        if (outer != null) {
+            return outer.root();
+        }
         return session.root == target ? this : new TransformationContext(session, session.root);
     }
 

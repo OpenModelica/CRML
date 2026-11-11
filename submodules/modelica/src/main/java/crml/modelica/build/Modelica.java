@@ -3,6 +3,8 @@ package crml.modelica.build;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.emf.ecore.util.EcoreUtil;
+
 import crml.model.modelica.ArrayConstructor;
 import crml.model.modelica.ArrayDimension;
 import crml.model.modelica.BinaryExpression;
@@ -16,6 +18,7 @@ import crml.model.modelica.ComponentReference;
 import crml.model.modelica.Equation;
 import crml.model.modelica.Expression;
 import crml.model.modelica.ExtendsClause;
+import crml.model.modelica.ForEquation;
 import crml.model.modelica.FunctionCall;
 import crml.model.modelica.IfExpression;
 import crml.model.modelica.IntegerLiteral;
@@ -28,10 +31,12 @@ import crml.model.modelica.RawReason;
 import crml.model.modelica.RealLiteral;
 import crml.model.modelica.Reference;
 import crml.model.modelica.ReferencePart;
+import crml.model.modelica.SimpleEquation;
 import crml.model.modelica.Statement;
 import crml.model.modelica.StringLiteral;
 import crml.model.modelica.UnaryExpression;
 import crml.model.modelica.UnaryOperatorKind;
+import crml.model.modelica.Variability;
 import crml.model.modelica.Visibility;
 
 /**
@@ -141,6 +146,14 @@ public interface Modelica {
         return component;
     }
 
+    /** {@code parameter Type name = binding}. */
+    default ComponentDeclaration parameter(Reference<ClassDefinition> declaredType, String name,
+            Expression binding) {
+        ComponentDeclaration component = component(declaredType, name, binding);
+        component.setVariability(Variability.PARAMETER);
+        return component;
+    }
+
     default ComponentDeclaration input(Reference<ClassDefinition> declaredType, String name) {
         ComponentDeclaration component = component(declaredType, name);
         component.setCausality(Causality.INPUT);
@@ -169,11 +182,22 @@ public interface Modelica {
 
     // --- equations and statements -------------------------------------------
 
-    default Equation eq(Expression lhs, Expression rhs) {
-        Equation equation = FACTORY.createEquation();
+    default SimpleEquation eq(Expression lhs, Expression rhs) {
+        SimpleEquation equation = FACTORY.createSimpleEquation();
         equation.setLhs(lhs);
         equation.setRhs(rhs);
         return equation;
+    }
+
+    /** {@code for iterator in start:stop loop body end for}. */
+    default ForEquation forEq(String iterator, Expression start, Expression stop,
+            List<? extends Equation> body) {
+        ForEquation loop = FACTORY.createForEquation();
+        loop.setIterator(iterator);
+        loop.setStart(start);
+        loop.setStop(stop);
+        loop.getEquations().addAll(body);
+        return loop;
     }
 
     default Statement assign(ComponentReference target, Expression value) {
@@ -191,6 +215,25 @@ public interface Modelica {
         for (String part : dottedName.split("\\.")) {
             reference.getParts().add(part(part));
         }
+        return reference;
+    }
+
+    /**
+     * Copy of base with subscripts added to its last part: {@code a -> a[i]},
+     * {@code a.b -> a.b[i]}. The base is left untouched; the subscripts become
+     * part of the copy.
+     */
+    default ComponentReference subscripted(ComponentReference base, Expression... subscripts) {
+        ComponentReference reference = EcoreUtil.copy(base);
+        List<ReferencePart> parts = reference.getParts();
+        parts.get(parts.size() - 1).getSubscripts().addAll(Arrays.asList(subscripts));
+        return reference;
+    }
+
+    /** Copy of base with a member appended: {@code a[i] -> a[i].x}. The base is left untouched. */
+    default ComponentReference member(ComponentReference base, String member) {
+        ComponentReference reference = EcoreUtil.copy(base);
+        reference.getParts().add(part(member));
         return reference;
     }
 

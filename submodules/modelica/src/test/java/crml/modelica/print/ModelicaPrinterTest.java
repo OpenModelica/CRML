@@ -2,14 +2,20 @@ package crml.modelica.print;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
 
 import crml.model.modelica.BinaryOperatorKind;
 import crml.model.modelica.ClassDefinition;
 import crml.model.modelica.ComponentDeclaration;
+import crml.model.modelica.ComponentReference;
 import crml.model.modelica.Expression;
+import crml.model.modelica.ForEquation;
 import crml.model.modelica.ModelicaElement;
 import crml.model.modelica.ModelicaFactory;
+import crml.model.modelica.SimpleEquation;
 import crml.model.modelica.UnaryOperatorKind;
 import crml.model.modelica.Variability;
 import crml.model.modelica.Visibility;
@@ -264,6 +270,91 @@ public class ModelicaPrinterTest implements Modelica {
           + "    // AT: no CRMLtoModelica implementation\n"
           + "end Outer;\n",
             print(cls));
+    }
+
+    // --- parameters and for-equations ---------------------------------------
+
+    /** P1 */
+    @Test
+    public void printsParameter() {
+        ComponentDeclaration n = parameter(builtinRef("Integer"), "n",
+            call(builtinRef("size"), ref("P.period"), integer(1)));
+        assertEquals(Variability.PARAMETER, n.getVariability());
+        assertEquals("parameter Integer n = size(P.period, 1);\n", print(n));
+    }
+
+    /** P2 */
+    @Test
+    public void printsForEquation() {
+        ClassDefinition cls = model("M");
+        cls.getComponents().add(component(builtinRef("Real"), "a"));
+        cls.getEquations().add(eq(ref("a"), integer(1)));
+        cls.getEquations().add(forEq("i", integer(1), ref("n"), Arrays.asList(
+            eq(subscripted(ref("x"), ref("i")), integer(0)),
+            eq(subscripted(ref("y"), ref("i")), subscripted(ref("x"), ref("i"))))));
+        assertEquals(
+            "model M\n"
+          + "    Real a;\n"
+          + "equation\n"
+          + "    a = 1;\n"
+          + "    for i in 1:n loop\n"
+          + "        x[i] = 0;\n"
+          + "        y[i] = x[i];\n"
+          + "    end for;\n"
+          + "end M;\n",
+            print(cls));
+    }
+
+    /** P3 */
+    @Test
+    public void printsNestedForEquations() {
+        Expression index = binary(BinaryOperatorKind.ADD,
+            binary(BinaryOperatorKind.MUL,
+                binary(BinaryOperatorKind.SUB, ref("i1"), integer(1)),
+                ref("n2")),
+            ref("i2"));
+        ForEquation inner = forEq("i2", integer(1), ref("n2"), Arrays.asList(
+            eq(subscripted(ref("out"), index), integer(0))));
+        ForEquation outer = forEq("i1", integer(1), ref("n1"), Arrays.asList(inner));
+        outer.setComment("region");
+        assertEquals(
+            "for i1 in 1:n1 loop\n"
+          + "    for i2 in 1:n2 loop\n"
+          + "        out[(i1 - 1) * n2 + i2] = 0;\n"
+          + "    end for;\n"
+          + "end for \"region\";\n",
+            print(outer));
+    }
+
+    /** P4 */
+    @Test
+    public void printsSubscriptedMembersAndRangeBounds() {
+        ComponentReference a = ref("a");
+        ComponentReference element = member(subscripted(a, ref("i")), "x");
+        assertEquals("a[i].x", expr(element));
+        assertEquals("a", expr(a), "the base is copied, not changed");
+
+        ComponentReference period = ref("P.period");
+        assertEquals("P.period[k]", expr(subscripted(period, ref("k"))));
+        assertEquals("P.period[k].isOpen", expr(member(subscripted(period, ref("k")), "isOpen")));
+        assertEquals("P.period", expr(period));
+
+        assertEquals(
+            "out[p] = if m[p] then x else y;\n",
+            print(eq(subscripted(ref("out"), ref("p")),
+                ifExpr(subscripted(ref("m"), ref("p")), ref("x"), ref("y")))));
+
+        assertEquals(
+            "for i in 1:n + 1 loop\n"
+          + "end for;\n",
+            print(forEq("i", integer(1), binary(BinaryOperatorKind.ADD, ref("n"), integer(1)),
+                Collections.<SimpleEquation>emptyList())));
+
+        assertEquals(
+            "for i in (if b then 1 else 2):(if b then n else m) loop\n"
+          + "end for;\n",
+            print(forEq("i", ifExpr(ref("b"), integer(1), integer(2)), ifExpr(ref("b"), ref("n"), ref("m")),
+                Collections.<SimpleEquation>emptyList())));
     }
 
     // --- determinism --------------------------------------------------------

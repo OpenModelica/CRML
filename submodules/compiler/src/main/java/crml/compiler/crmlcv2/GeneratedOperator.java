@@ -3,9 +3,13 @@ package crml.compiler.crmlcv2;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.emf.ecore.util.EcoreUtil;
+
 import crml.model.language.Variable;
 import crml.model.modelica.ClassDefinition;
 import crml.model.modelica.ClassKind;
+import crml.model.modelica.ComponentDeclaration;
+import crml.model.modelica.Reference;
 
 /**
  * The Modelica class generated for one CRML template or user operator, plus
@@ -42,6 +46,16 @@ public final class GeneratedOperator {
     /** True when calls must instantiate this class rather than call it. */
     public boolean isBlock() {
         return definition.getKind() != ClassKind.FUNCTION;
+    }
+
+    /** The type of the result: a copy of the type of the {@code out} component. */
+    public Reference<ClassDefinition> resultType() {
+        for (ComponentDeclaration component : definition.getComponents()) {
+            if (OUTPUT_PORT.equals(component.getName())) {
+                return EcoreUtil.copy(component.getDeclaredType());
+            }
+        }
+        throw new IllegalStateException("generated operator " + name() + " has no " + OUTPUT_PORT);
     }
 
     /** The operator's header variables, in declaration order. */

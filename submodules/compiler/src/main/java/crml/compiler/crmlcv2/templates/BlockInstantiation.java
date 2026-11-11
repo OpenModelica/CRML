@@ -30,7 +30,9 @@ public final class BlockInstantiation implements Modelica {
 
     /**
      * Declares {@code blockType <allocated>;}, emits one equation per input, and
-     * returns a reference to the block's output port.
+     * returns a reference to the block's output port. In the lifted mode of the
+     * context ({@link TransformationContext#lifted}) this gives an instance per
+     * slot, {@code blockType <allocated>[N]}, wired inside the region's loop.
      *
      * @param inputs port name to the expression driving it; iteration order
      *               decides equation order, so pass an ordered map
@@ -39,14 +41,16 @@ public final class BlockInstantiation implements Modelica {
             Reference<ClassDefinition> blockType, String namePrefix, Map<String, Expression> inputs,
             String outputPort, EObject crmlSource) {
         String name = ctx.allocateName(namePrefix);
-        ctx.declare(component(blockType, name), crmlSource);
+        // The reference declare returns, not the name: in the lifted mode of the
+        // context the instance is an array and the reference is to one entry.
+        ComponentReference instance = ctx.declare(component(blockType, name), crmlSource);
 
         for (Map.Entry<String, Expression> input : inputs.entrySet()) {
             ctx.equate(eq(
-                ref(name + "." + input.getKey()),
+                member(instance, input.getKey()),
                 input.getValue()), crmlSource);
         }
 
-        return ref(name + "." + outputPort);
+        return member(instance, outputPort);
     }
 }

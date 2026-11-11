@@ -10,9 +10,12 @@ import org.eclipse.emf.ecore.EObject;
 import crml.compiler.crmlcv2.Diagnostic;
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.GeneratedOperator;
+import crml.compiler.crmlcv2.Lifter;
+import crml.compiler.crmlcv2.SetHandle;
 import crml.compiler.crmlcv2.TransformationContext;
 import crml.compiler.crmlcv2.util.CRMLCompilerException;
 import crml.compiler.crmlcv2.util.CRMLCompilerException.UnsupportedConstruct;
+import crml.compiler.crmlcv2.util.TypeResolver;
 import crml.model.language.Binding;
 import crml.model.language.ComputedValue;
 import crml.model.language.CustomOperator;
@@ -204,7 +207,8 @@ public final class OperatorTransformer implements Modelica {
         if (generated.isBlock()) {
             Map<String, Expression> inputs = new LinkedHashMap<String, Expression>();
             for (Variable parameter : generated.parameters()) {
-                inputs.put(parameter.getName(), argument(ctx, call, operator, parameter));
+                inputs.put(parameter.getName(),
+                    transformer.values().transform(ctx, argument(call, operator, parameter)));
             }
             // The generated class itself, not its name: this is the reference
             // that makes renaming it impossible to get wrong.
@@ -214,7 +218,7 @@ public final class OperatorTransformer implements Modelica {
 
         List<Expression> arguments = new ArrayList<Expression>();
         for (Variable parameter : generated.parameters()) {
-            arguments.add(argument(ctx, call, operator, parameter));
+            arguments.add(transformer.values().transform(ctx, argument(call, operator, parameter)));
         }
         return call(resolvedRef(generated.definition()), arguments);
     }
@@ -224,8 +228,7 @@ public final class OperatorTransformer implements Modelica {
      * operators interleave keywords and values, so a binding's position in the
      * list says nothing about which parameter it fills.
      */
-    private Expression argument(TransformationContext ctx, ComputedValue call,
-            CustomOperator operator, Variable parameter) {
+    private Value argument(ComputedValue call, CustomOperator operator, Variable parameter) {
         for (Binding binding : call.getBindings()) {
             if (binding.getElement() == parameter) {
                 Value value = binding.getValue();
@@ -234,12 +237,44 @@ public final class OperatorTransformer implements Modelica {
                         "parameter '" + parameter.getName() + "' of operator '" + describe(operator)
                         + "' is bound to nothing", call));
                 }
-                return transformer.values().transform(ctx, value);
+                return value;
             }
         }
         throw CRMLCompilerException.unsupported(Diagnostics.error("ComputedValue",
             "no argument bound to parameter '" + parameter.getName() + "' of operator '"
             + describe(operator) + "'", call));
+    }
+
+    /**
+     * A call with {@code x.element} arguments: the operator is applied once for
+     * each slot of the {@link Lifter}'s region. A function is called per slot; a
+     * block is instantiated per slot, through the lifted mode of the context.
+     */
+    public SetHandle transformLifted(Lifter lifter, ComputedValue call) {
+        CustomOperator operator = call.getOperator();
+        if (operator == null) {
+            throw CRMLCompilerException.unsupported(Diagnostics.error("ComputedValue",
+                "the call does not refer to any operator", call));
+        }
+        GeneratedOperator generated = declare(lifter.outer(), operator);
+
+        Expression value;
+        if (generated.isBlock()) {
+            Map<String, Expression> inputs = new LinkedHashMap<String, Expression>();
+            for (Variable parameter : generated.parameters()) {
+                inputs.put(parameter.getName(), lifter.operand(argument(call, operator, parameter)));
+            }
+            value = transformer.blocks().instantiate(lifter.body(), resolvedRef(generated.definition()),
+                generated.name() + "_", inputs, GeneratedOperator.OUTPUT_PORT, call);
+        } else {
+            List<Expression> arguments = new ArrayList<Expression>();
+            for (Variable parameter : generated.parameters()) {
+                arguments.add(lifter.operand(argument(call, operator, parameter)));
+            }
+            value = call(resolvedRef(generated.definition()), arguments);
+        }
+        return lifter.close(value, generated.resultType(),
+            TypeResolver.resolveBuiltin(operator.getDomain()), call);
     }
 
     // --- naming -------------------------------------------------------------

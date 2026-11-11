@@ -127,4 +127,13 @@ public final class Precedence {
     public static boolean conditionNeedsParens(Expression condition) {
         return of(condition) <= IF;
     }
+
+    /**
+     * Whether a bound of a range ({@code start:stop}) must be parenthesised. A
+     * bound is a logical_expression, so only an if-expression needs
+     * parentheses.
+     */
+    public static boolean rangeBoundNeedsParens(Expression bound) {
+        return of(bound) <= IF;
+    }
 }

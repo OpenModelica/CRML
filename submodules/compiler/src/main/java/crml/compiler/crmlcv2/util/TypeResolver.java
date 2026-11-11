@@ -2,13 +2,18 @@ package crml.compiler.crmlcv2.util;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
+import crml.model.language.BinaryOperator;
 import crml.model.language.BuiltinType;
 import crml.model.language.BuiltinTypeReference;
+import crml.model.language.BuiltinUnaryOperatorKind;
 import crml.model.language.ComputedValue;
 import crml.model.language.ConstructorValue;
 import crml.model.language.CustomOperator;
 import crml.model.language.Domain;
 import crml.model.language.IndirectTypeReference;
+import crml.model.language.Liftable;
+import crml.model.language.ScatteredValue;
+import crml.model.language.Set;
 import crml.model.language.TypeReference;
 import crml.model.language.UnaryOperator;
 import crml.model.language.UserTypereference;
@@ -40,10 +45,7 @@ public class TypeResolver implements Modelica {
             return resolve(ctx, ((IndirectTypeReference) type).getReferredType());
         }
         if (type instanceof BuiltinTypeReference) {
-            BuiltinType builtin = ((BuiltinTypeReference) type).getBuiltinType();
-            String name = resolve(builtin);
-            return isModelicaPrimitive(builtin) ? this.<ClassDefinition>builtinRef(name)
-                                                : this.<ClassDefinition>libraryRef(name);
+            return builtinReference(((BuiltinTypeReference) type).getBuiltinType());
         }
         if (type instanceof UserTypereference) {
             Domain domain = ((UserTypereference) type).getDomain();
@@ -63,6 +65,13 @@ public class TypeResolver implements Modelica {
             return unresolved(ctx, null, "no type reference to resolve");
         }
         return unresolved(ctx, type, "unable to resolve type reference: " + type.eClass().getName());
+    }
+
+    /** The Modelica type of a CRML builtin type. */
+    public Reference<ClassDefinition> builtinReference(BuiltinType builtin) {
+        String name = resolve(builtin);
+        return isModelicaPrimitive(builtin) ? this.<ClassDefinition>builtinRef(name)
+                                            : this.<ClassDefinition>libraryRef(name);
     }
 
     /** Real, Integer and String are the language's own; the rest come from the library. */
@@ -118,8 +127,9 @@ public class TypeResolver implements Modelica {
      * a reference to a variable of a known domain still reports "unknown". Where
      * a decision genuinely depends on the type - not merely on it being
      * compatible - this looks through the reference to the variable's declared
-     * domain, through a constructor to the domain it constructs, and through a
-     * user operator or template call to the operator's result type.
+     * domain, through a constructor to the domain it constructs, through a
+     * user operator or template call to the operator's result type, and through
+     * {@code x.element} to the type of an element of {@code x}.
      *
      * <p>Used sparingly by the operator transformers: their type dispatch is
      * written around "known-or-unknown" predicates and was verified against
@@ -148,6 +158,10 @@ public class TypeResolver implements Modelica {
             CustomOperator operator = ((ComputedValue) value).getOperator();
             return operator == null ? null : resolveBuiltin(operator.getDomain());
         }
+        if (value instanceof ScatteredValue) {
+            // x.element stands for one element of x.
+            return elementBuiltin(((ScatteredValue) value).getData());
+        }
         if (value instanceof UnaryOperator) {
             // The operators whose result is an Event whatever their operand:
             // typeinference.csv has TICK,EVENT,1,CLOCK and START/END,EVENT,1,PERIOD.
@@ -164,6 +178,151 @@ public class TypeResolver implements Modelica {
             }
         }
         return null;
+    }
+
+    /**
+     * The builtin type of an element of a collection, or null if it is unknown
+     * or the value is not a collection: an element of a set literal or of a
+     * variable defined by one, a Period of a Periods, a result of a lifted
+     * application.
+     */
+    public static BuiltinType elementBuiltin(Value collection) {
+        Value value = collection;
+        while (value instanceof UnaryOperator
+                && ((UnaryOperator) value).getOptype() == BuiltinUnaryOperatorKind.SUBEXPRESSION) {
+            value = ((UnaryOperator) value).getValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof ScatteredValue && ((ScatteredValue) value).getMethod() == null) {
+            // x.element with no application is the set of elements of x.
+            return elementBuiltin(((ScatteredValue) value).getData());
+        }
+        if (value instanceof Set<?>) {
+            return elementBuiltin((Set<?>) value);
+        }
+        if (value instanceof VariableReference) {
+            Variable variable = ((VariableReference) value).getVariable();
+            if (variable != null && variable.getDefinition() instanceof Set<?>) {
+                BuiltinType element = elementBuiltin((Set<?>) variable.getDefinition());
+                return element != null ? element : resolveBuiltin(variable.getDomain());
+            }
+        }
+        if (value instanceof Liftable && !((Liftable) value).getLifts().isEmpty()) {
+            return inferBuiltin(value);
+        }
+        return inferBuiltin(value) == BuiltinType.PERIODS ? BuiltinType.PERIOD : null;
+    }
+
+    /** The type of the first element of a set literal whose type is known. */
+    private static BuiltinType elementBuiltin(Set<?> set) {
+        for (Object element : set.getElements()) {
+            if (element instanceof Value) {
+                BuiltinType type = inferBuiltin((Value) element);
+                if (type != null) {
+                    return type;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The result type of a built-in unary operator applied to an operand of the
+     * given type (null if unknown).
+     *
+     * <p>Follows the rows of {@code typeinference.csv}, written out as a switch:
+     * that file is not loaded at runtime. Throws {@code Lift.UnknownResultType}
+     * where the rows do not decide the type. Used to declare the result array of
+     * a lifted application, which is the one place the generator has to name the
+     * type of an operator's result itself.
+     */
+    public static BuiltinType resultBuiltin(UnaryOperator op, BuiltinType operandType) {
+        switch (op.getOptype()) {
+            case NOT:
+                return BuiltinType.BOOLEAN;
+            case CARD:
+                return BuiltinType.INTEGER;
+            case TICK:
+            case START:
+            case END:
+                return BuiltinType.EVENT;
+            case SIN:
+            case ASIN:
+            case COS:
+            case ACOS:
+            case LOG:
+            case LOG10:
+            case EXP_OP:
+                return BuiltinType.REAL;
+            case ADD:
+            case SUB:
+                if (operandType == BuiltinType.REAL || operandType == BuiltinType.INTEGER) {
+                    return operandType;
+                }
+                break;
+            default:
+                break;
+        }
+        throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Lift.UnknownResultType",
+            "the result type of operator " + op.getOptype() + " on an operand of type "
+            + name(operandType) + " is not known, so its lifted result cannot be declared", op));
+    }
+
+    /**
+     * The result type of a built-in binary operator applied to operands of the
+     * given types (null if unknown); see {@link #resultBuiltin(UnaryOperator, BuiltinType)}.
+     *
+     * <p>One departure from {@code typeinference.csv}: {@code /} and {@code ^}
+     * are Real whatever their operands, because that is what Modelica's
+     * {@code /} and {@code ^} yield, and the type is used to declare a Modelica
+     * array.
+     */
+    public static BuiltinType resultBuiltin(BinaryOperator op, BuiltinType lt, BuiltinType rt) {
+        switch (op.getOptype()) {
+            case AND:
+            case OR:
+            case LT:
+            case LE:
+            case GT:
+            case GE:
+            case EQ:
+            case NEQ:
+                return BuiltinType.BOOLEAN;
+            case FILTER:
+                return BuiltinType.CLOCK;
+            case DIV:
+            case POW:
+                return BuiltinType.REAL;
+            case ADD:
+                if (lt == BuiltinType.STRING || rt == BuiltinType.STRING) {
+                    return BuiltinType.STRING;
+                }
+                // fall through
+            case SUB:
+            case MUL:
+            case MOD:
+                if (lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) {
+                    return BuiltinType.BOOLEAN;
+                }
+                if (lt == BuiltinType.REAL || rt == BuiltinType.REAL) {
+                    return BuiltinType.REAL;
+                }
+                if (lt == BuiltinType.INTEGER && rt == BuiltinType.INTEGER) {
+                    return BuiltinType.INTEGER;
+                }
+                break;
+            default:
+                break;
+        }
+        throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Lift.UnknownResultType",
+            "the result type of operator " + op.getOptype() + " on operands of types ("
+            + name(lt) + ", " + name(rt) + ") is not known, so its lifted result cannot be declared", op));
+    }
+
+    private static String name(BuiltinType type) {
+        return type == null ? "unknown" : type.toString();
     }
 
     public static String resolve(BuiltinType type){

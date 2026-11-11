@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import crml.compiler.crmlcv2.Diagnostics;
+import crml.compiler.crmlcv2.Lifter;
+import crml.compiler.crmlcv2.SetHandle;
 import crml.compiler.crmlcv2.TransformationContext;
 import crml.compiler.crmlcv2.templates.Transformer;
 import crml.compiler.crmlcv2.util.CRMLCompilerException;
@@ -35,6 +37,28 @@ public final class UnaryOperatorTransformer implements Modelica {
     public Expression transform(TransformationContext ctx, UnaryOperator op) {
         Expression operand = transformer.values().transform(ctx, op.getValue());
         BuiltinType t = TypeResolver.resolveBuiltin(op.getValue().getReturnType());
+        return apply(ctx, op, operand, t);
+    }
+
+    /**
+     * An operator with an {@code x.element} operand: applied once for each slot
+     * of the {@link Lifter}'s region. A block-backed operator (tick, card) gets
+     * an instance per slot, through the lifted mode of the context.
+     */
+    public SetHandle transformLifted(Lifter lifter, UnaryOperator op) {
+        Expression operand = lifter.operand(op.getValue());
+        BuiltinType t = lifter.operandBuiltin(op.getValue());
+        Expression value = apply(lifter.body(), op, operand, t);
+        BuiltinType result = TypeResolver.resultBuiltin(op, t);
+        return lifter.close(value, transformer.types().builtinReference(result), result, op);
+    }
+
+    /**
+     * The operator applied to an operand that is already translated.
+     *
+     * @param t the type of the operand, or null if unknown
+     */
+    private Expression apply(TransformationContext ctx, UnaryOperator op, Expression operand, BuiltinType t) {
         BuiltinUnaryOperatorKind opType = op.getOptype();
 
         switch (opType) {

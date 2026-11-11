@@ -1,5 +1,6 @@
 package crml.compiler.crmlcv2.templates;
 
+import org.eclipse.emf.ecore.EObject;
 
 import crml.compiler.crmlcv2.Diagnostics;
 import crml.compiler.crmlcv2.TransformationContext;
@@ -13,9 +14,11 @@ import crml.model.language.DurationValue;
 import crml.model.language.IfValue;
 import crml.model.language.IntegerConstant;
 import crml.model.language.IntegrateValue;
+import crml.model.language.Liftable;
 import crml.model.language.PeriodsValue;
 import crml.model.language.ProjectionValue;
 import crml.model.language.RealConstant;
+import crml.model.language.ScatteredValue;
 import crml.model.language.Sequence;
 import crml.model.language.Set;
 import crml.model.language.StringConstant;
@@ -36,6 +39,11 @@ import crml.modelica.build.Modelica;
  * reference to what it declared; a value with no Modelica target throws
  * {@link UnsupportedConstruct}, which the enclosing declaration or equation
  * turns into a diagnostic and a placeholder.
+ *
+ * <p>This is the dispatch for positions where a single value is expected. A
+ * collection - {@code x.element}, or an application lifted by one - is
+ * translated by {@link ScatteredValueTransformer#collect} instead, and is an
+ * error here.
  */
 public final class ValueTransformer implements Modelica {
 
@@ -71,6 +79,21 @@ public final class ValueTransformer implements Modelica {
         }
         if (value instanceof TimeValue) {
             return ref("time");
+        }
+        if (value instanceof ScatteredValue) {
+            // Always an error here: a lift is consumed by its application.
+            return transformer.scatteredValues().transform(ctx, (ScatteredValue) value);
+        }
+        if (value instanceof Liftable && !((Liftable) value).getLifts().isEmpty()) {
+            // A lifted application is a collection. It is translated where a
+            // collection is expected (ScatteredValueTransformer.collect); here a
+            // single value is, and a set does not propagate into one.
+            EObject consumer = value.eContainer();
+            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Lift.SetWhereValueExpected",
+                "a " + value.eClass().getName() + " with an '.element' operand yields a set, which "
+                + (consumer == null ? "nothing" : "a " + consumer.eClass().getName())
+                + " cannot take as a single value; aggregate it (and, or) or lift the consumer with '.element'",
+                value));
         }
         if (value instanceof BinaryOperator) {
             return transformer.binaryOperators().transform(ctx, (BinaryOperator) value);

@@ -120,8 +120,8 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
      * operator in scope is left as it is, so a consumer can report it rather
      * than silently receiving a wrong tree.
      *
-     * <p>Afterwards links every ScatteredValue ({@code x.element}) to its
-     * enclosing Liftable.
+     * <p>Afterwards links every ScatteredValue ({@code x.element}) to the
+     * Liftable it is a direct operand of (see {@link LiftBuilder#link}).
      */
     public void resolveOperatorCalls(){
         if (builtRoot instanceof Model) {
@@ -133,7 +133,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         }
         modify();
         // Only now are the ComputedValue calls in the tree, so a ScatteredValue
-        // can find the Liftable that encloses it.
+        // can find the Liftable it is an operand of.
         LiftBuilder.linkAll(builtRoot);
     }
 

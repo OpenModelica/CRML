@@ -210,6 +210,10 @@ enum Variability {
      * {@code constant}.
      */
     CONSTANT = 1
+    /*
+     * {@code parameter}.
+     */
+    PARAMETER = 2
 }
 
 /*
@@ -291,9 +295,19 @@ class ModificationElement extends ModelicaElement {
 //////////////////////////
 
 /*
- * Equation: {@code lhs = rhs "comment";}.
+ * Element of an equation section.
  */
-class Equation extends ModelicaElement {
+abstract class Equation extends ModelicaElement {
+    /*
+     * Description string of the equation, or null for none.
+     */
+    String comment
+}
+
+/*
+ * {@code lhs = rhs}.
+ */
+class SimpleEquation extends Equation {
     /*
      * Left-hand side of the equation.
      */
@@ -302,10 +316,28 @@ class Equation extends ModelicaElement {
      * Right-hand side of the equation.
      */
     contains Expression rhs
+}
+
+/*
+ * {@code for iterator in start:stop loop equations end for}. Nestable. Step not supported.
+ */
+class ForEquation extends Equation {
     /*
-     * Description string of the equation, or null for none.
+     * Name of the loop variable.
      */
-    String comment
+    String iterator
+    /*
+     * First value of the loop variable.
+     */
+    contains Expression start
+    /*
+     * Last value of the loop variable.
+     */
+    contains Expression stop
+    /*
+     * The equations of the loop body.
+     */
+    contains Equation[] equations
 }
 
 /*

@@ -6,10 +6,13 @@ import static crml.compiler.crmlcv2.templates.value.TypeCategories.isClockOrUnkn
 import static crml.compiler.crmlcv2.templates.value.TypeCategories.isNumericOrUnknown;
 import static crml.compiler.crmlcv2.templates.value.TypeCategories.isStringCompatible;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import crml.compiler.crmlcv2.Diagnostics;
+import crml.compiler.crmlcv2.Lifter;
+import crml.compiler.crmlcv2.SetHandle;
 import crml.compiler.crmlcv2.TransformationContext;
 import crml.compiler.crmlcv2.templates.Transformer;
 import crml.compiler.crmlcv2.util.CRMLCompilerException;
@@ -18,6 +21,9 @@ import crml.model.language.BinaryOperator;
 import crml.model.language.BuiltinBinaryOperatorKind;
 import crml.model.language.BuiltinType;
 import crml.model.modelica.BinaryOperatorKind;
+import crml.model.modelica.ClassDefinition;
+import crml.model.modelica.ComponentDeclaration;
+import crml.model.modelica.ComponentReference;
 import crml.model.modelica.Expression;
 import crml.modelica.build.Modelica;
 
@@ -42,10 +48,113 @@ public final class BinaryOperatorTransformer implements Modelica {
     }
 
     public Expression transform(TransformationContext ctx, BinaryOperator op) {
+        if (op.getLhs() == null) {
+            // "and (...)": no left operand. Not isAggregator(), which also asks
+            // the operand whether it is a collection, and no value says yes.
+            return aggregate(ctx, op);
+        }
         Expression lhs = transformer.values().transform(ctx, op.getLhs());
         Expression rhs = transformer.values().transform(ctx, op.getRhs());
         BuiltinType lt = TypeResolver.resolveBuiltin(op.getLhs().getReturnType());
         BuiltinType rt = TypeResolver.resolveBuiltin(op.getRhs().getReturnType());
+        return apply(ctx, op, lhs, rhs, lt, rt);
+    }
+
+    /**
+     * An operator with at least one {@code x.element} operand: applied once for
+     * each slot of the {@link Lifter}'s region. A block-backed operator (filter)
+     * gets an instance per slot, through the lifted mode of the context.
+     */
+    public SetHandle transformLifted(Lifter lifter, BinaryOperator op) {
+        Expression lhs = lifter.operand(op.getLhs());
+        Expression rhs = lifter.operand(op.getRhs());
+        BuiltinType lt = lifter.operandBuiltin(op.getLhs());
+        BuiltinType rt = lifter.operandBuiltin(op.getRhs());
+        Expression value = apply(lifter.body(), op, lhs, rhs, lt, rt);
+        BuiltinType result = TypeResolver.resultBuiltin(op, lt, rt);
+        return lifter.close(value, transformer.types().builtinReference(result), result, op);
+    }
+
+    // --- aggregators ---------------------------------------------------------
+
+    /**
+     * An aggregator: an operator with no left operand, folded over the elements
+     * of a collection. {@code and (S)} becomes
+     *
+     * <pre>
+     * Boolean4 and_acc1[n + 1];
+     * and_acc1[1] = undefined;
+     * for i1 in 1:n loop
+     *     and_acc1[i1 + 1] = and4(and_acc1[i1], S[i1]);
+     * end for;
+     * </pre>
+     *
+     * and the result is {@code and_acc1[n + 1]}. {@code undefined} is the
+     * identity of and4 and or4, so it starts the fold, stands in for every slot
+     * of the collection that holds no element, and is the result for an empty
+     * collection. Never lifted itself: an {@code x.element} operand of an
+     * aggregator is the collection it folds.
+     */
+    private Expression aggregate(TransformationContext ctx, BinaryOperator op) {
+        BuiltinBinaryOperatorKind opType = op.getOptype();
+        String prefix;
+        String function;
+        switch (opType) {
+            case AND:
+                prefix = "and";
+                function = "CRMLtoModelica.Functions.and4";
+                break;
+            case OR:
+                prefix = "or";
+                function = "CRMLtoModelica.Functions.or4";
+                break;
+            case ADD:
+            case SUB:
+            case MUL:
+                throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented(
+                    "BinaryOperator." + opType + ".aggregate",
+                    "aggregating a set with " + opType + " is not implemented yet", op));
+            default:
+                // Not an aggregator in the grammar: an operand is missing.
+                transformer.values().transform(ctx, op.getLhs());
+                throw CRMLCompilerException.unreachable();
+        }
+
+        SetHandle set = transformer.scatteredValues().collect(ctx, op.getRhs());
+        BuiltinType elementType = set.elementBuiltin();
+        if (elementType != null && elementType != BuiltinType.BOOLEAN && elementType != BuiltinType.REQUIREMENT) {
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, null, elementType, op));
+        }
+
+        String undefined = "CRMLtoModelica.Types.Boolean4.undefined";
+        ComponentDeclaration accumulator = component(
+            this.<ClassDefinition>libraryRef(TypeResolver.resolve(BuiltinType.BOOLEAN)),
+            ctx.allocateName(prefix + "_acc"));
+        accumulator.getArrayDimensions().add(dimension(binary(BinaryOperatorKind.ADD, set.size(), integer(1))));
+        ComponentReference acc = ctx.declare(accumulator, op);
+        ctx.equate(eq(subscripted(acc, integer(1)), ref(undefined)), op);
+
+        String i = ctx.allocateName("i");
+        Expression element = set.element(ref(i));
+        Expression active = set.inactiveIsUndefined() ? null : set.active(ref(i));
+        if (active != null) {
+            element = ifExpr(active, element, ref(undefined));
+        }
+        ctx.equate(forEq(i, integer(1), set.size(), Collections.singletonList(
+            eq(subscripted(acc, binary(BinaryOperatorKind.ADD, ref(i), integer(1))),
+                call(this.<ClassDefinition>libraryRef(function), subscripted(acc, ref(i)), element)))), op);
+
+        return subscripted(acc, binary(BinaryOperatorKind.ADD, set.size(), integer(1)));
+    }
+
+    /**
+     * The operator applied to operands that are already translated.
+     *
+     * @param lt the type of the left operand, or null if unknown
+     * @param rt the type of the right operand, or null if unknown
+     */
+    private Expression apply(TransformationContext ctx, BinaryOperator op, Expression lhs, Expression rhs,
+            BuiltinType lt, BuiltinType rt) {
         BuiltinBinaryOperatorKind opType = op.getOptype();
 
         switch (opType) {

@@ -33,6 +33,8 @@ public final class Transformer {
     private final ConstructorTransformer constructors = new ConstructorTransformer(this);
     private final IntegrateTransformer integrals = new IntegrateTransformer(this);
     private final PeriodsTransformer periods = new PeriodsTransformer(this);
+    private final ScatteredValueTransformer scatteredValues = new ScatteredValueTransformer(this);
+    private final LiftableTransformer liftables = new LiftableTransformer(this);
 
     /** Translates one CRML model; see {@link ModelTransformer#transform}. */
     public TransformationContext transform(Model model) {
@@ -93,5 +95,13 @@ public final class Transformer {
 
     public PeriodsTransformer periods() {
         return periods;
+    }
+
+    public ScatteredValueTransformer scatteredValues() {
+        return scatteredValues;
+    }
+
+    public LiftableTransformer liftables() {
+        return liftables;
     }
 }
