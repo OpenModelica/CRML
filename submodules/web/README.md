@@ -5,7 +5,7 @@ WebAssembly, so that a web page can translate CRML without Java, e.g. in the Ope
 
 It is built from the sources of the `language` and `compiler` projects and the jars of the `model` and `modelica`
 projects: the parser, generated from `language/src/main/antlr/crml/language/grammar/crml.g4`, `crml.language`,
-which builds the object model, and `crml.compiler.crmlcv2`, which translates it to Modelica. The command line, the
+which builds the object model, and `org.openmodelica.crml.compiler.crmlcv2`, which translates it to Modelica. The command line, the
 file handling and running OMC are not part of it. The Java sources are compiled for Java 8, as in the other projects.
 The parser uses ANTLR 4.13.2 here instead of 4.9.2, whose runtime needs `java.util.UUID`, which TeaVM does not
 provide.
@@ -89,6 +89,6 @@ node submodules/web/test/compare.mjs submodules/web/build/generated/teavm/js/crm
 node submodules/web/test/compare.mjs submodules/web/build/generated/teavm/wasm-gc/crml.wasm $MODELS build/web-expected
 ```
 
-translates every test model on the JVM, with `crml.compiler.util.TranslateModels` from the compiler's tests, and
+translates every test model on the JVM, with `org.openmodelica.crml.compiler.util.TranslateModels` from the compiler's tests, and
 with `crml.js` and `crml.wasm` (Node.js 22 or later), and checks that the results are the same. Models that fail
 count as the same when they fail in both.

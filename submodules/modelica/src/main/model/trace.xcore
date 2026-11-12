@@ -1,9 +1,10 @@
 @GenModel(
     bundleManifest="false",
     modelDirectory="crml-modelica/src-gen",
-    complianceLevel="8.0"
+    complianceLevel="8.0",
+    prefix="Trace"
 )
-package crml.model.trace
+package org.openmodelica.crml.modelica.trace.metamodel
 
 import org.eclipse.emf.ecore.EObject
 

@@ -12,6 +12,9 @@ else
 	GRADLE_CMD := ./gradlew
 endif
 
+.PHONY: all test tests test-dom test-crmlcv2 test-verification test-etl test-forml \
+	build javadoc javadoc-all serve-javadoc cleanall clean gitclean distribution
+
 all: build
 
 test: tests
@@ -20,23 +23,23 @@ tests:
 	$(GRADLE_CMD) test
 
 test-dom:
-	$(GRADLE_CMD) :language:clean :language:test --tests "crml.language.dom.specification.*"
+	$(GRADLE_CMD) :language:clean :language:test --tests "org.openmodelica.crml.language.dom.specification.*"
 
 test-crmlcv2:
-	$(GRADLE_CMD) :compiler:clean :compiler:test --tests "crml.compiler.crmlcv2.specification.*"
+	$(GRADLE_CMD) :compiler:clean :compiler:test --tests "org.openmodelica.crml.compiler.crmlcv2.specification.*"
 
 # Simulates the generated Modelica with omc and compares it with the reference
-# results. Picks up every class in crml.compiler.crmlcv2.verification named
+# results. Picks up every class in org.openmodelica.crml.compiler.crmlcv2.verification named
 # Verification<Suite>; SUITE narrows it, e.g. make test-verification SUITE=ETL.
 # Report: submodules/compiler/build/verification_report.html
 test-verification:
-	$(GRADLE_CMD) :compiler:verificationTest --tests "crml.compiler.crmlcv2.verification.Verification$(SUITE)*"
+	$(GRADLE_CMD) :compiler:verificationTest --tests "org.openmodelica.crml.compiler.crmlcv2.verification.Verification$(SUITE)*"
 
 test-etl:
-	$(GRADLE_CMD) test --tests "ctests.ETLTests*"
+	$(GRADLE_CMD) :language:test --tests "org.openmodelica.crml.language.ctests.ETLTests*"
 
 test-forml:
-	$(GRADLE_CMD) test --tests "ctests.FORMLTests*"
+	$(GRADLE_CMD) :language:test --tests "org.openmodelica.crml.language.ctests.FORMLTests*"
 
 build:
 	$(GRADLE_CMD) build

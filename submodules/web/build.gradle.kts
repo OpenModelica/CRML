@@ -1,6 +1,6 @@
 /*
  * The CRML to Modelica translator for web browsers: the parser, crml.language
- * and crml.compiler.crmlcv2 compiled with TeaVM to JavaScript
+ * and org.openmodelica.crml.compiler.crmlcv2 compiled with TeaVM to JavaScript
  * (build/generated/teavm/js/crml.js) and WebAssembly
  * (build/generated/teavm/wasm-gc/crml.wasm + crml.wasm-runtime.js).
  * The sources are those of the language and compiler projects; the object
@@ -30,7 +30,7 @@ dependencies {
     implementation(teavm.libs.jsoApis)
 
     // The object model (EMF/Xcore) that crml.language builds and
-    // crml.compiler.crmlcv2 translates, used as jars: only the parser has to
+    // org.openmodelica.crml.compiler.crmlcv2 translates, used as jars: only the parser has to
     // be regenerated here.
     implementation(project(":model"))
     implementation(project(":modelica"))
@@ -57,8 +57,9 @@ sourceSets {
             srcDir("../language/src/main/java")
             srcDir("../compiler/src/main/java")
             include("crml/web/**", "org/apache/logging/log4j/**", "org/teavm/classlib/**",
-                    "org/eclipse/core/runtime/**", "org/osgi/framework/**", "crml/language/**",
-                    "crml/compiler/crmlcv2/**")
+                    "org/eclipse/core/runtime/**", "org/osgi/framework/**", "org/openmodelica/crml/language/**",
+                    "crml/language/grammar/**",
+                    "org/openmodelica/crml/compiler/crmlcv2/**")
         }
     }
 }

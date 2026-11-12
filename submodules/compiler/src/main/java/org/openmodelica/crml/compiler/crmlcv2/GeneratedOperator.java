@@ -1,0 +1,65 @@
+package org.openmodelica.crml.compiler.crmlcv2;
+
+import java.util.Collections;
+import java.util.List;
+
+import org.eclipse.emf.ecore.util.EcoreUtil;
+
+import org.openmodelica.crml.model.metamodel.Variable;
+import org.openmodelica.crml.modelica.metamodel.ClassDefinition;
+import org.openmodelica.crml.modelica.metamodel.ClassKind;
+import org.openmodelica.crml.modelica.metamodel.ComponentDeclaration;
+import org.openmodelica.crml.modelica.metamodel.Reference;
+
+/**
+ * The Modelica class generated for one CRML template or user operator, plus
+ * what a call site needs in order to use it.
+ *
+ * <p>An operator whose body is a pure expression over its parameters becomes a
+ * Modelica {@code function} and its calls become function calls. An operator
+ * whose body hoists a component or an equation cannot be a function - a
+ * Modelica function body is an algorithm and holds no components with equations
+ * - so it becomes a {@code block}, and its calls become component
+ * instantiations wired with equations.
+ */
+public final class GeneratedOperator {
+
+    /** The name of the single output of a generated operator class. */
+    public static final String OUTPUT_PORT = "out";
+
+    private final ClassDefinition definition;
+    private final List<Variable> parameters;
+
+    public GeneratedOperator(ClassDefinition definition, List<Variable> parameters) {
+        this.definition = definition;
+        this.parameters = Collections.unmodifiableList(parameters);
+    }
+
+    public ClassDefinition definition() {
+        return definition;
+    }
+
+    public String name() {
+        return definition.getName();
+    }
+
+    /** True when calls must instantiate this class rather than call it. */
+    public boolean isBlock() {
+        return definition.getKind() != ClassKind.FUNCTION;
+    }
+
+    /** The type of the result: a copy of the type of the {@code out} component. */
+    public Reference<ClassDefinition> resultType() {
+        for (ComponentDeclaration component : definition.getComponents()) {
+            if (OUTPUT_PORT.equals(component.getName())) {
+                return EcoreUtil.copy(component.getDeclaredType());
+            }
+        }
+        throw new IllegalStateException("generated operator " + name() + " has no " + OUTPUT_PORT);
+    }
+
+    /** The operator's header variables, in declaration order. */
+    public List<Variable> parameters() {
+        return parameters;
+    }
+}

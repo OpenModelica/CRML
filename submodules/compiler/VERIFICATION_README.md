@@ -6,7 +6,7 @@ simulated with OpenModelica. A model with a reference is then compared against i
 From the repository root:
 
 ```
-make test-verification              # every suite: crml.compiler.crmlcv2.verification.Verification*
+make test-verification              # every suite: org.openmodelica.crml.compiler.crmlcv2.verification.Verification*
 make test-verification SUITE=ETL    # one suite: VerificationETL
 ```
 
@@ -91,14 +91,16 @@ these types differently:
 | Type | Compiled model | Reference | Compared as |
 |---|---|---|---|
 | scalar (Boolean, Requirement, Real, Integer, String) | `x` | `x` | trajectory, with `diffSimulationResults` |
-| Clock | `c.counter` | `c.counter` (the same record, as for an external clock), or the `activationCount` of the synchronous clock that holds the harness's `show_c` or `showEvent_c` block | tick count over time |
+| Clock | `c.out` | `c.out` (a `CRMLClock` record), or else the `activationCount` of the synchronous clock that holds the harness's `show_c` or `showEvent_c` block | instants at which `out` becomes `true4` (the ticks), counted over time against the activation count |
 | Period | `P.is_open`, `P.isLeft/RightBoundaryIncluded` | `P.timePeriod` (or `P.is_open`), and the same boundary flags | open/closed changes and boundary flags |
 | Event | `e.t` | `e.t` | event time over time |
 
 "Over time" compares the steps of a discrete signal: the same values, changing at the same
 instants within 1e-4 × the stop time. Changes closer together than that count as one, so
-zero-width pulses and before/after samples at an event don't matter. Everything else in
-those records is implementation and is not compared: the tick buffer, a period's start and
+zero-width pulses and before/after samples at an event don't matter. A clock's `out` is
+such a pulse, so it is compared by its rises to `true4` instead: the same number of them, at
+the same instants within the same tolerance. Everything else in
+those records is implementation and is not compared: a clock's counter and tick buffer, a period's start and
 close events, and a time locator's slots and index. Periods (plural) have no rule yet.
 
 | Status | Meaning |
@@ -107,7 +109,7 @@ close events, and a time locator's slots and index. Periods (plural) have no rul
 | `DIFFERS` | Not equal. The detail column shows the first difference, or names `diff.<var>.csv`. |
 | `MISSING` | The reference records it, but the simulation result doesn't have the signal. |
 | `DROPPED` | The translation produced no component for this variable or class member, or for the instance that contains it. |
-| `NOT_IN_REFERENCE` | The reference doesn't record it, or (for a clock) has no tick count tied to its name. |
+| `NOT_IN_REFERENCE` | The reference doesn't record it, or (for a clock) has neither `c.out` nor a `show_c` or `showEvent_c` block. |
 | `NO_RULE` | Its type has no comparison defined, such as Periods. |
 | `INPUT` | An external, bound by the harness. |
 | `NOT_REACHED` | Comparable, but the case stopped before the comparison. The outcome says where. |
@@ -129,9 +131,9 @@ See `VerificationETL`.
 
 | Package | Contents |
 |---|---|
-| `crml.compiler.crmlcv2.verification` | The tests only: `VerificationTest`, the base class, and one subclass per suite. |
-| `crml.compiler.crmlcv2.verification.engine` | What runs a case: `VerificationCase` (fixtures and mode), `Verification` (the stages and outcomes), `Outputs` (what a model's outputs are), `Observation` (which signals stand for each output), `Steps` (comparing discrete signals), and `OmcRunner` (runs `omc` scripts). |
-| `crml.compiler.util` | The report wrappers shared with the other compiler tests, including `OutputsWrapper`, and `CrmlFrontEnd`. |
+| `org.openmodelica.crml.compiler.crmlcv2.verification` | The tests only: `VerificationTest`, the base class, and one subclass per suite. |
+| `org.openmodelica.crml.compiler.crmlcv2.verification.engine` | What runs a case: `VerificationCase` (fixtures and mode), `Verification` (the stages and outcomes), `Outputs` (what a model's outputs are), `Observation` (which signals stand for each output), `Steps` (comparing discrete signals), and `OmcRunner` (runs `omc` scripts). |
+| `org.openmodelica.crml.compiler.util` | The report wrappers shared with the other compiler tests, including `OutputsWrapper`, and `CrmlFrontEnd`. |
 
 ## Architecture
 
@@ -145,11 +147,11 @@ flowchart LR
     make["make test-verification<br/>SUITE=..."] --> gradle["Gradle task<br/>:compiler:verificationTest<br/>(tag omc)"]
     gradle --> suite
 
-    subgraph tests["crml.compiler.crmlcv2.verification"]
+    subgraph tests["org.openmodelica.crml.compiler.crmlcv2.verification"]
         suite["VerificationETL<br/>cases()"] -->|extends| base["VerificationTest<br/>verify(case)"]
     end
 
-    subgraph engine["crml.compiler.crmlcv2.verification.engine"]
+    subgraph engine["org.openmodelica.crml.compiler.crmlcv2.verification.engine"]
         vcase["VerificationCase<br/>discover · of · fixtureProblem"]
         verif["Verification<br/>run · compare · finish"]
         outs["Outputs<br/>of(model, trace)"]
@@ -158,7 +160,7 @@ flowchart LR
         runner["OmcRunner<br/>run · Output markers"]
     end
 
-    subgraph util["crml.compiler.util"]
+    subgraph util["org.openmodelica.crml.compiler.util"]
         front["CrmlFrontEnd<br/>run(source)"]
         wrappers["OutputsWrapper, CodeWrapper,<br/>DiagnosticsWrapper, ThrowableWrapper"]
         listener["SpecificationTestListener<br/>(ExtentReports)"]
@@ -263,8 +265,8 @@ Why each class exists, and why `Verification` needs it:
   `Outputs`: it takes an `Outputs.Output` and chooses its signals by the output's kind, so
   a new kind in `Outputs` needs a rule here. The compiler's
   library and the reference models implement Clock, Period and Event differently, so the
-  same output is a different signal on each side, such as `c.counter` against a clock's
-  `activationCount`. Each check says whether it is a trajectory or steps, which decides
+  same output is a different signal on each side, such as `P.is_open` against a period's
+  `timePeriod`, or a clock's `c.out` against a synchronous clock's `activationCount`. Each check says whether it is a trajectory, steps or pulses, which decides
   whether `diffSimulationResults` or `Steps` compares it. It also tells `Verification`
   when the reference has no such signal.
 - **`Steps`** compares the signals that `diffSimulationResults` can't: those of
@@ -400,7 +402,7 @@ flowchart TD
     miss -->|no| MS["MISSING"]
     miss -->|yes| chk["Checks"]
     chk -->|"TRAJECTORY<br/>(scalars)"| diff["diffSimulationResults<br/>@@DIFF_FAILED"]
-    chk -->|"STEPS<br/>(clock, period, event)"| st["@@SERIES a&lt;i&gt; / e&lt;i&gt;<br/>Steps.of · difference"]
+    chk -->|"STEPS (period, event)<br/>PULSES (clock)"| st["@@SERIES a&lt;i&gt; / e&lt;i&gt;<br/>Steps.of / Steps.rises · difference"]
     diff & st --> res{"all checks equal?"}
     res -->|yes| MA["MATCH"]
     res -->|no| DI["DIFFERS"]

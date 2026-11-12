@@ -139,10 +139,9 @@ tasks.register<JavaExec>("generateGenModel") {
     outputs.file(outputFile)
 
     classpath = sourceSets["genmodel"].runtimeClasspath
-    mainClass.set("crml.modelica.GenmodelMain")
+    mainClass.set("org.openmodelica.crml.modelica.genmodel.GenmodelMain")
 
     args = listOf(
-        "crml.model",
         outputFile.get().asFile.absolutePath
     )
 }

@@ -45,7 +45,7 @@ dependencies {
  */
 tasks.register<JavaExec>("crmlc") {
     dependsOn("classes")
-    mainClass.set("crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.CRMLC")
     classpath = sourceSets["main"].runtimeClasspath
 }
 
@@ -64,7 +64,7 @@ tasks.register("printSourceSetInformation") {
 }
 
 application {
-    mainClass.set("crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.CRMLC")
 }
 
 tasks.test {
@@ -105,7 +105,7 @@ tasks.register<Test>("verificationTest") {
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "crml.compiler.CRMLC",
+            "Main-Class" to "org.openmodelica.crml.compiler.CRMLC",
             "Multi-Release" to "true"
         )
     }
@@ -153,18 +153,18 @@ tasks.shadowJar {
 sourceSets {
     main {
         java {
-            exclude("crml/compiler/translation/**")
-            exclude("crml/compiler/CRMLC.java")
+            exclude("org/openmodelica/crml/compiler/translation/**")
+            exclude("org/openmodelica/crml/compiler/CRMLC.java")
         }
     }
     test {
         java {
-            exclude("ctests/**")
+            exclude("org/openmodelica/crml/compiler/ctests/**")
         }
     }
 }
 
-// Equivalent to: ./gradlew test --tests "ctests.*TLTests"
+// Equivalent to: ./gradlew test --tests "org.openmodelica.crml.compiler.ctests.*TLTests"
 // Writes the Modelica text of every test model as the omcv2 pipeline gives
 // it, the reference that the web build is compared with:
 //   ./gradlew :compiler:translateModels -Pmodels=<dir> -Pout=<dir>
@@ -173,7 +173,7 @@ tasks.register<JavaExec>("translateModels") {
     group = "verification"
     description = "Translates the .crml files under -Pmodels into -Pout, the reference for the web build"
     classpath = sourceSets.test.get().runtimeClasspath
-    mainClass.set("crml.compiler.util.TranslateModels")
+    mainClass.set("org.openmodelica.crml.compiler.util.TranslateModels")
     args = listOf(
         rootProject.file(project.findProperty("models")
             ?: "submodules/test-resources/src/main/resources/testModels").path,

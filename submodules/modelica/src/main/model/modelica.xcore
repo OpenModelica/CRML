@@ -1,9 +1,10 @@
 @GenModel(
     bundleManifest="false",
     modelDirectory="crml-modelica/src-gen",
-    complianceLevel="8.0"
+    complianceLevel="8.0",
+    prefix="Modelica"
 )
-package crml.model.modelica
+package org.openmodelica.crml.modelica.metamodel
 
 /*
  * Superclass of all elements of the Modelica object model.

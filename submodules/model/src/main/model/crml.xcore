@@ -1,9 +1,10 @@
 @GenModel(
     bundleManifest="false",
     modelDirectory="crml-model/src-gen",
-    complianceLevel="8.0"
+    complianceLevel="8.0",
+    prefix="CRML"
 )
-package crml.model.language
+package org.openmodelica.crml.model.metamodel
 
 /*
  * Entity of a CRML model that has a name.

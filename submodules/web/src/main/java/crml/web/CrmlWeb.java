@@ -3,11 +3,11 @@ package crml.web;
 import org.eclipse.emf.ecore.EObject;
 import org.teavm.jso.JSExport;
 
-import crml.compiler.crmlcv2.OMCv2;
-import crml.language.dom.DOMVisitor;
-import crml.language.dom.util.BuildResult;
-import crml.language.util.Parser;
-import crml.model.language.Model;
+import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
+import org.openmodelica.crml.language.dom.DOMVisitor;
+import org.openmodelica.crml.language.dom.util.BuildResult;
+import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.model.metamodel.Model;
 
 /** Translates CRML text to Modelica in the browser with the omcv2 pipeline. */
 public class CrmlWeb {

@@ -171,7 +171,7 @@ dependencies {
 }
 
 // Give the mermaid source set the same EMF dependencies as main, so
-// MermaidMain can see the generated LanguagePackage.
+// MermaidMain can see the generated CRMLPackage.
 configurations["mermaidImplementation"].extendsFrom(configurations["implementation"])
 configurations["mermaidRuntimeOnly"].extendsFrom(configurations["runtimeOnly"])
 
@@ -216,7 +216,7 @@ tasks.register<JavaExec>("generateMermaid") {
 
     // Carries its own task dependencies, so compileMermaidJava runs first.
     classpath = sourceSets["mermaid"].runtimeClasspath
-    mainClass.set("crml.model.MermaidMain")
+    mainClass.set("org.openmodelica.crml.model.MermaidMain")
     args = listOf(outputFile.get().asFile.absolutePath)
 }
 
@@ -229,10 +229,9 @@ tasks.register<JavaExec>("generateGenModel") {
     outputs.file(outputFile)
 
     classpath = sourceSets["genmodel"].runtimeClasspath
-    mainClass.set("crml.model.GenmodelMain")     
-    
+    mainClass.set("org.openmodelica.crml.model.GenmodelMain")
+
     args = listOf(
-        "crml.model",
         outputFile.get().asFile.absolutePath
     )
 }
