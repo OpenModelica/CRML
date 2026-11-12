@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
 import org.openmodelica.crml.util.SafeResource;
-import org.openmodelica.crml.language.dom.DOMVisitor;
 import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.opcall.MixfixParser;
 import org.openmodelica.crml.language.pretty.PrettyPrint;
@@ -28,7 +27,8 @@ public class DebugModelTest {
     private static final String MODEL_RESOURCE = "debug/debug.crml";
 
     @Test
-    public void debugModel() throws IOException {
+    @java.lang.SuppressWarnings("squid:S2699") // This test case is only to debug tests from an IDE.
+    void debugModel() throws IOException {
         Path fileName = SafeResource.get(MODEL_RESOURCE);
         System.out.println("=== Model: " + fileName + " ===");
 

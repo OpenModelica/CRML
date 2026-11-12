@@ -14,7 +14,6 @@ import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.language.dom.DOMVisitor;
 import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
@@ -112,7 +111,7 @@ public class LiftLinkingTest {
 
     /** L1: two lifts of one call are both linked, in formal order. */
     @Test
-    public void twoLiftsOfOneCall() {
+    void twoLiftsOfOneCall() {
         EObject dom = build("'f' P1.element 'with' P2.element");
         ComputedValue f = call(dom, "f");
         ScatteredValue p1 = lift(dom, "P1");
@@ -124,7 +123,7 @@ public class LiftLinkingTest {
 
     /** L2 (experimental): parentheses around a lift are ignored. */
     @Test
-    public void parenthesisedLift() {
+    void parenthesisedLift() {
         EObject dom = build("'f' (P1.element) 'with' P2");
         ComputedValue f = call(dom, "f");
         ScatteredValue p1 = lift(dom, "P1");
@@ -139,7 +138,7 @@ public class LiftLinkingTest {
 
     /** L3: a lift links to a built-in unary operator. */
     @Test
-    public void unaryOperator() {
+    void unaryOperator() {
         EObject dom = build("not P1.element");
         ScatteredValue p1 = lift(dom, "P1");
         assertTrue(p1.getMethod() instanceof UnaryOperator, "method: " + p1.getMethod());
@@ -150,7 +149,7 @@ public class LiftLinkingTest {
 
     /** L4: the lifts of a binary operator are in operand order, lhs before rhs. */
     @Test
-    public void binaryOperatorOrder() {
+    void binaryOperatorOrder() {
         EObject dom = build("P2.element < P1.element");
         ScatteredValue p1 = lift(dom, "P1");
         ScatteredValue p2 = lift(dom, "P2");
@@ -165,7 +164,7 @@ public class LiftLinkingTest {
 
     /** L5: the operand of an aggregator is a set, not a lift. */
     @Test
-    public void aggregatorOperand() {
+    void aggregatorOperand() {
         EObject dom = build("and (P1.element)");
         ScatteredValue p1 = lift(dom, "P1");
         assertNull(p1.getMethod());
@@ -176,7 +175,7 @@ public class LiftLinkingTest {
 
     /** L6 (experimental): no link under a value that is not an application. */
     @Test
-    public void otherContainers() {
+    void otherContainers() {
         String[] expressions = {
             "if P1.element then true else false",
             "new Clock P1.element",
@@ -193,7 +192,7 @@ public class LiftLinkingTest {
 
     /** L7: chaining; each lift links to the call it is a direct argument of. */
     @Test
-    public void chaining() {
+    void chaining() {
         EObject dom = build("'h' ('g' P1.element).element 'with' P2.element");
         ComputedValue g = call(dom, "g");
         ComputedValue h = call(dom, "h");

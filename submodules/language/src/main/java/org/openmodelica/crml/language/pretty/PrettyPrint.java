@@ -10,6 +10,10 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 
 public class PrettyPrint {
+    /**
+     * This is a static class for printing EMF models along containment.
+     */
+    private PrettyPrint() {}
 
     private static final String CONNECTOR_MID = "├── ";
     private static final String CONNECTOR_LAST = "└── ";
@@ -112,7 +116,7 @@ public class PrettyPrint {
         return identity + " (" + type + ")";
     }
 
-    private static abstract class Entry {
+    private abstract static class Entry {
     }
 
     private static final class Leaf extends Entry {

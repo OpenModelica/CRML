@@ -28,7 +28,7 @@ public class FORMLTests extends ReportedTest {
     
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    public void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
 

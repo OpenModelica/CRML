@@ -21,7 +21,7 @@ public class VariableDeclarationTest {
     }
 
     @Test
-    public void testCorrect_multiVariableDeclaration() {
+    void testCorrect_multiVariableDeclaration() {
         Parser.ParserResult parsed = parse("Integer x1, x2;");
         assertFalse(parsed.syntax().hasErrors(), "Parse should succeed");
 

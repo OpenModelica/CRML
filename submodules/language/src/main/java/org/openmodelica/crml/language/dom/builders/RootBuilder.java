@@ -9,10 +9,7 @@ import org.eclipse.emf.ecore.EObject;
 
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.DependencyContext;
-import crml.language.grammar.crmlParser.DependencySetContext;
 import crml.language.grammar.crmlParser.Element_defContext;
-import crml.language.grammar.crmlParser.IdContext;
-import crml.language.grammar.crmlParser.SingleDependencyContext;
 import org.openmodelica.crml.model.metamodel.Class;
 import org.openmodelica.crml.model.metamodel.Dependency;
 import org.openmodelica.crml.language.dom.BuildContext;
@@ -20,7 +17,6 @@ import org.openmodelica.crml.language.dom.util.BuildResult.SingleBuildResult;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.Library;
 import org.openmodelica.crml.model.metamodel.Model;
-//import org.openmodelica.crml.model.metamodel.ProxyDependency;
 import org.openmodelica.crml.model.metamodel.Variable;
 
 public class RootBuilder {

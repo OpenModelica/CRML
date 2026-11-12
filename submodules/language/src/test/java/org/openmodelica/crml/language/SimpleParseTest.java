@@ -18,14 +18,14 @@ public class SimpleParseTest {
     }
 
     @Test
-    public void testModel() throws URISyntaxException, IOException {
+    void testModel() throws URISyntaxException, IOException {
         ParserResult parsed = new Parser().parse(resource("TestModel.crml"));
         parsed.syntax().errors().forEach(System.out::println);
         assertFalse(parsed.syntax().hasErrors());
     }
 
     @Test
-    public void testExample() throws URISyntaxException, IOException {
+    void testExample() throws URISyntaxException, IOException {
         ParserResult parsed = new Parser().parse(resource("Example.crml"));
         parsed.syntax().errors().forEach(System.out::println);
         assertFalse(parsed.syntax().hasErrors());

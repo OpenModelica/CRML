@@ -3,7 +3,6 @@ package org.openmodelica.crml.language.util;
 import org.eclipse.emf.ecore.EObject;
 import org.openmodelica.crml.language.pretty.PrettyPrint;
 import org.openmodelica.crml.testutil.CustomHtmlReporter;
-import org.openmodelica.crml.testutil.FormatUtil;
 
 import static j2html.TagCreator.code;
 import static j2html.TagCreator.pre;
@@ -17,7 +16,6 @@ public class DOMWrapper implements CustomHtmlReporter {
 
     @Override
     public Object report() {
-        //return pre(FormatUtil.numcode(PrettyPrint.prettyPrint(dom)));
         return pre(code(PrettyPrint.prettyPrint(dom)));
     }
 

@@ -12,7 +12,7 @@ public class ScopeResolutionOptions {
         this.strategy = strategy;
     }
 
-    public static enum ResolutionStrategy {
+    public enum ResolutionStrategy {
         DEFAULT,
         CONSTRUCTOR_BINDING
     }

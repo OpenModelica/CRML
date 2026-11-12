@@ -22,26 +22,26 @@ import org.openmodelica.crml.language.util.ThrowableWrapper;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
 import org.openmodelica.crml.testutil.ReportedTest;
 
-public class TypeOperator extends ReportedTest {
+public class TypeBooleanTest extends ReportedTest {
 
     static List<Arguments> fileNameSource() {
         List<Arguments> tests = new ArrayList<>();
-        tests.addAll(ReportedTest.fileNameSourceHelperDom(SpecsRoot.RESOURCES.resolve("operator")));
+        tests.addAll(ReportedTest.fileNameSourceHelperDom(SpecsRoot.RESOURCES.resolve("boolean")));
         tests.addAll(getDocExamples());
         return tests;
     }
 
     static List<Arguments> getDocExamples() {
         List<Arguments> tests = new ArrayList<>();
-        TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels/spec-doc-examples"), f -> {
-            return f.getFileName().toString().startsWith("Operator");
+        TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels").resolve("spec-doc-examples"), f -> {
+            return f.getFileName().toString().startsWith("Boolean");
         }).forEach(f -> tests.add(Arguments.of(f, true, false)));
         return tests;
     }
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    public void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
         Assumptions.assumeTrue(isValid);

@@ -13,7 +13,7 @@ public class VariableDeclarationTest {
     }
 
     @Test
-    public void testCorrect_multiVariableDeclaration() {
+    void testCorrect_multiVariableDeclaration() {
         assertFalse(parse("Integer x1, x2;").syntax().hasErrors());
     }
 }

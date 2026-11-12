@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.emf.ecore.EObject;
@@ -16,19 +18,31 @@ import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.DOMWrapper;
 import org.openmodelica.crml.language.util.Parser;
-import org.openmodelica.crml.language.util.SpecsRoot;
 import org.openmodelica.crml.language.util.ThrowableWrapper;
+import org.openmodelica.crml.testresources.TestResourcesRoot;
 import org.openmodelica.crml.testutil.ReportedTest;
 
-public class TypeClass extends ReportedTest {
+public class TypeOtherTest extends ReportedTest {
 
     static List<Arguments> fileNameSource() {
-        return ReportedTest.fileNameSourceHelperDom(SpecsRoot.RESOURCES.resolve("class"));
+        return getDocExamples();
+    }
+
+    static List<Arguments> getDocExamples() {
+        List<String> testedElsewhere = Arrays.asList(
+                "Boolean", "Clock", "Event", "Integer", "Operator",
+                "Period", "Real", "String", "Template");
+        List<Arguments> tests = new ArrayList<>();
+        TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels/spec-doc-examples"), f -> {
+            String name = f.getFileName().toString();
+            return testedElsewhere.stream().noneMatch(name::startsWith);
+        }).forEach(f -> tests.add(Arguments.of(f, true, false)));
+        return tests;
     }
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    public void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
         Assumptions.assumeTrue(isValid);
