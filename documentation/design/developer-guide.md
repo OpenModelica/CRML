@@ -971,7 +971,7 @@ flowchart TD
 
 These issues were found while writing this guide. They are worth fixing or keeping in mind:
 
-- **The jar has no working entry point.** `application.mainClass`, the jar manifest and the `crmlc` task all still name `org.openmodelica.crml.compiler.CRMLC`, which is excluded from compilation. `java -jar compiler-all.jar` fails, and the `--testsuite` flag described in the root README no longer exists. crmlcv2 needs a CLI.
+- **The root README describes the old CLI.** The jar now starts `org.openmodelica.crml.compiler.app.CompilerMain` (the crmlcv2 CLI), but the `--testsuite` flag the README shows no longer exists.
 - **The CI `omc` step checks nothing.** It checks `build/testSuiteGenerated/.../BooleanAccumulation.mo`, which only the legacy `ctests` wrote.
 - **The legacy compiler `ctests` are excluded.** `make test-etl` and `make test-forml` run only the `:language` parse tests in `org.openmodelica.crml.language.ctests`.
 - **The runtime library has drifted.** The four copies of `CRMLtoModelica.mo` are now two different versions (§9).

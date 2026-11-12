@@ -8,8 +8,13 @@ repositories {
     mavenCentral()
 }
 
+val antlr4Version: String by rootProject.extra
+
 dependencies {
     implementation(project(":language"))
+    // :language exposes ANTLR types (Parser, DOMVisitor) but keeps the runtime
+    // as an implementation dependency; the app package calls them directly.
+    implementation("org.antlr:antlr4-runtime:$antlr4Version")
     implementation(project(":model"))
     implementation(project(":modelica")) 
     implementation(project(":util"))
@@ -45,7 +50,7 @@ dependencies {
  */
 tasks.register<JavaExec>("crmlc") {
     dependsOn("classes")
-    mainClass.set("org.openmodelica.crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
     classpath = sourceSets["main"].runtimeClasspath
 }
 
@@ -64,7 +69,7 @@ tasks.register("printSourceSetInformation") {
 }
 
 application {
-    mainClass.set("org.openmodelica.crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
 }
 
 tasks.test {
@@ -105,7 +110,7 @@ tasks.register<Test>("verificationTest") {
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "org.openmodelica.crml.compiler.CRMLC",
+            "Main-Class" to "org.openmodelica.crml.compiler.app.CompilerMain",
             "Multi-Release" to "true"
         )
     }
