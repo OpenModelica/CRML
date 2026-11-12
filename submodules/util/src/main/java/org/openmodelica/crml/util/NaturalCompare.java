@@ -55,7 +55,6 @@ public class NaturalCompare implements Comparator<String> {
             String segment = matcher.group();
             try{
                 Integer num = Integer.parseInt(segment);
-                System.out.println(num);
                 tokens.add(num);
             } catch (NumberFormatException e){
                 tokens.add(segment);
