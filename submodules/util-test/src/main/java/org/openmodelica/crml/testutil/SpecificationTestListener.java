@@ -41,7 +41,6 @@ import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
-//import org.openmodelica.crml.language.util.ErrorListener.CRMLSyntaxResults;
 import org.openmodelica.crml.util.NaturalCompare;
 import org.openmodelica.crml.util.SafeResource;
 
@@ -50,7 +49,6 @@ import static com.aventstack.extentreports.Status.FAIL;
 public class SpecificationTestListener implements TestExecutionListener, AfterEachCallback, AfterAllCallback {
 
     // Static report state shared across all instances
-    private static ExtentSparkReporter reporter;
     private static ExtentReports extentReport;
     private static volatile boolean reportInitialized = false;
 
@@ -79,11 +77,12 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             join(content));
     }
 
+    @java.lang.SuppressWarnings("squid:S4507") // Hide warning for printStackTrace; This is a utility for tests, and failure is nor critical.
     private static synchronized void initReport() {
         if (!reportInitialized) {
             // A task running a separate suite names its own report, so it does
             // not overwrite the one the test task wrote.
-            reporter = new ExtentSparkReporter(System.getProperty("crml.test.report",
+            ExtentSparkReporter reporter = new ExtentSparkReporter(System.getProperty("crml.test.report",
                 "build" + java.io.File.separator + "test_report.html"));
             extentReport = new ExtentReports();
             extentReport.attachReporter(reporter);
@@ -94,7 +93,6 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                         StandardCharsets.UTF_8
                 ));
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
 
@@ -203,15 +201,15 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             return;
 
         String name = "";
-        Pattern pattern_idx = Pattern.compile("^(\\[\\d+\\])");
-        Matcher matcher_idx = pattern_idx.matcher(displayName);
-        if (matcher_idx.find())
-            name += matcher_idx.group(1) + " ";
+        Pattern patternIdx = Pattern.compile("^(\\[\\d+\\])");
+        Matcher matcherIdx = patternIdx.matcher(displayName);
+        if (matcherIdx.find())
+            name += matcherIdx.group(1) + " ";
 
-        Pattern pattern_path = Pattern.compile("([^\\\\\\/]+\\.crml(?:\\.disabled)?)");
-        Matcher matcher_path = pattern_path.matcher(displayName);
-        if (matcher_path.find())
-            name += matcher_path.group(1);
+        Pattern patternPath = Pattern.compile("([^\\\\\\/]+\\.crml(?:\\.disabled)?)");
+        Matcher matcherPath = patternPath.matcher(displayName);
+        if (matcherPath.find())
+            name += matcherPath.group(1);
 
         if (name.isEmpty())
             name = displayName;

@@ -11,6 +11,13 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class FormatUtil {
+
+    /**
+     * Hide constructor.
+     * This is a static utility class.
+     */
+    private FormatUtil() {}
+
     public static CodeTag numcode(String code, int... highlight) {
         String[] lines = code.split("\\R", -1);
 

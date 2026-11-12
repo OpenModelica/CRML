@@ -10,8 +10,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 public class SharedParameter implements ParameterResolver {
     public static class Keys extends HashSet<String> {
-        public Keys(Object _ignored){};
-        public static final String keyCode = "crml.language.specification.util.SharedParameter.Keys.keyCode";
+        public Keys(Object ignored){}
+        public static final String KEYCODE = "crml.language.specification.util.SharedParameter.Keys.keyCode";
     }
 
     public static final ExtensionContext.Namespace MESSAGE_NAMESPACE =
@@ -28,7 +28,7 @@ public class SharedParameter implements ParameterResolver {
     }
     
     public static void registerKey(String key, ExtensionContext.Store context){
-        if(key==Keys.keyCode){
+        if(Keys.KEYCODE.equals(key)){
             throw new IllegalArgumentException("Store key \""+key + "\" is reserved.");
         }
 
