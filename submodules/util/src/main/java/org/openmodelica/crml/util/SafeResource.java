@@ -13,6 +13,12 @@ import java.util.Collections;
 
 public class SafeResource {
 
+    /**
+     * Hide constructor.
+     * This is a static utility class.
+     */
+    private SafeResource() {}
+
     public static Path get(String name) {
         return get(name, Thread.currentThread().getContextClassLoader());
     }
@@ -27,17 +33,20 @@ public class SafeResource {
             if ("jar".equals(uri.getScheme())) {
                 String[] parts = uri.toString().split("!");
                 URI jarUri = URI.create(parts[0]);
-                FileSystem fs;
-                try {
-                    fs = FileSystems.newFileSystem(jarUri, Collections.emptyMap());
-                } catch (FileSystemAlreadyExistsException e) {
-                    fs = FileSystems.getFileSystem(jarUri);
-                }
+                FileSystem fs = getFS(jarUri);
                 return fs.getPath(parts[1]);
             }
             return Paths.get(uri);
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException("Failed to load resource: " + name, e);
+        }
+    }
+    
+    private static FileSystem getFS(URI uri) throws IOException{
+        try {
+            return FileSystems.newFileSystem(uri, Collections.emptyMap());
+        } catch (FileSystemAlreadyExistsException e) {
+            return FileSystems.getFileSystem(uri);
         }
     }
 }
