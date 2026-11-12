@@ -28,6 +28,7 @@ public class NaturalCompareTest {
     }
 
     @Test
+    @java.lang.SuppressWarnings("squid:S5976")
     void testNaturalOrderingWithDoubleDigits() {
         Path p1 = Paths.get("file2.txt");
         Path p2 = Paths.get("file10.txt");
@@ -78,6 +79,7 @@ public class NaturalCompareTest {
     }
 
     @Test
+    @java.lang.SuppressWarnings("squid:S5976")
     void testCaseSensitivity() {
         Path p1 = Paths.get("File1.txt");
         Path p2 = Paths.get("file1.txt");
