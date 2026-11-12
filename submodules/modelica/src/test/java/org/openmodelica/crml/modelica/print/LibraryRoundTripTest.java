@@ -3,8 +3,6 @@ package org.openmodelica.crml.modelica.print;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.modelica.print.ModelicaPrinter;
-import org.openmodelica.crml.modelica.print.PrinterOptions;
 
 import org.openmodelica.crml.modelica.metamodel.ClassDefinition;
 import org.openmodelica.crml.modelica.build.Modelica;
@@ -20,7 +18,7 @@ public class LibraryRoundTripTest implements Modelica {
 
     /** CRMLtoModelica.Types.Event */
     @Test
-    public void reproducesEventRecord() {
+    void reproducesEventRecord() {
         ClassDefinition event = record("Event");
         event.getComponents().add(component(builtinRef("Boolean4"), "b"));
         event.getComponents().add(component(builtinRef("Real"), "t"));
@@ -35,7 +33,7 @@ public class LibraryRoundTripTest implements Modelica {
 
     /** CRMLtoModelica.Functions.and4, in its nested-conditional form. */
     @Test
-    public void reproducesAnd4Function() {
+    void reproducesAnd4Function() {
         ClassDefinition and4 = function("and4");
         and4.getComponents().add(input(builtinRef("Boolean4"), "r1"));
         and4.getComponents().add(input(builtinRef("Boolean4"), "r2"));

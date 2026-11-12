@@ -100,6 +100,7 @@ public interface Modelica {
         return classDefinition(ClassKind.MODEL, name);
     }
 
+    @java.lang.SuppressWarnings("squid:S6213")
     default ClassDefinition record(String name) {
         return classDefinition(ClassKind.RECORD, name);
     }

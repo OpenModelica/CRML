@@ -37,12 +37,11 @@ public class GenmodelMain {
                 ModelicaPackage.class,
                 TracePackage.class);
         List<EPackage> list = Arrays.asList(
-                (EPackage) ModelicaPackage.eINSTANCE,
-                (EPackage) TracePackage.eINSTANCE);
+                ModelicaPackage.eINSTANCE,
+                TracePackage.eINSTANCE);
 
         GenModel genModel = GenModelFactory.eINSTANCE.createGenModel();
         genModel.setComplianceLevel(GenJDKLevel.JDK80_LITERAL);
-        System.out.println("Number of metamodels:" + list.size());
         genModel.initialize(list);
         for (GenPackage genPackage : genModel.getGenPackages()) {
             Class<?> packageInterface = packageInterfaces.get(list.indexOf(genPackage.getEcorePackage()));
@@ -51,10 +50,8 @@ public class GenmodelMain {
             String simpleName = packageInterface.getSimpleName();
             genPackage.setPrefix(simpleName.substring(0, simpleName.length() - "Package".length()));
         }
-        System.out.println("Target: " + target);
         Resource genModelResource = resourceSet.createResource(URI.createFileURI(target));
         genModelResource.getContents().add(genModel);
         genModelResource.save(Collections.emptyMap());
-        System.out.println("GenModel saved to: " + target);
     }
 }
