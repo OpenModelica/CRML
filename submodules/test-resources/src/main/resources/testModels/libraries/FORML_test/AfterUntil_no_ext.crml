@@ -1,6 +1,6 @@
 model AfterUntil_no_ext is {
 	// After events occur and until events occur
-	Operator [ Periods ] 'after' Clock ev1 'until' Clock ev2 = Periods ] ev1, ev2 ];
+	Operator [ Periods ] 'after' Clock ev1 'until' Clock ev2 = new Periods ] ev1, ev2 ];
 	
 	// Example of function call
 	Boolean b1 is 

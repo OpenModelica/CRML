@@ -1,0 +1,3 @@
+[submodule "diagram-generator"]
+	path = diagram-generator
+	url = https://github.com/OpenModelica/CRML-diagram.git

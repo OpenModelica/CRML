@@ -1,0 +1,18 @@
+model LiftTwoAxes_no_ext is {
+	// Two '.element' operands: the operator is applied to every combination of
+	// the elements of S and T (2 x 3 results).
+	Operator [ Boolean ] 'both' Boolean a 'with' Boolean b = a and b;
+	Operator [ Boolean ] 'negate' Boolean b = not b;
+
+	Boolean b1 is if (2.0 < time) then true else false;
+	Boolean b2 is if (3.0 < time) then true else false;
+	Boolean b3 is if (4.0 < time) then true else false;
+	Boolean S is { b1, b2 };
+	Boolean T is { b1, b2, b3 };
+
+	Boolean every_pair is and ('both' S.element 'with' T.element); // false until 4s, then true
+	Boolean some_pair is or ('both' S.element 'with' T.element); // false until 2s, then true
+
+	// Chaining: the results of one lifted application are the elements another one is lifted over
+	Boolean some_mixed_pair is or ('both' ('negate' S.element).element 'with' T.element); // false until 2s, true until 3s, then false
+};

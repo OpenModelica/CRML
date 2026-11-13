@@ -8,8 +8,15 @@ repositories {
     mavenCentral()
 }
 
+val antlr4Version: String by rootProject.extra
+
 dependencies {
     implementation(project(":language"))
+    // :language exposes ANTLR types (Parser, DOMVisitor) but keeps the runtime
+    // as an implementation dependency; the app package calls them directly.
+    implementation("org.antlr:antlr4-runtime:$antlr4Version")
+    implementation(project(":model"))
+    implementation(project(":modelica")) 
     implementation(project(":util"))
 
     implementation("org.apache.logging.log4j:log4j-api") {
@@ -43,7 +50,7 @@ dependencies {
  */
 tasks.register<JavaExec>("crmlc") {
     dependsOn("classes")
-    mainClass.set("crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
     classpath = sourceSets["main"].runtimeClasspath
 }
 
@@ -62,24 +69,119 @@ tasks.register("printSourceSetInformation") {
 }
 
 application {
-    mainClass.set("crml.compiler.CRMLC")
+    mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Needs OpenModelica; run through verificationTest instead.
+        excludeTags("omc")
+    }
     testLogging {
         events("passed", "skipped", "failed")
     }
     ignoreFailures = true
 }
 
+/**
+ * End-to-end verification: simulates the generated Modelica with OpenModelica
+ * and compares it with the reference results. Skips every case if omc is not
+ * installed. Report: build/verification_report.html.
+ */
+tasks.register<Test>("verificationTest") {
+    group = "verification"
+    description = "Simulates the generated Modelica with omc and compares it with the reference results"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("omc")
+    }
+    systemProperty("crml.test.report", "build/verification_report.html")
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+    ignoreFailures = true
+    // omc is the bottleneck and every case reads the same libraries; running
+    // in parallel would only contend for the same CPU and disk.
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+}
+
 tasks.jar {
     manifest {
         attributes(
-            "Main-Class" to "crml.compiler.CRMLC",
+            "Main-Class" to "org.openmodelica.crml.compiler.app.CompilerMain",
             "Multi-Release" to "true"
         )
     }
 }
 
-// Equivalent to: ./gradlew test --tests "ctests.*TLTests"
+// The license and notice files of the libraries. They have the same paths in
+// every jar (META-INF/LICENSE, META-INF/NOTICE, about.html, ...), so merged
+// into compiler-all.jar all but the first would be lost. Instead each library
+// keeps its own under META-INF/licenses/<group>/<module>-<version>/.
+val licenseFiles = listOf(
+    "META-INF/LICENSE*", "META-INF/LICENCE*", "META-INF/NOTICE*", "META-INF/COPYING*",
+    "META-INF/DEPENDENCIES*",
+    "LICENSE*", "NOTICE*", "about.html", "about_*.html", "about_files/**"
+)
+
+val thirdPartyLicenses by tasks.registering(Sync::class) {
+    description = "Collects the license and notice files of the runtime libraries"
+    val runtimeClasspath = configurations.runtimeClasspath.get()
+    inputs.files(runtimeClasspath)
+    // The patterns of the nested from() specs are not seen as inputs.
+    inputs.property("licenseFiles", licenseFiles)
+    into(layout.buildDirectory.dir("third-party-licenses"))
+    runtimeClasspath.incoming.artifacts.resolvedArtifacts.get()
+        .filter { it.id.componentIdentifier is ModuleComponentIdentifier }
+        .forEach { artifact ->
+            val id = artifact.id.componentIdentifier as ModuleComponentIdentifier
+            from(zipTree(artifact.file)) {
+                include(licenseFiles)
+                into("${id.group}/${id.module}-${id.version}")
+            }
+        }
+}
+
+tasks.shadowJar {
+    exclude(licenseFiles)
+    from(thirdPartyLicenses) {
+        into("META-INF/licenses")
+    }
+}
+
+// The old AST-based translation pipeline (crmlVisitorImpl/CRMLC and its ctests)
+// predates the current ANTLR grammar and no longer compiles against it. It is
+// being superseded by the OM-based omcv2 pipeline; kept on disk for reference
+// but excluded from compilation until it is revived or removed.
+sourceSets {
+    main {
+        java {
+            exclude("org/openmodelica/crml/compiler/translation/**")
+            exclude("org/openmodelica/crml/compiler/CRMLC.java")
+        }
+    }
+    test {
+        java {
+            exclude("org/openmodelica/crml/compiler/ctests/**")
+        }
+    }
+}
+
+// Equivalent to: ./gradlew test --tests "org.openmodelica.crml.compiler.ctests.*TLTests"
+// Writes the Modelica text of every test model as the omcv2 pipeline gives
+// it, the reference that the web build is compared with:
+//   ./gradlew :compiler:translateModels -Pmodels=<dir> -Pout=<dir>
+// Relative directories are taken from the root of the repository.
+tasks.register<JavaExec>("translateModels") {
+    group = "verification"
+    description = "Translates the .crml files under -Pmodels into -Pout, the reference for the web build"
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("org.openmodelica.crml.compiler.util.TranslateModels")
+    args = listOf(
+        rootProject.file(project.findProperty("models")
+            ?: "submodules/test-resources/src/main/resources/testModels").path,
+        rootProject.file(project.findProperty("out") ?: "build/web-expected").path
+    )
+}

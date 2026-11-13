@@ -6,9 +6,11 @@ plugins {
 group = "crml"
 version = "1.0-SNAPSHOT"
 
+val antlr4Version: String by rootProject.extra
+
 dependencies {
-    antlr("org.antlr:antlr4:4.9.2")
-    implementation("org.antlr:antlr4:4.9.2")
+    antlr("org.antlr:antlr4:$antlr4Version")
+    implementation("org.antlr:antlr4-runtime:$antlr4Version")
 
 
 
@@ -21,6 +23,12 @@ dependencies {
 
     testImplementation("com.aventstack:extentreports:5.0.9")
     
+}
+
+// The antlr plugin makes api extend antlr, which would put the whole tool
+// back on the runtime classpath of this project and of every consumer.
+configurations.api {
+    setExtendsFrom(extendsFrom.filter { it.name != "antlr" })
 }
 
 sourceSets {

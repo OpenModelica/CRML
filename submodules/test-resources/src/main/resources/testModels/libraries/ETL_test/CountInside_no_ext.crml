@@ -1,5 +1,8 @@
 model CountInside_no_ext is {
 	// Filter clock ticks inside a time period
+	// Known issue: CRMLtoModelica.Functions.gEV and lEV both compute r1.t > r2.t, so with
+	// the crmlcv2 compiler 'tick C >= P start' is computed as '>' and 'tick C <= P end' as
+	// 'tick C > P end' (the opposite direction). The library is left unchanged for now.
 	Operator [ Clock ] Clock C 'inside' Period P 
 		= C filter ((tick C >= P start) and (tick C <= P end));
 		
