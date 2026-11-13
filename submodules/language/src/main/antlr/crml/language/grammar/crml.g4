@@ -43,7 +43,7 @@ category_pair : '(' op ',' op ')'; //TODO
  
 var_def : cnst='constant'? var_qualifier? type id  (arg_list | 'is' (exp | is_external = 'external'))? ';' ;
 
-operator : 'Operator' '[' domain=type ']' operator_def ';' ; //TODO
+operator : 'Operator' (name=id ('='|'is') 'new'? 'Operator' )? '[' domain=type ']' operator_def ';' ;
 
 template : 'Template' args+=template_parameter+ '=' value=exp ';' ; //TODO
 
@@ -54,12 +54,17 @@ template_parameter
 
 class_params : '(' (id '=' exp)+ ')'; //TODO
 
-operator_def :  args+=operator_parameter+ '=' apply_category? value=exp ; //TODO
+operator_def
+	: args+=operator_parameter+ '=' apply_category? value=exp # NaturalOperatorDef
+	| '(' (args+=operator_parameter_program (',' args+=operator_parameter_program )* )? ')'  '=' apply_category? value=exp # ProgramOperatorDef
+	;
 
 operator_parameter 
 	: domain=type name=id # OperatorParameter
 	| kw=user_keyword # OperatorKeyword
 	;
+
+operator_parameter_program: domain=type name=id ;
 
 apply_category : 'apply' assoc=id 'on'; //TODO
 	 
@@ -128,7 +133,6 @@ exp
 	| trim //# TrimExpression
 	| p1=exp 'proj' ('(' opt=exp ')')?  p2=exp 
 	| period_op //# PoeriodOperationExpression
-//	| iterator //# IteratorExpression
 	| collection=exp '.''element'
 	//| 'apply' cat=id 'on' '(' exp ')'
 //TODO: with master on pre
@@ -151,7 +155,6 @@ exp
 // Loosest: everything to its right is the condition, as the corpus writes it:
 // c filter (a) and (b) is c filter ((a) and (b)).
 	| lhs=exp bop7='filter' rhs=exp
-//
 //	| sqexp=exp? keyword=user_keyword+ (sqexp=exp?)+
  	| keyword=user_keyword rhs=exp //# UserRightExpression
 	| lhs=exp keyword=user_keyword rhs=exp //# UserLeftBinaryExpression
@@ -162,7 +165,6 @@ exp
 	| when_exp //# WhenExpression
 //	| exp 'at' at=exp // Moved to binary operator. Why was it separate?
  	| integrate //# IntegrateExpression
-//	| 'tick' tick=exp // Moved to unary expression level 4
 	| crml_component_reference //# ComponentReferenceExpression
 	| if_exp //# IfExpression
 	| set_def //# SetDefinitionExpression
@@ -179,7 +181,6 @@ constructor : 'new' type (arg_list | exp)?;
 period_op : lb=('['| ']') exp ',' exp rb=('['| ']') ; 
 
 //right_op : 'start' | 'end';
-//
 
 // Needed for forbid and category
 op : builtin_op|user_keyword ;
@@ -215,8 +216,6 @@ string : STRING;
 
 IDENT : NONDIGIT ( DIGIT | NONDIGIT )* ;
 
-//ITERATOR : NONDIGIT ( DIGIT | NONDIGIT )* '.element';
-
 USER_KEYWORD : '\'' (NONDIGIT|SYMBOL) (NONDIGIT|' '|SYMBOL|DIGIT)* '\'';
 
 fragment CAPS :  'A' .. 'Z' ;
@@ -242,9 +241,6 @@ ML_COMMENT
 
 fragment
 NL: '\r\n' | '\n' | '\r';
-
-// Lexical units except for keywords
-
 
 STRING : '"' ( S_CHAR | S_ESCAPE )* '"' ;
 
