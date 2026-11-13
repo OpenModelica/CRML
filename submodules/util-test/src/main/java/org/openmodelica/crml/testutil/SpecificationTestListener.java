@@ -39,6 +39,7 @@ import org.opentest4j.TestAbortedException;
 import com.aventstack.extentreports.AnalysisStrategy;
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.model.Test;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
 import org.openmodelica.crml.util.NaturalCompare;
@@ -121,7 +122,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                     .sorted(Comparator.comparing(TestIdentifier::getDisplayName, NaturalCompare::compareStrings))
                     .forEach(test -> processTestNode(testKlass, test));
         });
-        extentReport.flush();
+        flushReport();
     }
 
     @Override
@@ -188,7 +189,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
                 continue;
             processNode(testKlass, displayName, status, throwable);
         }
-        extentReport.flush();
+        flushReport();
     }
 
     // -------------------------------------------------------------------------
@@ -290,6 +291,20 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Writes the report with the test classes in natural order of their names.
+     * The report lists classes in creation order, which follows execution (or
+     * discovery) order and so looks random; sorting the live list just before
+     * every flush fixes that for both reporting paths.
+     */
+    private static synchronized void flushReport() {
+        List<Test> tests = extentReport.getReport().getTestList();
+        synchronized (tests) {
+            tests.sort(Comparator.comparing(Test::getName, NaturalCompare::compareStrings));
+        }
+        extentReport.flush();
+    }
 
     private TestIdentifier getRoot(TestPlan testPlan) {
         return testPlan.getRoots().stream().findFirst().get();

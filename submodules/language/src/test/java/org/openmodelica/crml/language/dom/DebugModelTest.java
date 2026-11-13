@@ -62,8 +62,6 @@ public class DebugModelTest {
                 MixfixParser mixfix = new MixfixParser((Library) dom, visitor);
                 mixfix.perform((Library) dom); 
             }
-            
-            visitor.modify();
         } catch (Throwable e) {
             error = e;
         }
