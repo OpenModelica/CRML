@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
@@ -116,7 +117,9 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
     @Override
     public void testPlanExecutionFinished(TestPlan testPlan) {
-        testPlan.getChildren(getRoot(testPlan)).forEach(klass -> {
+        testPlan.getChildren(getRoot(testPlan)).stream()
+                .filter(SpecificationTestListener::isReportedTest)
+                .forEach(klass -> {
             final ExtentTest testKlass = extentReport.createTest(getKlassName(klass.getUniqueId()));
             testPlan.getDescendants(klass).stream()
                     .sorted(Comparator.comparing(TestIdentifier::getDisplayName, NaturalCompare::compareStrings))
@@ -304,6 +307,18 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             tests.sort(Comparator.comparing(Test::getName, NaturalCompare::compareStrings));
         }
         extentReport.flush();
+    }
+
+    /**
+     * Whether {@code klass} is a {@link ReportedTest}. The listener is loaded
+     * for every test run, so it sees classes that do not want a report.
+     */
+    private static boolean isReportedTest(TestIdentifier klass) {
+        return klass.getSource()
+                .filter(ClassSource.class::isInstance)
+                .map(source -> ((ClassSource) source).getJavaClass())
+                .map(ReportedTest.class::isAssignableFrom)
+                .orElse(false);
     }
 
     private TestIdentifier getRoot(TestPlan testPlan) {
