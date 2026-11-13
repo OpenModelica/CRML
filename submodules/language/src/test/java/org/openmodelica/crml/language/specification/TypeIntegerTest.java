@@ -13,6 +13,7 @@ import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.util.SpecsRoot;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,7 +32,7 @@ public class TypeIntegerTest extends ReportedTest {
         TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels/spec-doc-examples"), f -> {
             return f.getFileName().toString().startsWith("Integer");
         }).forEach(f -> {
-            tests.add(Arguments.of(f, true, false));
+            tests.add(Arguments.of(f, ModelExpectation.CORRECT, false));
         });
         return tests;
     }
@@ -39,7 +40,7 @@ public class TypeIntegerTest extends ReportedTest {
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void simulateTestFile(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
 
@@ -47,6 +48,6 @@ public class TypeIntegerTest extends ReportedTest {
 
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
-        assertEquals(isValid, !parsed.syntax().hasErrors());
+        assertEquals(expectation.parses(), !parsed.syntax().hasErrors());
     }
 }

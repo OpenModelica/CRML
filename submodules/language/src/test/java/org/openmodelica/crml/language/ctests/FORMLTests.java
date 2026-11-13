@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 import org.openmodelica.crml.util.SafeResource;
 import org.junit.jupiter.api.Assumptions;
@@ -22,13 +23,13 @@ public class FORMLTests extends ReportedTest {
     static List<Arguments> fileNameSource() {
         List<Arguments> tests = new ArrayList<>();
         tests.addAll(ReportedTest.fileNameSourceHelper2(SafeResource.get("testResourcesRoot").getParent().resolve("testModels").resolve("libraries").resolve("FORML_test")));
-        tests.add(Arguments.of(SafeResource.get("testResourcesRoot").getParent().resolve("testModels").resolve("libraries").resolve("FORM-L.crml"), true, false));
+        tests.add(Arguments.of(SafeResource.get("testResourcesRoot").getParent().resolve("testModels").resolve("libraries").resolve("FORM-L.crml"), ModelExpectation.CORRECT, false));
         return tests;
     }
     
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void simulateTestFile(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
 
@@ -36,6 +37,6 @@ public class FORMLTests extends ReportedTest {
 
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
-        assertEquals(isValid, !parsed.syntax().hasErrors());
+        assertEquals(expectation.parses(), !parsed.syntax().hasErrors());
     }
 }

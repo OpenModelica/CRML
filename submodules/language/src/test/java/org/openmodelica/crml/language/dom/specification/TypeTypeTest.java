@@ -19,6 +19,7 @@ import org.openmodelica.crml.language.util.DOMWrapper;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.util.SpecsRoot;
 import org.openmodelica.crml.language.util.ThrowableWrapper;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 
 public class TypeTypeTest extends ReportedTest {
@@ -31,10 +32,9 @@ public class TypeTypeTest extends ReportedTest {
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void translateToDom(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
-        Assumptions.assumeTrue(isValid);
 
         Parser.ParserResult parsed = new Parser().parse(fileName);
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
@@ -62,6 +62,9 @@ public class TypeTypeTest extends ReportedTest {
             emit(ThrowableWrapper.of(error), "Error");
         }
 
+        // TODO: check that validation rejects the model once it is implemented.
+        Assumptions.assumeTrue(expectation == ModelExpectation.CORRECT,
+                "Semantic validation is not implemented yet");
         assertNull(error, "DOM translation threw an exception");
     }
 }

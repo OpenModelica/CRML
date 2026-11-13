@@ -20,6 +20,7 @@ import org.openmodelica.crml.language.util.DOMWrapper;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.util.ThrowableWrapper;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 
 public class TypeOtherTest extends ReportedTest {
@@ -36,16 +37,15 @@ public class TypeOtherTest extends ReportedTest {
         TestResourcesRoot.listFiles(TestResourcesRoot.RESOURCES.resolve("testModels/spec-doc-examples"), f -> {
             String name = f.getFileName().toString();
             return testedElsewhere.stream().noneMatch(name::startsWith);
-        }).forEach(f -> tests.add(Arguments.of(f, true, false)));
+        }).forEach(f -> tests.add(Arguments.of(f, ModelExpectation.CORRECT, false)));
         return tests;
     }
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void translateToDom(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void translateToDom(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
-        Assumptions.assumeTrue(isValid);
 
         Parser.ParserResult parsed = new Parser().parse(fileName);
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
@@ -73,6 +73,9 @@ public class TypeOtherTest extends ReportedTest {
             emit(ThrowableWrapper.of(error), "Error");
         }
 
+        // TODO: check that validation rejects the model once it is implemented.
+        Assumptions.assumeTrue(expectation == ModelExpectation.CORRECT,
+                "Semantic validation is not implemented yet");
         assertNull(error, "DOM translation threw an exception");
     }
 }

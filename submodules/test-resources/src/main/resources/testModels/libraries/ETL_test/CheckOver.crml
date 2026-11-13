@@ -12,7 +12,7 @@ model CheckOver is {
 	
 	// Check
 	Operator [ Boolean ] 'check' Boolean phi 'over' Periods P 
-		= and ('evaluate' phi 'over' P);
+		= and ('evaluate' phi 'over' P.element);
 		
 	// Example of function call
 	Boolean phi1 is external;

@@ -17,7 +17,7 @@ model CoolingSystem is {
     Pump pump2;
     Pump pump3;
 
-    // This should not parse?
+    // A class constructor takes named attributes: new CoolingSystemClass (pumps is { ... })
     CoolingSystemClass coolingSystem is new CoolingSystemClass { pump1, pump2, pump3 };
 
 };

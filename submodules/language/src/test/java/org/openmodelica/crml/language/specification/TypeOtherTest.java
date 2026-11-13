@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 import org.junit.jupiter.api.Assumptions;
 
@@ -30,20 +31,20 @@ public class TypeOtherTest extends ReportedTest {
             String name = f.getFileName().toString();
             return testedElsewhere.stream().noneMatch(name::startsWith);
         }).forEach(f -> {
-            tests.add(Arguments.of(f, true, false));
+            tests.add(Arguments.of(f, ModelExpectation.CORRECT, false));
         });
         return tests;
     }
 
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void simulateTestFile(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled);
         Parser.ParserResult parsed = new Parser().parse(fileName);
 
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
-        assertEquals(isValid, !parsed.syntax().hasErrors());
+        assertEquals(expectation.parses(), !parsed.syntax().hasErrors());
     }
 }

@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.util.SpecsRoot;
+import org.openmodelica.crml.testutil.ModelExpectation;
 import org.openmodelica.crml.testutil.ReportedTest;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +28,7 @@ public class TypeTypeTest extends ReportedTest {
     
     @ParameterizedTest
     @MethodSource("fileNameSource")
-    void simulateTestFile(final Path fileName, final Boolean isValid, final Boolean isDisabled) throws IOException {
+    void simulateTestFile(final Path fileName, final ModelExpectation expectation, final Boolean isDisabled) throws IOException {
         emit(fileName, "CRML model");
         Assumptions.assumeFalse(isDisabled); 
 
@@ -35,6 +36,6 @@ public class TypeTypeTest extends ReportedTest {
         
         emit(CRMLSyntaxResultsWrapper.of(parsed.syntax()), "Syntax Errors");
         emit(parsed.toPrettyTree(), "AST");
-        assertEquals(isValid, !parsed.syntax().hasErrors());
+        assertEquals(expectation.parses(), !parsed.syntax().hasErrors());
     }
 }

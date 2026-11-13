@@ -330,11 +330,16 @@ There are two parallel suites with the same 14 class names (`TypeBoolean`, `Type
 
 | Suite | Checks |
 |---|---|
-| `org.openmodelica.crml.language.specification.*` | Parsing only: a model is accepted exactly when it is valid. |
-| `org.openmodelica.crml.language.dom.specification.*` | Parse, build and link without exceptions. Run with `make test-dom`. |
+| `org.openmodelica.crml.language.specification.*` | Parsing only: a model is accepted exactly when it has no syntax error. |
+| `org.openmodelica.crml.language.dom.specification.*` | Parse, build and link without exceptions. Models with a semantic error are skipped until validation is implemented. Run with `make test-dom`. |
 
 Test data comes from two places:
-- `src/test/resources/specs/<category>/*.correct.crml` and `*.faulty.crml`. A `.disabled` suffix skips a file.
+- `src/test/resources/specs/<category>/`, where the file name says what is expected (`ModelExpectation` in `:util-test`):
+  - `*.correct.crml` (or no marker): parses and is valid.
+  - `*.syntax-error.crml`: rejected by the parser. The DOM tests leave these out.
+  - `*.semantic-error.crml`: parses, but validation on the DOM must reject it.
+
+  A `.disabled` suffix skips a file.
 - The shared `testModels/spec-doc-examples/` corpus in `:test-resources`.
 
 `org.openmodelica.crml.language.dom.DebugModelTest` reads `src/test/resources/debug/debug.crml` and prints every stage of the pipeline. It is a convenient scratch harness.
@@ -351,7 +356,7 @@ flowchart TD
     E --> F{"Introduces name<br/>references?"}
     F -- yes --> G["Update ScopeResolver /<br/>ScopeResolutionOptions"]
     F -- no --> H
-    G --> H["Add .correct.crml / .faulty.crml<br/>under src/test/resources/specs/category/"]
+    G --> H["Add .correct.crml / .syntax-error.crml /<br/>.semantic-error.crml<br/>under src/test/resources/specs/category/"]
     H --> I["make test-dom<br/>and open build/test_report.html"]
 ```
 

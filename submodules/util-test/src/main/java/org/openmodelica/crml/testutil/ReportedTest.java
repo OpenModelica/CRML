@@ -30,6 +30,10 @@ public class ReportedTest {
 		context.put(key, message);
 	}
 	
+	/**
+	 * The models in {@code source} as {@code (Path, ModelExpectation, Boolean isDisabled)}
+	 * arguments; see {@link ModelExpectation} for the file name markers.
+	 */
 	public static List<Arguments> fileNameSourceHelper2(Path source) {
 		try (Stream<Path> list = Files.list(source)) {
 			return list
@@ -37,12 +41,9 @@ public class ReportedTest {
 				.filter(p -> p.toString().endsWith(".crml") || p.toString().endsWith(".crml.disabled"))
 				.sorted(new NaturalCompare.PathCompare())
 				.map(p -> {
-					String name = p.getFileName().toString().toLowerCase();
-
-					boolean isFaulty = name.contains(".faulty");
-					boolean isDisabled = name.contains(".disabled");
-
-					return Arguments.of(p, !isFaulty, isDisabled);
+					String name = p.getFileName().toString();
+					boolean isDisabled = name.toLowerCase().endsWith(".disabled");
+					return Arguments.of(p, ModelExpectation.fromFileName(name), isDisabled);
 				})
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
@@ -52,13 +53,12 @@ public class ReportedTest {
 	}
 
 	/**
-	 * Same as {@link #fileNameSourceHelper2(Path)}, but faulty models are dropped
-	 * entirely instead of being included as skipped test cases. Intended for DOM
-	 * tests, which only care about models that are expected to translate cleanly.
+	 * Same as {@link #fileNameSourceHelper2(Path)}, but models with a syntax
+	 * error are dropped entirely, as they never reach the DOM.
 	 */
 	public static List<Arguments> fileNameSourceHelperDom(Path source) {
 		return fileNameSourceHelper2(source).stream()
-			.filter(args -> (Boolean) args.get()[1])
+			.filter(args -> ((ModelExpectation) args.get()[1]).parses())
 			.collect(Collectors.toList());
 	}
 }

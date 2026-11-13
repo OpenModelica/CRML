@@ -134,7 +134,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     }
 
     private void processTestNode(ExtentTest testKlass, TestIdentifier test) {
-        if (test.getDisplayName().equals("simulateTestFile(Path, Boolean, Boolean)"))
+        if (test.getDisplayName().startsWith("simulateTestFile("))
             return;
 
         final TestExecutionResult testResult = RESULTS.get(test);
@@ -201,7 +201,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
     private void processNode(ExtentTest testKlass, String displayName,
             TestExecutionResult.Status status, Throwable throwable) {
-        if (displayName.equals("simulateTestFile(Path, Boolean, Boolean)"))
+        if (displayName.startsWith("simulateTestFile("))
             return;
 
         String name = "";
