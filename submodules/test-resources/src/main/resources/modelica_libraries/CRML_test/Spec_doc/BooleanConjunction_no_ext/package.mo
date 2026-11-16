@@ -1,3 +1,0 @@
-within CRML_test.Spec_doc;
-package BooleanConjunction_no_ext
-end BooleanConjunction_no_ext;
