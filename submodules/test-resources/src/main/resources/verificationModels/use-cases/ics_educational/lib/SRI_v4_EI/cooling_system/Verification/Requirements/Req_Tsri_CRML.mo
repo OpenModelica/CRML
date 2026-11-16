@@ -22,19 +22,19 @@ model Req_Tsri_CRML
     Placement(transformation(extent = {{-18, 46}, {2, 66}})));
   CRML.TimeLocators.Continuous.FromFor fromFor
     annotation (Placement(transformation(extent={{20,-30},{40,-10}})));
-  CRML.Blocks.Logical4.Not4 not4_1
+  CRML.Blocks.Logical4.bNot4 not4_1
     annotation (Placement(transformation(extent={{-14,-30},{6,-10}})));
   Modelica.Blocks.Sources.Constant seconds(k=60)
     annotation (Placement(transformation(extent={{-72,-48},{-52,-28}})));
   CRML.Requirements.CheckAtEnd checkAtEnd
     annotation (Placement(transformation(extent={{20,-66},{40,-46}})));
-  CRML.Blocks.Logical4.Not4 not4_2
+  CRML.Blocks.Logical4.bNot4 not4_2
     annotation (Placement(transformation(extent={{-12,-66},{8,-46}})));
   CRML.ETL.Connectors.Boolean4Output R2_T annotation (Placement(
         transformation(extent={{100,8},{120,28}}), iconTransformation(origin = {0, 54}, extent = {{100, -54}, {120, -34}})));
   outer CRML.TimeLocators.Continuous.Master master annotation(
     Placement(transformation(origin = {70, 76}, extent = {{-10, -10}, {10, 10}})));
-  CRML.Blocks.Logical4.And4 and4 annotation(
+  CRML.Blocks.Logical4.bAnd4 and4 annotation(
     Placement(transformation(origin = {80, -34}, extent = {{-10, -10}, {10, 10}})));
   CRML.ETL.Connectors.Boolean4Output R_T annotation(
     Placement(transformation(origin = {0, -52}, extent = {{100, 8}, {120, 28}}), iconTransformation(origin = {0, -12}, extent = {{100, -54}, {120, -34}})));

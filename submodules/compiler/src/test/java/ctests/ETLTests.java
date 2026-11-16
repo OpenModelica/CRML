@@ -52,6 +52,10 @@ public class ETLTests extends ReportedTest {
 
         emit(FilesWrapper.of(ret.files), "files");
         emit(ret.msg, "OMC message");
+        if (ret.comparedVars() != null) {
+            emit(String.join(", ", ret.comparedVars()), "Compared variables");
+            emit(String.join(", ", ret.diffFailedVars()), "Differing variables");
+        }
         
         //files = ret.files;
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))

@@ -17,7 +17,7 @@ public
     annotation (Placement(transformation(extent={{100,40},{120,60}})));
   CRML.Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4_1
     annotation (Placement(transformation(extent={{-20,46},{-12,54}})));
-  CRML.Blocks.Logical4.And4 and4_1
+  CRML.Blocks.Logical4.bAnd4 and4_1
     annotation (Placement(transformation(extent={{0,32},{20,52}})));
   CRML.Blocks.Logical4.Boolean4Constant boolean4Constant3(K=CRML.ETL.Types.Boolean4.undecided)
     annotation (Placement(transformation(extent={{-34,20},{-14,40}})));

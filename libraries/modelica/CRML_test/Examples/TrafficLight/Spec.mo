@@ -31,9 +31,9 @@ model Spec
     Placement(transformation(extent = {{-10, -82}, {14, -58}})));
   CRML.Blocks.Logical4.ShowBoolean4 show_req3 annotation(
     Placement(transformation(origin = {-2, 14}, extent = {{140, -2}, {162, 22}})));
-  CRML.Blocks.Logical4.And4 and4_1 annotation(
+  CRML.Blocks.Logical4.bAnd4 and4_1 annotation(
     Placement(transformation(extent = {{20, -58}, {40, -38}})));
-  CRML.Blocks.Logical4.And4 and4_2 annotation(
+  CRML.Blocks.Logical4.bAnd4 and4_2 annotation(
     Placement(transformation(extent = {{112, -50}, {132, -30}})));
   CRML.Blocks.Logical4.ShowBoolean4 show_req annotation(
     Placement(transformation(extent = {{138, -52}, {160, -28}})));

@@ -13,7 +13,7 @@ public
   CRML.ETL.TimeLocators.Attributes.PeriodEnd
                                           periodEnd
     annotation (Placement(transformation(extent={{-4,-12},{4,-4}})));
-  CRML.Blocks.Logical4.Or4 or4_n
+  CRML.Blocks.Logical4.bOr4 or4_n
     annotation (Placement(transformation(extent={{40,-10},{60,10}})));
   CRML.Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4
     annotation (Placement(transformation(extent={{20,-12},{28,-4}})));
