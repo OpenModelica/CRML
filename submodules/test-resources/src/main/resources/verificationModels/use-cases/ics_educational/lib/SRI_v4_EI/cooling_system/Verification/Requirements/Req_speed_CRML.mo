@@ -13,13 +13,13 @@ model Req_speed_CRML
     annotation (Placement(transformation(extent={{-32,12},{-24,20}})));
   CRML.Requirements.CheckCountLowerEqual checkCountLowerEqual(threshold = 2)
     annotation (Placement(transformation(origin = {2, 0}, extent = {{20, -70}, {40, -50}})));
-  CRML.Blocks.Logical4.And4 and4_1
+  CRML.Blocks.Logical4.bAnd4 and4_1
     annotation (Placement(transformation(extent={{62,-52},{82,-32}})));
   CRML.ETL.Connectors.Boolean4Output R_v annotation (Placement(
         transformation(origin = {0, -42}, extent = {{100, -10}, {120, 10}}), iconTransformation(origin = {0, -54}, extent = {{100, -10}, {120, 10}})));
   Modelica.Blocks.Sources.Constant heure(k=3600)
     annotation (Placement(transformation(extent={{-60,-28},{-40,-8}})));
-  CRML.Blocks.Logical4.Not4 not4_1
+  CRML.Blocks.Logical4.bNot4 not4_1
     annotation (Placement(transformation(extent={{-10,6},{10,26}})));
   CRML.ETL.Connectors.Boolean4Output R2_v annotation(
     Placement(transformation(origin = {0, 4}, extent = {{100, -10}, {120, 10}}), iconTransformation(origin = {0, 32}, extent = {{100, -10}, {120, 10}})));

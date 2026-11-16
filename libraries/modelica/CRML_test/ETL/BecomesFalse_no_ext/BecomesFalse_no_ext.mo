@@ -23,9 +23,9 @@ model BecomesFalse_no_ext
     annotation (Placement(transformation(extent={{100,40},{120,60}})));
   CRML.ETL.Connectors.ClockOutput c2
     annotation (Placement(transformation(extent={{100,0},{120,20}})));
-  CRML.Blocks.Logical4.Not4 not4_1
+  CRML.Blocks.Logical4.bNot4 not4_1
     annotation (Placement(transformation(extent={{-30,40},{-10,60}})));
-  CRML.Blocks.Logical4.Not4 not4_2
+  CRML.Blocks.Logical4.bNot4 not4_2
     annotation (Placement(transformation(extent={{-30,0},{-10,20}})));
 equation
   connect(clockEvent1.u, event4ToEvent.y)

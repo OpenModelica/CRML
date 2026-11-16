@@ -35,7 +35,29 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.junit.platform:junit-platform-reporting:1.10.1") 
+    testImplementation("org.junit.platform:junit-platform-reporting:1.10.1")
+}
+
+/**
+ * Packages the CRMLtoModelica library (libraries/modelica/CRMLtoModelica.mo)
+ * as the resource modelica_libraries/CRMLtoModelica.mo. The compiler extracts
+ * it next to the translated models, which need it to be loaded by omc.
+ */
+val packageCRMLtoModelicaLibrary by tasks.registering(Sync::class) {
+    description = "Packages the CRMLtoModelica Modelica library into the compiler resources."
+    from(rootProject.layout.projectDirectory.file("libraries/modelica/CRMLtoModelica.mo")) {
+        into("modelica_libraries")
+    }
+    into(layout.buildDirectory.dir("generated/crml-to-modelica-library"))
+}
+
+sourceSets {
+    main {
+        resources {
+            // The packaged CRMLtoModelica library (adds a dependency on packageCRMLtoModelicaLibrary)
+            srcDir(packageCRMLtoModelicaLibrary)
+        }
+    }
 }
 
 /**

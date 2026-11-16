@@ -9,7 +9,7 @@ partial model BecomesFalse
     annotation (Placement(transformation(extent={{-6,-6},{6,6}})));
   CRML.Blocks.Events.Event4ToEvent event4ToEvent(x(start=true))
     annotation (Placement(transformation(extent={{-54,-4},{-46,4}})));
-  CRML.Blocks.Logical4.Not4 not4_1
+  CRML.Blocks.Logical4.bNot4 not4_1
     annotation (Placement(transformation(extent={{-88,-10},{-68,10}})));
   CRML.Blocks.Events.ShowEvent showEvent_c_b1_becomes_false
     annotation (Placement(transformation(extent={{60,-56},{68,-48}})));

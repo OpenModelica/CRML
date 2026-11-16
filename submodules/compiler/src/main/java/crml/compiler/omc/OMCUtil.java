@@ -7,13 +7,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.thymeleaf.TemplateEngine;
@@ -24,6 +26,7 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import crml.compiler.Utilities;
 import crml.util.PathUtil;
 import crml.util.PathUtil.Option;
+import crml.util.SafeResource;
 
 /**
  * Wrapper for OpenModelica compiler calls
@@ -65,52 +68,98 @@ public class OMCUtil {
     return TEMPLATE_ENGINE.process("compare_simulation_results", ctx);
   }
 
-  public static Path getCRMLToModelicaFile() {
+  /**
+   * Classpath resource of the CRMLtoModelica library (single file),
+   * packaged by the packageCRMLtoModelicaLibrary task of the compiler project
+   */
+  static final String CRML_TO_MODELICA_RESOURCE = "modelica_libraries/CRMLtoModelica.mo";
+  /**
+   * Classpath resource folder of the CRML library (Modelica package folder),
+   * packaged by the packageCRMLLibrary task of the test-resources project
+   */
+  static final String CRML_LIBRARY_RESOURCE = "modelica_libraries/CRML";
+
+  /** Library folders already emitted by this JVM; the library is extracted once per folder */
+  private static final Set<Path> EMITTED_CRML_LIBRARIES = new HashSet<>();
+
+  /**
+   * Locates a classpath resource (also inside a jar, see {@link SafeResource})
+   */
+  private static Path resource(String name) throws IOException {
     try {
-      return Paths.get(Thread.currentThread().getContextClassLoader().getResource("modelica_libraries/CRMLtoModelica.mo").toURI());
-    } catch (URISyntaxException e) {
-      // File is expected to be packages with Gradle.
-      throw new RuntimeException(e);
+      return SafeResource.get(name);
+    } catch (IllegalArgumentException e) {
+      throw new IOException("Could not find resource on the classpath: " + name, e);
     }
-//    String startedFrom = System.getProperty("user.dir");
-//    return new File(startedFrom + java.io.File.separator + CompileSettings.CRMLtoModelicaLibrary);
   }
 
-  public static Path getCRMLLibrary() {
-    try {
-      return Paths.get(Thread.currentThread().getContextClassLoader().getResource("modelica_libraries/CRML.mo").toURI());
-    } catch (URISyntaxException e) {
-      // File is expected to be packages with Gradle.
-      throw new RuntimeException(e);
+  /** Location of the emitted CRMLtoModelica library for a given output folder */
+  public static Path getCRMLToModelicaFile(Path out_dir) {
+    return out_dir.resolve("../crml2modelica.mo").normalize();
+  }
+
+  /** Location of the emitted CRML library (its package.mo) for a given output folder */
+  public static Path getCRMLLibrary(Path out_dir) {
+    return out_dir.resolve("../CRML/package.mo").normalize();
+  }
+
+  /**
+   * Extracts the CRMLtoModelica library from the classpath
+   * @return the emitted file
+   */
+  public static Path emitCRMLToModelicaFile(Path out_dir) throws IOException {
+    Path target = getCRMLToModelicaFile(out_dir);
+    Files.createDirectories(target.getParent());
+    Files.copy(resource(CRML_TO_MODELICA_RESOURCE), target, StandardCopyOption.REPLACE_EXISTING);
+    return target;
+  }
+
+  /**
+   * Extracts the CRML library package from the classpath
+   * (provided by the test-resources project)
+   * @return the package.mo of the emitted library, to be loaded by omc
+   */
+  public static Path emitCRMLLibrary(Path out_dir) throws IOException {
+    Path packageMo = getCRMLLibrary(out_dir);
+    Path libDir = packageMo.getParent();
+    synchronized (EMITTED_CRML_LIBRARIES) {
+      if (EMITTED_CRML_LIBRARIES.contains(libDir) && Files.exists(packageMo))
+        return packageMo;
+
+      Path source = resource(CRML_LIBRARY_RESOURCE);
+      List<Path> files;
+      try (Stream<Path> walk = Files.walk(source)) {
+        files = walk.filter(Files::isRegularFile).collect(Collectors.toList());
+      }
+      for (Path f : files) {
+        // relative path as String, since source may be on a different file system (jar)
+        Path target = libDir.resolve(source.relativize(f).toString());
+        Files.createDirectories(target.getParent());
+        Files.copy(f, target, StandardCopyOption.REPLACE_EXISTING);
+      }
+
+      if (!Files.exists(packageMo))
+        throw new IOException("The packaged CRML library has no package.mo: " + packageMo);
+      EMITTED_CRML_LIBRARIES.add(libDir);
+      return packageMo;
     }
-    //String startedFrom = System.getProperty("user.dir");
-    //return new File(startedFrom + java.io.File.separator + CompileSettings.CRMLLibrary);
   }
 
   public static String generateSimulationScript(String stripped_file_name, Path verifModelFolder, Path out_dir) throws IOException {
-    Path crml2Modelica = out_dir.resolve("../crml2modelica.mo");
-    Files.copy(getCRMLToModelicaFile(), crml2Modelica, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
-    Path crmlLib = out_dir.resolve("../CRML.mo");
-    Files.copy(getCRMLLibrary(), crmlLib, StandardCopyOption.REPLACE_EXISTING); //Export file from jar to host
-
-    //File crml2Modelica = getCRMLToModelicaFile().toFile();
-    //File crmlLib = getCRMLLibrary().toFile();
-
-    
-    if (!Files.exists(crml2Modelica)) // Export failed, this check is legacy only
-      throw new IOException("Could not find: " + crml2Modelica.toAbsolutePath().toString());
-
-    if (!Files.exists(crmlLib)) // Export failed, this check is legacy only
-      throw new IOException("Could not find: " + crmlLib.toAbsolutePath().toString());
+    Path crml2Modelica = emitCRMLToModelicaFile(out_dir); //Export file from jar to host
 
     Path verif_model = verifModelFolder.resolve(stripped_file_name);
     boolean verifModelExists = Files.exists(verif_model);
+
+    // The CRML library is only needed (and loaded) to simulate the verification model
+    Path crmlLib = verifModelExists ? emitCRMLLibrary(out_dir) : getCRMLLibrary(out_dir);
+
     if (verifModelExists) {
       for (Path f : Files.list(verif_model).collect(java.util.stream.Collectors.toList()))
         Files.copy(f, out_dir.resolve(f.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    
+
     Context ctx = new Context();
     ctx.setVariable("crml2ModelicaPath", PathUtil.toString(crml2Modelica, Option.UNIX, Option.ABSOLUTE)); //Was: Utilities.toUnixPath(crml2Modelica.getAbsolutePath())
     ctx.setVariable("stripped_file_name", stripped_file_name);
@@ -165,7 +214,7 @@ public class OMCUtil {
     File mos_file = new File(script_file_name);
     File mo_file = new File (filePrefix + ".mo");
    
-    OMCFilesLog msg = new OMCFilesLog(mos_file.toPath(), mo_file.toPath(), getCRMLToModelicaFile(), getCRMLLibrary());
+    OMCFilesLog msg = new OMCFilesLog(mos_file.toPath(), mo_file.toPath(), getCRMLToModelicaFile(out_dir), getCRMLLibrary(out_dir));
 
  
     String omcOutput = checkInputStream(inputStream);
