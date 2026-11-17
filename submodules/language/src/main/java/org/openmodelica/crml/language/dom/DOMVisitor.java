@@ -40,8 +40,8 @@ import org.openmodelica.crml.model.metamodel.Sequence;
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
     private final ScopeResolver resolver = new ScopeResolver();
     private EObject builtRoot;
-    private final List<Function0<Boolean>> crossrefTasks = new ArrayList<>();
-    private final List<Function0<Boolean>> modificationTasks = new ArrayList<>();
+    private final List<LinkerTask> crossrefTasks = new ArrayList<>();
+    private final List<ModificationTask> modificationTasks = new ArrayList<>();
 
     private final RootBuilder root = new RootBuilder(this);
     private final ClassBuilder cls = new ClassBuilder(this);
@@ -79,11 +79,61 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     }
 
     public void linker(){
-        while(crossrefTasks.removeIf(Function0<Boolean>::apply));
-
-        if(!crossrefTasks.isEmpty()){
+        if(!link().isEmpty()){
             throw CRMLLanguageException.linkerFailure(crossrefTasks);
         }
+    }
+
+    /**
+     * Runs the queued link tasks until no more of them resolves, like
+     * {@link #linker()}, but returns what is left instead of throwing.
+     * The unresolved tasks stay queued, so a later call retries them.
+     *
+     * @return the references that could not be resolved; empty if all were
+     */
+    public List<UnresolvedLink> link(){
+        while(crossrefTasks.removeIf(LinkerTask::apply));
+
+        List<UnresolvedLink> unresolved = new ArrayList<>();
+        for (LinkerTask task : crossrefTasks) {
+            unresolved.add(task.toUnresolvedLink());
+        }
+        return unresolved;
+    }
+
+    /** The root built by {@link #build}, or null if none was built yet. */
+    public EObject root(){
+        return builtRoot;
+    }
+
+    /**
+     * The operator-call parser for the built root: the operators of the root
+     * {@code Model} or {@code Library}, in declaration order.
+     *
+     * @return the parser, or null if the root is neither a Model nor a Library
+     */
+    public MixfixParser operatorParser(){
+        if (builtRoot instanceof Model) {
+            return new MixfixParser((Model) builtRoot, this);
+        } else if (builtRoot instanceof Library) {
+            return new MixfixParser((Library) builtRoot, this);
+        }
+        return null;
+    }
+
+    /**
+     * Replaces the operator calls of the built root with {@code parser} and
+     * applies the replacements. Unlike {@link #resolveOperatorCalls()}, it does
+     * not link the lifted values afterwards.
+     *
+     * @return the applied replacements, in the order they were applied
+     */
+    public List<DomModification> resolveOperatorCalls(MixfixParser parser){
+        if (parser == null || builtRoot == null) {
+            return new ArrayList<>();
+        }
+        parser.perform(builtRoot);
+        return modify();
     }
     
     /**
@@ -100,14 +150,11 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
      * Liftable it is a direct operand of (see {@link LiftBuilder#link}).
      */
     public void resolveOperatorCalls(){
-        if (builtRoot instanceof Model) {
-            new MixfixParser((Model) builtRoot, this).perform(builtRoot);
-        } else if (builtRoot instanceof Library) {
-            new MixfixParser((Library) builtRoot, this).perform(builtRoot);
-        } else {
+        MixfixParser parser = operatorParser();
+        if (parser == null) {
             return;
         }
-        modify();
+        resolveOperatorCalls(parser);
         // Only now are the ComputedValue calls in the tree, so a ScatteredValue
         // can find the Liftable it is an operand of.
         LiftBuilder.linkAll(builtRoot);
@@ -120,12 +167,20 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         }
         modificationTasks.add(new ModificationTask(host, reference, value));
     }
-    private void modify(){
-        while(modificationTasks.removeIf(Function0<Boolean>::apply));
+    private List<DomModification> modify(){
+        List<DomModification> applied = new ArrayList<>();
+        while(modificationTasks.removeIf(task -> {
+            if (!task.apply()) {
+                return false;
+            }
+            applied.add(task.applied());
+            return true;
+        }));
 
         if(!modificationTasks.isEmpty()){
             throw CRMLLanguageException.domFailure(modificationTasks);
         }
+        return applied;
     }
 
     private class LinkerTask implements Function0<Boolean>{
@@ -150,6 +205,10 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
             return resolver.link(source, feature, id, options);
         }
 
+        private UnresolvedLink toUnresolvedLink() {
+            return new UnresolvedLink(source, feature, id, options);
+        }
+
         @Override
         public String toString() {
             return "Linker task: '"+ feature.getName() + "' to '" + id + "' in " + source.toString();
@@ -160,6 +219,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         private final EObject host;
         private final EStructuralFeature feature;
         private final EObject value;
+        private Object oldValue;
 
         private ModificationTask(EObject host, EStructuralFeature feature, EObject value){
             this.host = host;
@@ -169,8 +229,13 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
 
         @Override
         public Boolean apply() {
+            oldValue = host.eGet(feature);
             host.eSet(feature, value);
             return true;
+        }
+
+        private DomModification applied() {
+            return new DomModification(host, feature, oldValue, value);
         }
 
         @Override

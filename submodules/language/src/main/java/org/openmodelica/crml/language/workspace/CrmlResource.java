@@ -1,0 +1,132 @@
+package org.openmodelica.crml.language.workspace;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import org.antlr.v4.runtime.CharStreams;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
+import org.openmodelica.crml.language.dom.DOMVisitor;
+import org.openmodelica.crml.language.dom.util.BuildResult;
+import org.openmodelica.crml.language.util.ErrorListener.CRMLSyntaxError;
+import org.openmodelica.crml.language.util.Parser;
+
+/**
+ * One CRML file: its parse result, its header and the root of its DOM
+ * (a {@code Model} or {@code Library}).
+ *
+ * <p>Loading parses and builds only. The root is not linked: references into
+ * other resources cannot be resolved before every file of the run is loaded.
+ * The {@link CrmlWorkspace} links it later, see {@link #getState()}.
+ *
+ * <p>A file with syntax errors still gets a resource: its errors are in
+ * {@link #getErrors()}, its {@link #getHeader() header} may be readable, but
+ * it has no contents ("load as much as possible").
+ */
+public class CrmlResource extends ResourceImpl {
+
+    /** How far this resource has got in the pipeline. */
+    public enum State {
+        /** Not loaded yet. */
+        NEW,
+        /** Parsed with syntax errors: no DOM. */
+        SYNTAX_ERRORS,
+        /** Parsed, but building the DOM failed: no DOM. */
+        BUILD_FAILED,
+        /** DOM built, not linked yet. */
+        BUILT,
+        /** Linked, operator calls resolved, lifted. Done. */
+        RESOLVED
+    }
+
+    private State state = State.NEW;
+    private Parser.ParserResult parsed;
+    private RootHeader header;
+
+    /**
+     * The visitor that built the DOM. It holds the queued link tasks until
+     * the workspace links this resource; dropped afterwards.
+     */
+    private DOMVisitor visitor;
+
+    public CrmlResource(URI uri) {
+        super(uri);
+    }
+
+    @Override
+    protected void doLoad(InputStream inputStream, Map<?, ?> options) throws IOException {
+        parsed = new Parser().parse(CharStreams.fromStream(inputStream, StandardCharsets.UTF_8));
+        header = RootHeader.read(parsed.ast());
+
+        // TODO: revise that the parser retrun CrmlDiagnostic entries by default, and not syntax errors.
+        if (parsed.syntax().hasErrors()) {
+            for (CRMLSyntaxError error : parsed.syntax().errors()) {
+                getErrors().add(new CrmlDiagnostic(CrmlDiagnostic.Kind.SYNTAX, error.message(),
+                    location(), error.line(), error.charPosition()));
+            }
+            state = State.SYNTAX_ERRORS;
+            return;
+        }
+
+        visitor = new DOMVisitor();
+        EObject root = null;
+        try {
+            BuildResult built = visitor.build(parsed.ast());
+            if (built instanceof BuildResult.SingleBuildResult) {
+                root = ((BuildResult.SingleBuildResult<?>) built).result();
+            }
+        } catch (RuntimeException e) {
+            //TODO: same as before with syntax errors
+            getErrors().add(CrmlDiagnostic.of(CrmlDiagnostic.Kind.DOM_BUILD, e, location()));
+        }
+        if (root == null) {
+            visitor = null;
+            state = State.BUILD_FAILED;
+            return;
+        }
+        getContents().add(root);
+        state = State.BUILT;
+    }
+
+    @Override
+    protected void doUnload() {
+        super.doUnload();//Note: It changes some objects to Proxies, so that might be an issue with reloading content.
+        state = State.NEW;
+        parsed = null;
+        header = null;
+        visitor = null;
+    }
+
+    /** The root of the DOM, or null if the file did not get that far. */
+    public EObject getRoot() {
+        return getContents().isEmpty() ? null : getContents().get(0);
+    }
+
+    public State getState() { return state; }
+
+    /** The parse result, or null before loading. */
+    public Parser.ParserResult getParsed() { return parsed; }
+
+    /** What the file declares, or null if not even the header could be read. */
+    public RootHeader getHeader() { return header; }
+
+    /**
+     * The visitor holding the pending link tasks. Only for the workspace;
+     * null once resolved or if building failed.
+     */
+    DOMVisitor getVisitor() { return visitor; }
+
+    /** Called by the workspace once linking and operator-call resolution are done. */
+    void markResolved() {
+        state = State.RESOLVED;
+        visitor = null;
+    }
+
+    /** The location diagnostics of this resource report: its URI. */
+    String location() {
+        return getURI() == null ? null : getURI().toString();
+    }
+}

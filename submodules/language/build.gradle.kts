@@ -1,5 +1,5 @@
 plugins {
-    id("java")
+    id("java-library")
     id("antlr")
 }
 
@@ -14,7 +14,9 @@ val antlr4Version: String by rootProject.extra
 dependencies {
     // Model submodule – language depends on the EMF model definition.
     // EMF (EObject, EList, etc.) reaches this module transitively via model's api deps.
-    implementation(project(":model"))
+    // Exported (api): the public API of this module (CrmlWorkspace, CrmlResource,
+    // DOMVisitor, ...) hands out metamodel types, so consumers need them too.
+    api(project(":model"))
 
     // ── ANTLR4 ───────────────────────────────────────────────────────────────
     // The full tool (with ST4, ICU4J, antlr 3 and treelayout) is needed only
