@@ -2,51 +2,33 @@ package org.openmodelica.crml.language.dom.specification;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
-import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.language.dom.DOMVisitor;
-import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.pretty.PrettyPrint;
-import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.language.util.DomRun;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.InspectingWorkspace.Stage;
 
 public class VariableDeclarationTest {
 
-    private final Parser parser = new Parser();
-
-    private Parser.ParserResult parse(String content) {
-        return parser.parse("model Foo is {\n" + content + "\n};");
+    private static DomRun link(String content) {
+        return DomRun.of("model Foo is {\n" + content + "\n};", Stage.LINK);
     }
 
     @Test
     void testCorrect_multiVariableDeclaration() {
-        Parser.ParserResult parsed = parse("Integer x1, x2;");
-        assertFalse(parsed.syntax().hasErrors(), "Parse should succeed");
+        DomRun run = link("Integer x1, x2;");
+        assertFalse(run.parsed().syntax().hasErrors(), "Parse should succeed");
 
-        Throwable error = null;
-        EObject dom = null;
-        try {
-            DOMVisitor visitor = new DOMVisitor();
-            BuildResult result = visitor.build(parsed.ast());
-            if (result instanceof BuildResult.SingleBuildResult) {
-                dom = ((BuildResult.SingleBuildResult<?>) result).result();
+        if (run.dom() != null) {
+            System.out.println("DOM:\n" + PrettyPrint.prettyPrint(run.dom()));
+        }
+        run.errors().forEach(error -> {
+            System.out.println("Error: " + error);
+            if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getCause() != null) {
+                ((CrmlDiagnostic) error).getCause().printStackTrace(System.out);
             }
-            visitor.linker();
-        } catch (Throwable e) {
-            error = e;
-        }
+        });
 
-        if (dom != null) {
-            System.out.println("DOM:\n" + PrettyPrint.prettyPrint(dom));
-        }
-        if (error != null) {
-            StringWriter sw = new StringWriter();
-            error.printStackTrace(new PrintWriter(sw));
-            System.out.println("Error:\n" + sw);
-        }
-
-        assertNull(error, "DOM translation threw an exception");
+        assertTrue(run.errors().isEmpty(), "DOM translation reported errors:" + run.errorText());
     }
 }

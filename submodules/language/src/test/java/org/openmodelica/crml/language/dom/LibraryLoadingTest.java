@@ -13,21 +13,21 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
-import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.util.AstWrapper;
 import org.openmodelica.crml.language.util.CRMLSyntaxResultsWrapper;
 import org.openmodelica.crml.language.util.DOMWrapper;
-import org.openmodelica.crml.language.util.Parser;
-import org.openmodelica.crml.language.util.ThrowableWrapper;
+import org.openmodelica.crml.language.util.DiagnosticsWrapper;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
+import org.openmodelica.crml.language.workspace.CrmlResource;
+import org.openmodelica.crml.language.workspace.CrmlWorkspace;
+import org.openmodelica.crml.language.workspace.RootHeader;
 import org.openmodelica.crml.model.metamodel.CRMLPackage;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
 import org.openmodelica.crml.testutil.CustomHtmlReporter;
@@ -38,12 +38,6 @@ import org.openmodelica.crml.testutil.constraints.ConstraintFile;
 import org.openmodelica.crml.testutil.constraints.ConstraintResult;
 import org.openmodelica.crml.testutil.constraints.ConstraintTable;
 import org.openmodelica.crml.util.NaturalCompare;
-
-import crml.language.grammar.crmlParser.DefinitionContext;
-import crml.language.grammar.crmlParser.DependencyContext;
-import crml.language.grammar.crmlParser.DependencySetContext;
-import crml.language.grammar.crmlParser.IdContext;
-import crml.language.grammar.crmlParser.SingleDependencyContext;
 
 /**
  * Parsing and DOM building of models spread over several files: the cases of
@@ -102,20 +96,12 @@ public class LibraryLoadingTest extends ReportedTest {
         }
     }
 
-    /** What is known about one input file of a case. */
+    /** One input file of a case and the resource it was loaded into. */
     private static final class Input {
         final Path file;
         final String label;
         final ModelExpectation expectation;
-        Parser.ParserResult parsed;
-        /** {@code model}/{@code library}, its name and dependencies; read from the AST. */
-        String kind;
-        String name;
-        final List<String> dependencies = new ArrayList<>();
-        DOMVisitor visitor;
-        EObject root;
-        /** The exception that stopped DOM building, linking or operator-call resolution. */
-        Throwable domError;
+        CrmlResource resource;
 
         Input(Path file) {
             this.file = file;
@@ -123,8 +109,42 @@ public class LibraryLoadingTest extends ReportedTest {
             this.expectation = ModelExpectation.fromFileName(label);
         }
 
+        /** True if the file parsed without syntax errors. */
         boolean parsed() {
-            return parsed != null && !parsed.syntax().hasErrors();
+            return resource != null && resource.getParsed() != null && !resource.getParsed().syntax().hasErrors();
+        }
+
+        /** What the file declares; only for a file that parsed, as the fixture check expects. */
+        RootHeader header() {
+            return parsed() ? resource.getHeader() : null;
+        }
+
+        EObject root() {
+            return resource == null ? null : resource.getRoot();
+        }
+
+        /** The errors other than syntax errors: DOM building, linking, operator calls, lifting. */
+        List<Resource.Diagnostic> domErrors() {
+            List<Resource.Diagnostic> errors = new ArrayList<>();
+            if (resource != null) {
+                for (Resource.Diagnostic error : resource.getErrors()) {
+                    if (!(error instanceof CrmlDiagnostic) || ((CrmlDiagnostic) error).getKind() != Kind.SYNTAX) {
+                        errors.add(error);
+                    }
+                }
+            }
+            return errors;
+        }
+
+        /** The errors of building the DOM. */
+        List<Resource.Diagnostic> buildErrors() {
+            List<Resource.Diagnostic> errors = new ArrayList<>();
+            for (Resource.Diagnostic error : domErrors()) {
+                if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getKind() == Kind.DOM_BUILD) {
+                    errors.add(error);
+                }
+            }
+            return errors;
         }
     }
 
@@ -139,13 +159,14 @@ public class LibraryLoadingTest extends ReportedTest {
         if (inputs.isEmpty()) {
             failures.add("the case has no .crml file");
         }
-        ResourceSet resourceSet = new ResourceSetImpl();
+        CrmlWorkspace workspace = new CrmlWorkspace();
+        ResourceSet resourceSet = workspace.getResourceSet();
         List<ConstraintResult> constraints = null;
 
         try {
             // 1. Grammar, and 2. DOM building: one Resource per file, one ResourceSet.
             for (Input input : inputs) {
-                input.parsed = new Parser().parse(input.file);
+                input.resource = workspace.load(input.file);
                 if (input.parsed() != input.expectation.parses()) {
                     failures.add(input.label + ": expected " + (input.expectation.parses() ? "to parse" : "a syntax error")
                         + ", but it " + (input.parsed() ? "parsed" : "has syntax errors"));
@@ -153,41 +174,28 @@ public class LibraryLoadingTest extends ReportedTest {
                 if (!input.parsed()) {
                     continue;
                 }
-                readHeader(input);
-
-                try {
-                    input.visitor = new DOMVisitor();
-                    BuildResult result = input.visitor.build(input.parsed.ast());
-                    if (result instanceof BuildResult.SingleBuildResult) {
-                        input.root = ((BuildResult.SingleBuildResult<?>) result).result();
-                    }
-                } catch (Throwable e) {
-                    input.domError = e;
-                    failures.add(input.label + ": building the DOM threw " + e);
+                for (Resource.Diagnostic error : input.buildErrors()) {
+                    failures.add(input.label + ": building the DOM failed: " + error);
                 }
-                if (input.root == null) {
+                if (input.root() == null) {
                     failures.add(input.label + ": no DOM root was built");
-                    continue;
                 }
-                Resource resource = new ResourceImpl(URI.createFileURI(input.file.toAbsolutePath().toString()));
-                resourceSet.getResources().add(resource);
-                resource.getContents().add(input.root);
             }
 
             // 3. Every dependency of a correct file is provided by the case.
             Map<String, Input> declared = new LinkedHashMap<>();
             for (Input input : inputs) {
-                if (input.name != null) {
-                    declared.putIfAbsent(input.name, input);
+                if (input.header() != null) {
+                    declared.putIfAbsent(input.header().name(), input);
                 }
             }
             for (Input input : inputs) {
-                if (input.expectation != ModelExpectation.CORRECT) {
+                if (input.expectation != ModelExpectation.CORRECT || input.header() == null) {
                     continue;
                 }
-                for (String dependency : input.dependencies) {
-                    if (!declared.containsKey(dependency)) {
-                        failures.add(input.label + ": depends on '" + dependency
+                for (RootHeader.DependencyName dependency : input.header().dependencies()) {
+                    if (!declared.containsKey(dependency.name())) {
+                        failures.add(input.label + ": depends on '" + dependency.name()
                             + "', which no file of the case declares");
                     }
                 }
@@ -195,17 +203,7 @@ public class LibraryLoadingTest extends ReportedTest {
 
             // Linking and operator-call resolution: reported only (see class comment).
             // Run after every Resource exists, as a cross-resource linker will need.
-            for (Input input : inputs) {
-                if (input.root == null) {
-                    continue;
-                }
-                try {
-                    input.visitor.linker();
-                    input.visitor.resolveOperatorCalls();
-                } catch (Throwable e) {
-                    input.domError = e;
-                }
-            }
+            workspace.resolve();
 
             // 4. The case's own constraints on the linked DOM.
             Path constraintFile = caseDir.resolve(CONSTRAINTS);
@@ -238,37 +236,18 @@ public class LibraryLoadingTest extends ReportedTest {
         }
         for (Input input : inputs) {
             emit(input.file, input.label + ": CRML model");
-            if (input.parsed == null) {
+            if (input.resource == null || input.resource.getParsed() == null) {
                 continue;
             }
-            if (input.parsed.syntax().hasErrors()) {
-                emit(CRMLSyntaxResultsWrapper.of(input.parsed.syntax()), input.label + ": syntax errors");
+            if (input.resource.getParsed().syntax().hasErrors()) {
+                emit(CRMLSyntaxResultsWrapper.of(input.resource.getParsed().syntax()), input.label + ": syntax errors");
             }
-            emit(AstWrapper.of(input.parsed), input.label + ": AST");
-            if (input.root != null) {
-                emit(DOMWrapper.of(input.root), input.label + ": DOM");
+            emit(AstWrapper.of(input.resource.getParsed()), input.label + ": AST");
+            if (input.root() != null) {
+                emit(DOMWrapper.of(input.root()), input.label + ": DOM");
             }
-            if (input.domError != null) {
-                emit(ThrowableWrapper.of(input.domError), input.label + ": DOM errors");
-            }
-        }
-    }
-
-    /** Fills in the kind, name and dependencies of a file that parsed. */
-    private static void readHeader(Input input) {
-        if (!(input.parsed.ast() instanceof DefinitionContext)) {
-            return;
-        }
-        DefinitionContext definition = (DefinitionContext) input.parsed.ast();
-        input.kind = definition.definition_type().getText();
-        input.name = definition.id().getText();
-        for (DependencyContext dependency : definition.dependency()) {
-            if (dependency instanceof SingleDependencyContext) {
-                input.dependencies.add(((SingleDependencyContext) dependency).id().getText());
-            } else if (dependency instanceof DependencySetContext) {
-                for (IdContext id : ((DependencySetContext) dependency).id()) {
-                    input.dependencies.add(id.getText());
-                }
+            if (!input.domErrors().isEmpty()) {
+                emit(DiagnosticsWrapper.of(input.domErrors()), input.label + ": DOM errors");
             }
         }
     }
@@ -283,11 +262,8 @@ public class LibraryLoadingTest extends ReportedTest {
                 text.append("syntax errors, not loaded\n");
                 continue;
             }
-            text.append(input.kind).append(' ').append(input.name);
-            if (!input.dependencies.isEmpty()) {
-                text.append(" <- ").append(String.join(", ", input.dependencies));
-            }
-            text.append(input.root != null && input.root.eResource() != null ? "" : " (no resource)");
+            text.append(input.header());
+            text.append(input.root() != null && input.root().eResource() != null ? "" : " (no DOM)");
             text.append('\n');
         }
         return text.toString();

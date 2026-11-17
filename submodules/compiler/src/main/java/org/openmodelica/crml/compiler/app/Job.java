@@ -13,14 +13,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
 import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
-import org.openmodelica.crml.language.dom.DOMVisitor;
-import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.pretty.PrettyPrint;
-import org.openmodelica.crml.language.util.ErrorListener.CRMLSyntaxError;
 import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlResource;
+import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
 
 /** A file to compile, the file its Modelica is written to, and the compilation itself. */
@@ -109,22 +110,29 @@ final class Job {
      * Runs the whole pipeline on {@link #source} and writes the Modelica to
      * {@link #target}. Problems are printed on {@code err}, prefixed with the
      * source file; the --print-* sections go to {@code out}. A translation
-     * with errors is still written, so it can be inspected, but fails.
+     * with errors is still written, so it can be inspected, but fails. A model
+     * with errors before translation (syntax, building, linking, operator
+     * calls) is not translated.
      */
     Outcome compile(CRMLCompilerConfig config, PrintStream out, PrintStream err) {
         try {
-            Parser.ParserResult parsed = new Parser().parse(source);
-            if (config.printAst() && parsed.ast() != null) {
+            // One workspace per file, for now: files do not see each other.
+            CrmlWorkspace workspace = new CrmlWorkspace();
+            CrmlResource resource = workspace.load(source);
+            Parser.ParserResult parsed = resource.getParsed();
+            if (config.printAst() && parsed != null && parsed.ast() != null) {
                 section(out, "AST", parsed.toPrettyTree());
             }
-            if (parsed.syntax().hasErrors()) {
-                for (CRMLSyntaxError error : parsed.syntax().errors()) {
-                    report(err, error.toString());
-                }
+            if (resource.getState() == CrmlResource.State.SYNTAX_ERRORS) {
+                reportAll(err, resource.getErrors(), config.stacktrace());
                 return Outcome.FAILED;
             }
 
-            EObject root = buildObjectModel(parsed, config.printDom(), out);
+            EObject root = buildObjectModel(workspace, resource, config.printDom(), out);
+            if (!resource.getErrors().isEmpty()) {
+                reportAll(err, resource.getErrors(), config.stacktrace());
+                return Outcome.FAILED;
+            }
 
             if (!(root instanceof Model)) {
                 report(err, "WARNING skipped: "
@@ -159,28 +167,22 @@ final class Job {
     }
 
     /**
-     * Builds the CRML object model, links it and resolves the operator calls.
-     * With {@code --print-dom} the model is printed even when linking fails,
-     * to show what could not be resolved.
+     * Links the object model of {@code resource} and resolves its operator
+     * calls. With {@code --print-dom} the model is printed even when linking
+     * fails, to show what could not be resolved.
      *
      * @return the root of the model, or null if nothing was built
      */
-    private EObject buildObjectModel(Parser.ParserResult parsed, boolean printDom, PrintStream out) {
-        DOMVisitor visitor = new DOMVisitor();
-        EObject root = null;
+    private EObject buildObjectModel(CrmlWorkspace workspace, CrmlResource resource, boolean printDom, PrintStream out) {
         try {
-            BuildResult built = visitor.build(parsed.ast());
-            if (built instanceof BuildResult.SingleBuildResult) {
-                root = ((BuildResult.SingleBuildResult<?>) built).result();
-            }
-            visitor.linker();
-            visitor.resolveOperatorCalls();
+            workspace.resolve();
         } finally {
             if (printDom) {
+                EObject root = resource.getRoot();
                 section(out, "DOM", root != null ? PrettyPrint.prettyPrint(root) : "(no object model was built)");
             }
         }
-        return root;
+        return resource.getRoot();
     }
 
     private void write(String modelica, String within) throws IOException {
@@ -201,5 +203,22 @@ final class Job {
 
     private void report(PrintStream err, String message) {
         err.println(source + ": " + message);
+    }
+
+    /**
+     * Prints the diagnostics of the CRML front end, one per line as
+     * {@code file:line:column: ERROR KIND: message}, and with {@code stacktrace}
+     * the exception behind each one that has one.
+     */
+    private void reportAll(PrintStream err, List<Resource.Diagnostic> diagnostics, boolean stacktrace) {
+        for (Resource.Diagnostic diagnostic : diagnostics) {
+            String kind = diagnostic instanceof CrmlDiagnostic ? ((CrmlDiagnostic) diagnostic).getKind() + ": " : "";
+            err.println(source + ":" + diagnostic.getLine() + ":" + diagnostic.getColumn() + ": ERROR "
+                    + kind + diagnostic.getMessage());
+            Throwable cause = diagnostic instanceof CrmlDiagnostic ? ((CrmlDiagnostic) diagnostic).getCause() : null;
+            if (stacktrace && cause != null) {
+                cause.printStackTrace(err);
+            }
+        }
     }
 }

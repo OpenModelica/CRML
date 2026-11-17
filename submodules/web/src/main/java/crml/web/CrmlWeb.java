@@ -4,9 +4,8 @@ import org.eclipse.emf.ecore.EObject;
 import org.teavm.jso.JSExport;
 
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
-import org.openmodelica.crml.language.dom.DOMVisitor;
-import org.openmodelica.crml.language.dom.util.BuildResult;
-import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.language.workspace.CrmlResource;
+import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
 
 /** Translates CRML text to Modelica in the browser with the omcv2 pipeline. */
@@ -20,16 +19,16 @@ public class CrmlWeb {
   @JSExport
   public static String translate(String crml, String within) {
     try {
-      Parser.ParserResult parsed = new Parser().parse(crml);
-      if (parsed.ast() == null || parsed.syntax().hasErrors()) {
+      CrmlWorkspace workspace = new CrmlWorkspace();
+      CrmlResource resource = workspace.load(crml);
+      if (resource.getState() == CrmlResource.State.SYNTAX_ERRORS) {
         return "ERROR unable to parse";
       }
-      DOMVisitor visitor = new DOMVisitor();
-      BuildResult result = visitor.build(parsed.ast());
-      EObject dom = result instanceof BuildResult.SingleBuildResult
-          ? ((BuildResult.SingleBuildResult<?>) result).result() : null;
-      visitor.linker();
-      visitor.resolveOperatorCalls();
+      workspace.resolve();
+      if (!resource.getErrors().isEmpty()) {
+        return "ERROR " + resource.getErrors().get(0);
+      }
+      EObject dom = resource.getRoot();
       if (!(dom instanceof Model)) {
         return "ERROR unable to build the object model";
       }

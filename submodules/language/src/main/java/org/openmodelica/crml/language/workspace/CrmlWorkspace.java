@@ -171,9 +171,22 @@ public class CrmlWorkspace {
         return URI.createURI(normalized.toUri().toString());
     }
 
-    /** The resource for {@code uri}: the one in the resource set, or a new, unloaded one. */
+    /**
+     * The resource for {@code uri}: the one in the resource set, or a new,
+     * unloaded one. Looked up by hand rather than with
+     * {@link ResourceSet#getResource}, which normalizes the URI with EMF's URI
+     * converter; that needs the Eclipse platform, which the web build (TeaVM)
+     * does not have. The workspace makes its URIs itself, so they need no
+     * normalizing.
+     */
     private CrmlResource resourceFor(URI uri) {
-        Resource existing = resourceSet.getResource(uri, false);
+        Resource existing = null;
+        for (Resource resource : resourceSet.getResources()) {
+            if (uri.equals(resource.getURI())) {
+                existing = resource;
+                break;
+            }
+        }
         if (existing instanceof CrmlResource) {
             return (CrmlResource) existing;
         }

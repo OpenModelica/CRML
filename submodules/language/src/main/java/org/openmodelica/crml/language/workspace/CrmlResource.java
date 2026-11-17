@@ -1,5 +1,6 @@
 package org.openmodelica.crml.language.workspace;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -58,7 +59,7 @@ public class CrmlResource extends ResourceImpl {
 
     @Override
     protected void doLoad(InputStream inputStream, Map<?, ?> options) throws IOException {
-        parsed = new Parser().parse(CharStreams.fromStream(inputStream, StandardCharsets.UTF_8));
+        parsed = new Parser().parse(CharStreams.fromString(read(inputStream), location()));
         header = RootHeader.read(parsed.ast());
 
         // TODO: revise that the parser retrun CrmlDiagnostic entries by default, and not syntax errors.
@@ -89,6 +90,21 @@ public class CrmlResource extends ResourceImpl {
         }
         getContents().add(root);
         state = State.BUILT;
+    }
+
+    /**
+     * The whole stream as UTF-8 text. Read by hand rather than with
+     * {@code CharStreams.fromStream}, which needs {@code java.nio.channels}:
+     * the web build (TeaVM) does not have it.
+     */
+    private static String read(InputStream in) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = in.read(buffer)) != -1) {
+            bytes.write(buffer, 0, n);
+        }
+        return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
     }
 
     @Override

@@ -14,8 +14,8 @@ import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.language.dom.util.BuildResult;
-import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.language.util.DomRun;
+import org.openmodelica.crml.language.workspace.InspectingWorkspace.Stage;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.BuiltinBinaryOperatorKind;
 import org.openmodelica.crml.model.metamodel.BuiltinUnaryOperatorKind;
@@ -28,9 +28,8 @@ import org.openmodelica.crml.model.metamodel.VariableReference;
 
 /**
  * Linking of {@code x.element} to the application it lifts
- * ({@link org.openmodelica.crml.language.dom.builders.LiftBuilder#link}): parses CRML text,
- * then runs the linker and the operator-call resolution, as the compiler's
- * front end does.
+ * ({@link org.openmodelica.crml.language.dom.builders.LiftBuilder#link}): loads CRML text
+ * into a workspace and runs all stages, as the compiler's front end does.
  */
 public class LiftLinkingTest {
 
@@ -44,15 +43,10 @@ public class LiftLinkingTest {
 
     /** Builds a model that defines {@code Boolean r is <expression>;} and returns the object model. */
     private static EObject build(String expression) {
-        Parser.ParserResult parsed = new Parser().parse(
-            "model M is {\n" + PRELUDE + "Boolean r is " + expression + ";\n};");
-        assertFalse(parsed.syntax().hasErrors(), "syntax errors: " + parsed.syntax().errors());
-        DOMVisitor visitor = new DOMVisitor();
-        BuildResult result = visitor.build(parsed.ast());
-        EObject dom = ((BuildResult.SingleBuildResult<?>) result).result();
-        visitor.linker();
-        visitor.resolveOperatorCalls();
-        return dom;
+        DomRun run = DomRun.of("model M is {\n" + PRELUDE + "Boolean r is " + expression + ";\n};", Stage.LIFT);
+        assertFalse(run.parsed().syntax().hasErrors(), "syntax errors: " + run.parsed().syntax().errors());
+        assertTrue(run.errors().isEmpty(), "errors:" + run.errorText());
+        return run.dom();
     }
 
     private static <T> List<T> all(EObject root, Class<T> type) {

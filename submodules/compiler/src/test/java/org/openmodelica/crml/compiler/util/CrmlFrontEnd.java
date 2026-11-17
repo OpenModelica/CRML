@@ -7,17 +7,20 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
 import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
-import org.openmodelica.crml.language.dom.DOMVisitor;
-import org.openmodelica.crml.language.dom.util.BuildResult;
-import org.openmodelica.crml.language.util.Parser;
+import org.openmodelica.crml.language.dom.CRMLLanguageException;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlResource;
+import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
 
 /**
- * CRML source to generated Modelica: parse, build the object model, link,
- * resolve operator calls, translate with {@link OMCv2}.
+ * CRML source to generated Modelica: load the file into a
+ * {@link CrmlWorkspace} of its own (parse, build the object model, link,
+ * resolve operator calls), then translate with {@link OMCv2}.
  *
  * <p>Shared by the specification report and the verification suite, so both
  * see exactly the same front end. Never throws for a problem in the model: each
@@ -42,28 +45,23 @@ public final class CrmlFrontEnd {
     }
 
     public static CrmlFrontEnd run(Path source) throws IOException {
-        Parser.ParserResult parsed = new Parser().parse(source);
+        CrmlWorkspace workspace = new CrmlWorkspace();
+        CrmlResource resource = workspace.load(source);
         List<String> syntaxErrors = new ArrayList<>();
-        if (parsed.syntax().hasErrors()) {
-            for (Object syntaxError : parsed.syntax().errors()) {
+        if (resource.getState() == CrmlResource.State.SYNTAX_ERRORS) {
+            for (Resource.Diagnostic syntaxError : resource.getErrors()) {
                 syntaxErrors.add(String.valueOf(syntaxError));
             }
             return new CrmlFrontEnd(source, syntaxErrors, null, null, null);
         }
 
-        EObject dom = null;
-        try {
-            DOMVisitor visitor = new DOMVisitor();
-            BuildResult result = visitor.build(parsed.ast());
-            if (result instanceof BuildResult.SingleBuildResult) {
-                dom = ((BuildResult.SingleBuildResult<?>) result).result();
-            }
-            visitor.linker();
-            // Natural-language operator calls are parsed as raw Sequences; this
-            // turns the ones that name an operator in scope into calls.
-            visitor.resolveOperatorCalls();
-        } catch (Throwable e) {
-            return new CrmlFrontEnd(source, syntaxErrors, dom, null, e);
+        // Natural-language operator calls are parsed as raw Sequences; resolving
+        // turns the ones that name an operator in scope into calls.
+        workspace.resolve();
+        EObject dom = resource.getRoot();
+        Throwable error = error(resource.getErrors());
+        if (error != null) {
+            return new CrmlFrontEnd(source, syntaxErrors, dom, null, error);
         }
 
         if (!(dom instanceof Model)) {
@@ -75,6 +73,31 @@ public final class CrmlFrontEnd {
         } catch (Throwable e) {
             return new CrmlFrontEnd(source, syntaxErrors, dom, null, e);
         }
+    }
+
+    /**
+     * The errors of loading and resolving as one exception, as the front end
+     * reported them before it used the workspace: the linker failure for
+     * unresolved references, else the exception behind the first error.
+     *
+     * <p>TODO: replace {@link #error()} with the diagnostics themselves.
+     */
+    private static Throwable error(List<Resource.Diagnostic> errors) {
+        List<Resource.Diagnostic> unresolved = new ArrayList<>();
+        for (Resource.Diagnostic error : errors) {
+            if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getKind() == CrmlDiagnostic.Kind.UNRESOLVED_REFERENCE) {
+                unresolved.add(error);
+            }
+        }
+        if (!unresolved.isEmpty()) {
+            return CRMLLanguageException.linkerFailure(unresolved);
+        }
+        for (Resource.Diagnostic error : errors) {
+            if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getCause() != null) {
+                return ((CrmlDiagnostic) error).getCause();
+            }
+        }
+        return errors.isEmpty() ? null : CRMLLanguageException.inconsistent(errors.get(0).toString());
     }
 
     public Path source() {
