@@ -65,7 +65,8 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     private static final Map<String, Throwable> EXT_THROWABLES = new HashMap<>();
     private static final Map<String, List<String>> RESULTS_BY_CLASS = new HashMap<>();
 
-    // Shared parameters (both paths)
+    // Shared parameters (both paths), keyed by "className#displayName": two
+    // classes may run the same files, and so have the same display names.
     private static final Map<String, Map<String, ? extends Object>> SHARED = new HashMap<>();
 
     /**
@@ -141,7 +142,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         if (testResult == null)
             return;
 
-        processNode(testKlass, test.getDisplayName(), testResult.getStatus(),
+        processNode(testKlass, getKlassName(test.getUniqueId()), test.getDisplayName(), testResult.getStatus(),
                 testResult.getThrowable().orElse(null));
     }
 
@@ -151,10 +152,9 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        SHARED.put(context.getDisplayName(), SharedParameter.asMap(context));
-
         String className = context.getRequiredTestClass().getName();
         String displayName = context.getDisplayName();
+        SHARED.put(className + "#" + displayName, SharedParameter.asMap(context));
 
         TestExecutionResult.Status status;
         Throwable throwable = null;
@@ -190,7 +190,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             Throwable throwable = EXT_THROWABLES.get(className + "#" + displayName);
             if (status == null)
                 continue;
-            processNode(testKlass, displayName, status, throwable);
+            processNode(testKlass, className, displayName, status, throwable);
         }
         flushReport();
     }
@@ -199,7 +199,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
     // Shared node rendering
     // -------------------------------------------------------------------------
 
-    private void processNode(ExtentTest testKlass, String displayName,
+    private void processNode(ExtentTest testKlass, String className, String displayName,
             TestExecutionResult.Status status, Throwable throwable) {
         if (displayName.startsWith("simulateTestFile("))
             return;
@@ -220,7 +220,7 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
             name = displayName;
 
         final ExtentTest node = testKlass.createNode(name);
-        for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(displayName, new HashMap<>()).entrySet()) {
+        for (Entry<String, ? extends Object> entry : SHARED.getOrDefault(className + "#" + displayName, new HashMap<>()).entrySet()) {
             if (entry.getValue() instanceof Path) {
                 // A file's contents are collapsed; its link stays visible.
                 Path path = (Path) entry.getValue();

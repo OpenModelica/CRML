@@ -513,7 +513,7 @@ public final class Verification {
             return "syntax errors: " + frontEnd.syntaxErrors();
         }
         if (!frontEnd.diagnostics().isEmpty()) {
-            return "errors: " + frontEnd.diagnostics();
+            return "errors: " + frontEnd.diagnosticText();
         }
         if (frontEnd.translationError() != null) {
             return "threw " + frontEnd.translationError();

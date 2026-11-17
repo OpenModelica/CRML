@@ -11,6 +11,8 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
 import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.LocationStyle;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
@@ -51,7 +53,7 @@ public final class CrmlFrontEnd {
         List<String> syntaxErrors = new ArrayList<>();
         if (resource.getState() == CrmlResource.State.SYNTAX_ERRORS) {
             for (Resource.Diagnostic syntaxError : resource.getErrors()) {
-                syntaxErrors.add(String.valueOf(syntaxError));
+                syntaxErrors.add(CrmlDiagnostic.format(syntaxError, LocationStyle.NONE));
             }
             return new CrmlFrontEnd(source, syntaxErrors, Collections.<Resource.Diagnostic>emptyList(),
                 null, null, null);
@@ -112,6 +114,16 @@ public final class CrmlFrontEnd {
     /** What the translation threw, or null. */
     public Throwable translationError() {
         return translationError;
+    }
+
+    /** The {@link #diagnostics()} as text, without the file name: one file per run. */
+    public String diagnosticText() {
+        StringBuilder text = new StringBuilder();
+        for (Resource.Diagnostic diagnostic : diagnostics) {
+            text.append(text.length() == 0 ? "" : System.lineSeparator())
+                .append(CrmlDiagnostic.format(diagnostic, LocationStyle.NONE));
+        }
+        return text.toString();
     }
 
     /** True if loading or resolving reported errors, or the translation threw. */

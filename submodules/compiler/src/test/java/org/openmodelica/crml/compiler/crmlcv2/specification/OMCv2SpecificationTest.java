@@ -89,7 +89,7 @@ public abstract class OMCv2SpecificationTest extends ReportedTest {
         }
 
         List<Diagnostic> errors = run.errors();
-        assertTrue(run.diagnostics().isEmpty(), "Building the object model reported errors: " + run.diagnostics());
+        assertTrue(run.diagnostics().isEmpty(), "Building the object model reported errors:" + System.lineSeparator() + run.diagnosticText());
         assertNull(run.translationError(), "OMCv2 translation threw an exception");
         assertEquals(0, errors.size(), "OMCv2 recorded ERROR diagnostics: " + errors);
     }

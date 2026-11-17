@@ -42,6 +42,8 @@ public class CrmlResource extends ResourceImpl {
     }
 
     private State state = State.NEW;
+    /** What diagnostics name this file by; the URI if not set. */
+    private String location;
     private Parser.ParserResult parsed;
     private RootHeader header;
 
@@ -127,8 +129,23 @@ public class CrmlResource extends ResourceImpl {
         visitor = null;
     }
 
-    /** The location diagnostics of this resource report: its URI. */
-    String location() {
+    /**
+     * The location the diagnostics of this resource report: the one set with
+     * {@link #setLocation}, else its URI.
+     */
+    public String location() {
+        if (location != null) {
+            return location;
+        }
         return getURI() == null ? null : getURI().toString();
+    }
+
+    /**
+     * Sets the location diagnostics report, e.g. the path as the user gave it
+     * rather than the absolute URI. Set it before loading: the parser and the
+     * DOM builder take it when the file is loaded.
+     */
+    void setLocation(String location) {
+        this.location = location;
     }
 }

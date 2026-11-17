@@ -1,5 +1,7 @@
 package org.openmodelica.crml.compiler.util;
 
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.LocationStyle;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -54,7 +56,7 @@ public final class TranslateModels {
             return "ERROR unable to parse\n";
         }
         if (!result.diagnostics().isEmpty()) {
-            return "ERROR " + result.diagnostics().get(0) + "\n";
+            return "ERROR " + CrmlDiagnostic.format(result.diagnostics().get(0), LocationStyle.NONE) + "\n";
         }
         if (result.translationError() != null) {
             return "ERROR " + result.translationError() + "\n";

@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.LocationStyle;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.InspectingWorkspace;
 import org.openmodelica.crml.language.workspace.InspectingWorkspace.Stage;
@@ -61,11 +63,11 @@ public final class DomRun {
     /** All errors of the resource: syntax, DOM building and the stages that ran. */
     public List<Resource.Diagnostic> errors() { return new ArrayList<>(resource.getErrors()); }
 
-    /** The errors as text, one per line, for assertion messages. */
+    /** The errors as text, one per line and without the file name, for assertion messages. */
     public String errorText() {
         StringBuilder text = new StringBuilder();
         for (Resource.Diagnostic diagnostic : resource.getErrors()) {
-            text.append(System.lineSeparator()).append(diagnostic);
+            text.append(System.lineSeparator()).append(CrmlDiagnostic.format(diagnostic, LocationStyle.NONE));
         }
         return text.toString();
     }

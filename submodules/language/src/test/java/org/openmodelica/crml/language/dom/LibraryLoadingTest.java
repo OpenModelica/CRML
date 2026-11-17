@@ -25,6 +25,7 @@ import org.openmodelica.crml.language.util.DOMWrapper;
 import org.openmodelica.crml.language.util.DiagnosticsWrapper;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.LocationStyle;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.language.workspace.RootHeader;
@@ -175,7 +176,7 @@ public class LibraryLoadingTest extends ReportedTest {
                     continue;
                 }
                 for (Resource.Diagnostic error : input.buildErrors()) {
-                    failures.add(input.label + ": building the DOM failed: " + error);
+                    failures.add(input.label + ": building the DOM failed: " + CrmlDiagnostic.format(error, LocationStyle.NONE));
                 }
                 if (input.root() == null) {
                     failures.add(input.label + ": no DOM root was built");

@@ -109,13 +109,17 @@ public class CrmlWorkspace {
     /**
      * Loads one file: parses it and builds its DOM, without linking. Loading
      * the same file twice returns the same resource. The file is read as
-     * CRML whatever its extension.
+     * CRML whatever its extension. Its diagnostics name it by {@code file}
+     * as given, its URI is absolute.
      *
      * @throws IOException if the file cannot be read
      */
     public CrmlResource load(Path file) throws IOException {
         CrmlResource resource = resourceFor(uri(file));
         if (!resource.isLoaded()) {
+            // Diagnostics name the file as the caller did, e.g. relative to
+            // the working directory on the command line.
+            resource.setLocation(file.toString());
             // Read through the Path, not the URI: the file may be in a jar
             // (test resources), which EMF's URI converter cannot open.
             try (InputStream in = Files.newInputStream(file)) {
@@ -417,7 +421,7 @@ public class CrmlWorkspace {
             RootIndex.Lookup lookup = index.lookup(dependency.name());
             if (lookup.status() == RootIndex.Lookup.Status.BROKEN) {
                 broken.add(new CrmlDiagnostic(Kind.BROKEN_DEPENDENCY,
-                    "Dependency " + dependency.name() + " has errors: " + lookup.resources().get(0).getURI(),
+                    "Dependency " + dependency.name() + " has errors: " + lookup.resources().get(0).location(),
                     resource.location(), dependency.line(), dependency.column()));
             }
         }

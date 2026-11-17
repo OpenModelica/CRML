@@ -23,7 +23,7 @@ public class VariableDeclarationTest {
             System.out.println("DOM:\n" + PrettyPrint.prettyPrint(run.dom()));
         }
         run.errors().forEach(error -> {
-            System.out.println("Error: " + error);
+            System.out.println("Error: " + CrmlDiagnostic.format(error, CrmlDiagnostic.LocationStyle.NONE));
             if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getCause() != null) {
                 ((CrmlDiagnostic) error).getCause().printStackTrace(System.out);
             }

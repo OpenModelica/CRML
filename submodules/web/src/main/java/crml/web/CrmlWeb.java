@@ -4,6 +4,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.teavm.jso.JSExport;
 
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
@@ -26,7 +27,8 @@ public class CrmlWeb {
       }
       workspace.resolve();
       if (!resource.getErrors().isEmpty()) {
-        return "ERROR " + resource.getErrors().get(0);
+        // One text per call: the location would only be its inline URI.
+        return "ERROR " + CrmlDiagnostic.format(resource.getErrors().get(0), CrmlDiagnostic.LocationStyle.NONE);
       }
       EObject dom = resource.getRoot();
       if (!(dom instanceof Model)) {
