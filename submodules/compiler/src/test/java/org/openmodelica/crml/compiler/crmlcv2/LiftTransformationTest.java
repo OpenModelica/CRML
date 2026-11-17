@@ -13,12 +13,6 @@ import java.util.List;
 
 import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
-import org.openmodelica.crml.compiler.crmlcv2.Lifter;
-import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
-import org.openmodelica.crml.compiler.crmlcv2.SetHandle;
-import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
-import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
 import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;

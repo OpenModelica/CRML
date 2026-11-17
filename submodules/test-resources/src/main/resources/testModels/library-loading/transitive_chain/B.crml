@@ -1,0 +1,2 @@
+library B is A union {
+};

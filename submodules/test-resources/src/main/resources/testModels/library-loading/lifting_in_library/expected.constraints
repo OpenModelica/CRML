@@ -1,0 +1,6 @@
+[Variable::name == "r"].definition.operator.@root.name == "Temporal"
+count [Model::name == "UseLifting"] / [Sequence] == 0
+# Inside the library, P.element is linked to the 'holds ... during' call it lifts.
+# The call is the operand of the aggregator "and" (rhs), wrapped in parentheses (.value).
+[CustomOperator::keywords.keyword contains "'during all'"].definition.rhs.value.operator.keywords.keyword contains "'during'"
+[CustomOperator::keywords.keyword contains "'during all'"].definition.rhs.value.lifts.data.variable.name == "P"

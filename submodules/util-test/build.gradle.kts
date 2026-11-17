@@ -12,6 +12,13 @@ dependencies {
 
     implementation(project(":util"))
 
+    // The model constraint engine (org.openmodelica.crml.testutil.constraints) works on
+    // any EMF model. Versions are the ones the root build pins for the whole project.
+    val emfCoreVersion: String by rootProject.extra
+    val emfCommonVersion: String by rootProject.extra
+    implementation("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
+    implementation("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
+
     implementation("com.j2html:j2html:1.6.0")
     
     testImplementation(platform("org.junit:junit-bom:5.10.1"))

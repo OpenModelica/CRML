@@ -1,0 +1,6 @@
+// Same variables as libraries/ETL_test/BecomesTrueInside.crml, operators from ETL.
+model BecomesTrueInside is ETL union {
+	Boolean b1 is external;
+	Period P1 is external;
+	Clock c_b1_becomes_true_inside_p1 is b1 'becomes true inside' P1;
+};

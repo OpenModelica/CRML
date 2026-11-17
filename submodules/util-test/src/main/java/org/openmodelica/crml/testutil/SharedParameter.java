@@ -1,7 +1,7 @@
 package org.openmodelica.crml.testutil;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 public class SharedParameter implements ParameterResolver {
-    public static class Keys extends HashSet<String> {
+    public static class Keys extends LinkedHashSet<String> {
         public Keys(Object ignored){}
         public static final String KEYCODE = "crml.language.specification.util.SharedParameter.Keys.keyCode";
     }
@@ -38,7 +38,7 @@ public class SharedParameter implements ParameterResolver {
 
     public static Map<String, Object> asMap(ExtensionContext context){
         ExtensionContext.Store store = context.getStore(SharedParameter.MESSAGE_NAMESPACE);
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
 
 
         Keys keys = store.getOrComputeIfAbsent("keys", Keys::new, Keys.class);

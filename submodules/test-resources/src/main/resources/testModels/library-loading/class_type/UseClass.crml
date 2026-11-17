@@ -1,0 +1,5 @@
+// A library class is usable as a variable type, and the constructor binding
+// 'id' resolves to the member of the class in the library's resource.
+model UseClass is Equipment union {
+	Pump pump1 is new Pump (id = "P1");
+};

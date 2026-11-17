@@ -1,0 +1,4 @@
+// Expected: validation error, dependency cycle B -> A -> B.
+library B is A union {
+	Operator [ Boolean ] 'negation of' Boolean b = not b;
+};

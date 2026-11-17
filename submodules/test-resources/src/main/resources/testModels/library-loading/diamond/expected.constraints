@@ -1,0 +1,6 @@
+# Logic's 'or' exists once in the whole resource set, and the model uses it.
+count [Template::keywords.keyword contains "'or'"] == 1
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+[Variable::name == "x_xor_y"].definition.operator.@root.name == "Right"
+[Variable::name == "not_x"].definition.operator.@root.name == "Left"
+count [Model::name == "UseDiamond"] / [Sequence] == 0

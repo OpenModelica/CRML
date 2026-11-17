@@ -1,0 +1,4 @@
+# Broken has a syntax error and is not loaded; nothing depends on it.
+count [Library::name == "Broken"] == 0
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+count [Model::name == "UseLogic"] / [Sequence] == 0

@@ -1,0 +1,4 @@
+# Both libraries of the flatten set are in scope; "(x 'or' y)" is a SUBEXPRESSION, hence .value.value.
+[Variable::name == "nor"].definition.operator.@root.name == "Negation"
+[Variable::name == "nor"].definition.bindings.value.value.operator.@root.name == "Logic"
+count [Model::name == "UseFlatten"] / [Sequence] == 0

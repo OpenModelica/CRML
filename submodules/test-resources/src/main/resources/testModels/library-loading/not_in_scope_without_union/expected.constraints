@@ -1,0 +1,2 @@
+# Logic is loaded but not unioned: the call must stay an unresolved Sequence.
+[Variable::name == "x_or_y"].definition is a Sequence

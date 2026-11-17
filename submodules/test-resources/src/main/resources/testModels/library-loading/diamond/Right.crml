@@ -1,0 +1,3 @@
+library Right is Logic union {
+	Template b1 'xor' b2 = (b1 'or' b2) and not (b1 and b2);
+};

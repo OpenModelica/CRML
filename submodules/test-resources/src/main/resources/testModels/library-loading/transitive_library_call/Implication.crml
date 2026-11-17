@@ -1,0 +1,3 @@
+library Implication is Logic union {
+	Template b1 'implies' b2 = not b1 'or' b2;
+};

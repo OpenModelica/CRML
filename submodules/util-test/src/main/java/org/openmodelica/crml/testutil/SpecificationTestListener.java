@@ -214,8 +214,9 @@ public class SpecificationTestListener implements TestExecutionListener, AfterEa
         Matcher matcherPath = patternPath.matcher(displayName);
         if (matcherPath.find())
             name += matcherPath.group(1);
-
-        if (name.isEmpty())
+        else
+            // Not about a single file (e.g. a folder of models): the display
+            // name, which already carries the index, is the best label.
             name = displayName;
 
         final ExtentTest node = testKlass.createNode(name);

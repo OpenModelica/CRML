@@ -1,0 +1,6 @@
+library Equipment is {
+	partial class Machine is {
+		String id;
+		Boolean inOperation is external;
+	};
+};

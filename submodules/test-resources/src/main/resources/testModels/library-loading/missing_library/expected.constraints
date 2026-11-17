@@ -1,0 +1,3 @@
+# Nothing called Missing is loaded; the model itself is still built and linked.
+count [Library::name == "Missing"] == 0
+[Variable::name == "x"].domain is not empty

@@ -1,0 +1,5 @@
+// An Operator declared in a library is callable from a model that unions it.
+model UseOperator is Negation union {
+	Boolean x is external;
+	Boolean not_x is 'negation of' x;
+};

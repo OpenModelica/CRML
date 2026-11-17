@@ -1,0 +1,3 @@
+model Base is {
+	Boolean x is external;
+};

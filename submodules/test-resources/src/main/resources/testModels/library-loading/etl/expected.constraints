@@ -1,0 +1,19 @@
+# ETL is loaded once for the four models.
+count [Library::name == "ETL"] == 1
+
+# Each model's call resolves to the ETL operator, and no call is left unresolved.
+[Variable::name == "b1_implies_b2"].definition.operator.@root.name == "ETL"
+[Variable::name == "c_b1_becomes_true_inside_p1"].definition.operator.@root.name == "ETL"
+[Variable::name == "i_count_ticks_of_c1_inside_p1"].definition.operator.@root.name == "ETL"
+[Variable::name == "b_check_over"].definition.operator.@root.name == "ETL"
+count [Model::name == "Implies"] / [Sequence] == 0
+count [Model::name == "BecomesTrueInside"] / [Sequence] == 0
+count [Model::name == "CountInside"] / [Sequence] == 0
+count [Model::name == "CheckOver"] / [Sequence] == 0
+
+# ETL resolves its own calls: 'check' aggregates ("and" over a set, a BinaryOperator with
+# only a right operand) calls to 'evaluate' (in parentheses: a SUBEXPRESSION
+# UnaryOperator around the call), lifted over P.element.
+count [Library::name == "ETL"] / [Sequence] == 0
+[CustomOperator::keywords.keyword contains "'check'"].definition.rhs.value.operator.keywords.keyword contains "'evaluate'"
+[CustomOperator::keywords.keyword contains "'check'"].definition.rhs.value.lifts.data.variable.name == "P"

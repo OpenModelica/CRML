@@ -1,0 +1,4 @@
+# 'or' comes from Logic through Extended; 'negation of' from Extended itself.
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+[Variable::name == "not_x"].definition.operator.@root.name == "Extended"
+count [Model::name == "UseTransitive"] / [Sequence] == 0

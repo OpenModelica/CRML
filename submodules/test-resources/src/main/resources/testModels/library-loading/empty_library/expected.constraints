@@ -1,0 +1,5 @@
+# The empty library is loaded, with nothing in it.
+[Library::name == "Empty"].classes is empty
+[Library::name == "Empty"].operators is empty
+# The model itself is unaffected.
+[Model::name == "UseEmpty"] / [Variable::name == "x"].domain is not empty

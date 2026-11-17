@@ -1,0 +1,6 @@
+// Transitivity is not limited to one level: M -> C -> B -> A.
+model UseChain is C union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

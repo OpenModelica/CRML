@@ -1,0 +1,5 @@
+// The library links 'Pump extends Machine' itself, before any model uses it.
+// Name lookup from a class inside a library root climbs to the Library.
+model UseLibraryClass is Equipment union {
+	Pump pump1 is new Pump;
+};

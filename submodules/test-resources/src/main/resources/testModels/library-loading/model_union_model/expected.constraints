@@ -1,0 +1,5 @@
+# Derived uses the operator and the variables of the model Base.
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Base"
+[Variable::name == "x_or_y"].definition.bindings.value.variable.@root.name == "Base"
+# The dependency itself is recorded in the DOM.
+[Model::name == "Derived"].superlibs.referedModel == [Model::name == "Base"]

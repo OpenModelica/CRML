@@ -1,0 +1,7 @@
+// The library is found by its declared name ('Logic'), not by its file name
+// ('operators.crml').
+model UseRenamed is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

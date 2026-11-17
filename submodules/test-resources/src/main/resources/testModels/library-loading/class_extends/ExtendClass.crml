@@ -1,0 +1,7 @@
+// A model class extends a class declared in a library (cross-resource superclass).
+model ExtendClass is Equipment union {
+	class Pump is {
+		Boolean cav is external;
+	} extends Machine;
+	Pump pump1 is new Pump;
+};

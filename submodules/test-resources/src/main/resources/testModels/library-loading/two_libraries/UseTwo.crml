@@ -1,0 +1,6 @@
+// Operators of two unioned libraries are both in scope, also in one expression.
+model UseTwo is Logic union Negation union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean nor is 'negation of' (x 'or' y);
+};

@@ -1,0 +1,7 @@
+// Union is idempotent: listing the same library twice must not make its
+// operators appear twice (which the mixfix parser would report as ambiguous).
+model UseTwice is Logic union Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

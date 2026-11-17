@@ -1,0 +1,4 @@
+[Variable::name == "x_implies_y"].definition.operator.@root.name == "Implication"
+# Implication's own 'implies' calls the 'or' of Logic, which it depends on.
+[Template::keywords.keyword contains "'implies'"].definition.operator.@root.name == "Logic"
+count [Library::name == "Implication"] / [Sequence] == 0

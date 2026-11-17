@@ -1,0 +1,3 @@
+library Logic is {
+	Template b1 'or' b2 = not (not b1 and not b2);
+};
