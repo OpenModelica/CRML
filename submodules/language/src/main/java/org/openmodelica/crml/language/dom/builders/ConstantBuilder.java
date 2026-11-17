@@ -90,7 +90,7 @@ public class ConstantBuilder {
             }
             //Double value = Double.parseDouble(numc.getText());
         } else {
-            builder.reportError("Unimplemented constant: "+context.getText());
+            builder.reportError(context, "Unimplemented constant: "+context.getText());
             return null;
         }
     }

@@ -67,7 +67,7 @@ public class TypeReferenceBuilder {
                     return ref;
                 }
                 default: {
-                    builder.reportError("Unable to resolve built-in type: " + typename);
+                    builder.reportError(context.builtin_type(), "Unable to resolve built-in type: " + typename);
                     return null;
                 }
             }

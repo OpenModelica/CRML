@@ -11,8 +11,6 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
 import org.openmodelica.crml.language.dom.DOMVisitor;
-import org.openmodelica.crml.language.dom.util.BuildResult;
-import org.openmodelica.crml.language.util.ErrorListener.CRMLSyntaxError;
 import org.openmodelica.crml.language.util.Parser;
 
 /**
@@ -62,27 +60,15 @@ public class CrmlResource extends ResourceImpl {
         parsed = new Parser().parse(CharStreams.fromString(read(inputStream), location()));
         header = RootHeader.read(parsed.ast());
 
-        // TODO: revise that the parser retrun CrmlDiagnostic entries by default, and not syntax errors.
         if (parsed.syntax().hasErrors()) {
-            for (CRMLSyntaxError error : parsed.syntax().errors()) {
-                getErrors().add(new CrmlDiagnostic(CrmlDiagnostic.Kind.SYNTAX, error.message(),
-                    location(), error.line(), error.charPosition()));
-            }
+            getErrors().addAll(parsed.syntax().errors());
             state = State.SYNTAX_ERRORS;
             return;
         }
 
         visitor = new DOMVisitor();
-        EObject root = null;
-        try {
-            BuildResult built = visitor.build(parsed.ast());
-            if (built instanceof BuildResult.SingleBuildResult) {
-                root = ((BuildResult.SingleBuildResult<?>) built).result();
-            }
-        } catch (RuntimeException e) {
-            //TODO: same as before with syntax errors
-            getErrors().add(CrmlDiagnostic.of(CrmlDiagnostic.Kind.DOM_BUILD, e, location()));
-        }
+        EObject root = visitor.buildRoot(parsed.ast());
+        getErrors().addAll(visitor.takeErrors());
         if (root == null) {
             visitor = null;
             state = State.BUILD_FAILED;

@@ -1,9 +1,15 @@
 package org.openmodelica.crml.language.dom;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.antlr.v4.runtime.IntStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Functions.Function0;
@@ -33,6 +39,8 @@ import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.dom.util.ScopeResolutionOptions;
 import org.openmodelica.crml.language.dom.util.ScopeResolver;
 import org.openmodelica.crml.language.opcall.MixfixParser;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
 import org.openmodelica.crml.model.metamodel.Library;
 import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.Sequence;
@@ -42,6 +50,10 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private EObject builtRoot;
     private final List<LinkerTask> crossrefTasks = new ArrayList<>();
     private final List<ModificationTask> modificationTasks = new ArrayList<>();
+    /** Reported with {@link #reportError}, not yet taken by {@link #takeErrors()}. */
+    private final List<CrmlDiagnostic> errors = new ArrayList<>();
+    /** Where each built object starts in the source: the innermost node it was built from. */
+    private final Map<EObject, Token> starts = new IdentityHashMap<>();
 
     private final RootBuilder root = new RootBuilder(this);
     private final ClassBuilder cls = new ClassBuilder(this);
@@ -53,10 +65,148 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final UserOperatorBuilder userop =  new UserOperatorBuilder(this);
     private final TemplateBuilder templates =  new TemplateBuilder(this);
 
+    /**
+     * Builds the DOM of a whole parse tree. Never throws: what goes wrong is
+     * in {@link #takeErrors()}, each error at its position in the source; an
+     * exception thrown while building is reported at the innermost node being
+     * built, with the exception as its cause.
+     *
+     * @return the root, or null if building reported any error
+     */
+    public EObject buildRoot(ParseTree tree) {
+        EObject result = null;
+        try {
+            BuildResult built = build(tree);
+            if (built instanceof BuildResult.SingleBuildResult) {
+                result = ((BuildResult.SingleBuildResult<?>) built).result();
+            }
+        } catch (BuildFailure e) {
+            errors.add(diagnostic(Kind.DOM_BUILD, e.start, message(e.getCause()), e.getCause()));
+        } catch (RuntimeException e) {
+            errors.add(diagnostic(Kind.DOM_BUILD, start(tree), message(e), e));
+        }
+        if (result == null && errors.isEmpty()) {
+            errors.add(diagnostic(Kind.DOM_BUILD, start(tree), "The file does not define a model or a library", null));
+        }
+        return errors.isEmpty() ? result : null;
+    }
+
     // recursion funnels through here, so dispatch stays in one place
-    @Override public BuildResult build(ParseTree n) { return visit(n); }
+    @Override public BuildResult build(ParseTree n) {
+        BuildResult result;
+        try {
+            result = visit(n);
+        } catch (BuildFailure e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new BuildFailure(start(n), e);
+        }
+        remember(result, n);
+        return result;
+    }
     @Override public <T extends BuildResult> T build(ParseTree n, Class<T> type) {
-        return type.cast(visit(n));
+        BuildResult result = build(n);
+        try {
+            return type.cast(result);
+        } catch (ClassCastException e) {
+            throw new BuildFailure(start(n), e);
+        }
+    }
+
+    @Override
+    public void reportError(ParseTree at, String message) {
+        errors.add(diagnostic(Kind.DOM_BUILD, start(at), message, null));
+    }
+
+    @Override
+    public void reportImplementationError(ParseTree at, String message) {
+        errors.add(diagnostic(Kind.DOM_BUILD, start(at), "Not supported yet: " + message, null));
+    }
+
+    @Override
+    public void reportError(EObject at, Kind kind, String message) {
+        errors.add(diagnosticAt(at, kind, message, null));
+    }
+
+    /**
+     * The errors reported since the last call, in the order they were
+     * reported; afterwards there are none.
+     */
+    public List<CrmlDiagnostic> takeErrors() {
+        List<CrmlDiagnostic> taken = new ArrayList<>(errors);
+        errors.clear();
+        return taken;
+    }
+
+    /**
+     * A diagnostic at the position {@code at} was built from, or that of its
+     * closest container built from the source; without a position if there
+     * is none (e.g. {@code at} was not built by this visitor).
+     */
+    public CrmlDiagnostic diagnosticAt(EObject at, Kind kind, String message, Throwable cause) {
+        Token start = null;
+        for (EObject object = at; object != null && start == null; object = object.eContainer()) {
+            start = starts.get(object);
+        }
+        return diagnostic(kind, start, message, cause);
+    }
+
+    private void remember(BuildResult result, ParseTree n) {
+        Token start = start(n);
+        if (start == null) {
+            return;
+        }
+        // The innermost node is built first, so it wins over the nodes that
+        // only pass its result on.
+        if (result instanceof BuildResult.SingleBuildResult) {
+            EObject object = ((BuildResult.SingleBuildResult<?>) result).result();
+            if (object != null) {
+                starts.putIfAbsent(object, start);
+            }
+        } else if (result instanceof BuildResult.MultiBuildResult) {
+            for (EObject object : ((BuildResult.MultiBuildResult<?>) result).<EObject>results()) {
+                if (object != null) {
+                    starts.putIfAbsent(object, start);
+                }
+            }
+        }
+    }
+
+    private static Token start(ParseTree n) {
+        if (n instanceof ParserRuleContext) {
+            return ((ParserRuleContext) n).getStart();
+        }
+        if (n instanceof TerminalNode) {
+            return ((TerminalNode) n).getSymbol();
+        }
+        return null;
+    }
+
+    /** A diagnostic at {@code start}, located at the source name of its stream. */
+    private static CrmlDiagnostic diagnostic(Kind kind, Token start, String message, Throwable cause) {
+        if (start == null) {
+            return new CrmlDiagnostic(kind, message, null, 0, 0, cause);
+        }
+        String location = start.getInputStream() == null ? null : start.getInputStream().getSourceName();
+        if (IntStream.UNKNOWN_SOURCE_NAME.equals(location)) {
+            location = null;
+        }
+        return new CrmlDiagnostic(kind, message, location, start.getLine(), start.getCharPositionInLine(), cause);
+    }
+
+    private static String message(Throwable e) {
+        return e.getMessage() != null ? e.getMessage() : e.toString();
+    }
+
+    /** An exception thrown while building, with the start of the innermost node being built. */
+    private static final class BuildFailure extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        private final transient Token start;
+
+        BuildFailure(Token start, RuntimeException cause) {
+            super(cause);
+            this.start = start;
+        }
     }
 
     // routing — mechanical, no instanceof

@@ -176,7 +176,7 @@ public class ExpressionBuilder {
 
             return duration;
         } else {
-            builder.reportError("Unable to process value: "+context.getText());
+            builder.reportError(context, "Unable to process value: "+context.getText());
             return null;
         }
     }

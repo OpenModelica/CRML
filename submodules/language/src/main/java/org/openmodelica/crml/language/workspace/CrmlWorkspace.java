@@ -268,7 +268,8 @@ public class CrmlWorkspace {
 
     /**
      * Stage 1: resolves the references queued while building the DOM. Each
-     * reference left unresolved is an {@link Kind#UNRESOLVED_REFERENCE} error.
+     * reference left unresolved is an {@link Kind#UNRESOLVED_REFERENCE} error
+     * at the position of the object holding it.
      *
      * @return what the stage did; null stops the resolution of {@code resource}
      */
@@ -278,8 +279,8 @@ public class CrmlWorkspace {
         try {
             unresolved = resource.getVisitor().link();
             for (UnresolvedLink link : unresolved) {
-                report(resource, new CrmlDiagnostic(Kind.UNRESOLVED_REFERENCE,
-                    "Unresolved reference " + link, resource.location(), 0, 0), diagnostics);
+                report(resource, resource.getVisitor().diagnosticAt(link.host(), Kind.UNRESOLVED_REFERENCE,
+                    "Unresolved reference " + link, null), diagnostics);
             }
         } catch (RuntimeException | StackOverflowError e) {
             report(resource, CrmlDiagnostic.of(Kind.LINKING, e, resource.location()), diagnostics);
@@ -299,7 +300,9 @@ public class CrmlWorkspace {
     /**
      * Stage 2: replaces each Sequence that spells out a call to an operator
      * in scope with that call. Sequences that name no operator stay in the
-     * DOM; they are listed in the result but not reported, as before.
+     * DOM; they are listed in the result but not reported, as before. A call
+     * that can be read in several ways is an {@link Kind#OPERATOR_CALL} error
+     * at its position, and stays a Sequence.
      *
      * @param parser the parser from {@link #operatorParser}; null resolves nothing
      * @return what the stage did; null stops the resolution of {@code resource}
@@ -311,6 +314,9 @@ public class CrmlWorkspace {
             replaced = resource.getVisitor().resolveOperatorCalls(parser);
         } catch (RuntimeException | StackOverflowError e) {
             report(resource, CrmlDiagnostic.of(Kind.OPERATOR_CALL, e, resource.location()), diagnostics);
+        }
+        for (CrmlDiagnostic error : resource.getVisitor().takeErrors()) {
+            report(resource, error, diagnostics);
         }
         return new CallResult(replaced, sequences(resource.getRoot()), diagnostics);
     }

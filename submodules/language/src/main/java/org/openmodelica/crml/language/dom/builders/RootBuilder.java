@@ -35,10 +35,10 @@ public class RootBuilder {
             case "library":
                 return processLibrary(context);
             case "package":
-                builder.reportImplementationError("Loading a package is not implemented yet");
+                builder.reportImplementationError(context.definition_type(), "Loading a package is not implemented yet");
                 break;
             default:
-                builder.reportError("Unknown definition type: "+type);
+                builder.reportError(context.definition_type(), "Unknown definition type: "+type);
         }
         return null;
     }
@@ -69,7 +69,7 @@ public class RootBuilder {
             } else if (res instanceof org.openmodelica.crml.model.metamodel.Operator) {
                 model.getOperators().add((org.openmodelica.crml.model.metamodel.Operator)res);
             } else {
-                builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
+                builder.reportError(elemets, "Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }
         }
         return model;
@@ -96,7 +96,7 @@ public class RootBuilder {
             } else if (res instanceof org.openmodelica.crml.model.metamodel.Operator) {
                 library.getOperators().add((org.openmodelica.crml.model.metamodel.Operator)res);
             } else {
-                builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
+                builder.reportError(elemets, "Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }
         }
         return library;
@@ -123,7 +123,7 @@ public class RootBuilder {
             }
             return dependencies;
         }
-        builder.reportError("Unknown dependency type: "+context.getClass().getSimpleName());
+        builder.reportError(context, "Unknown dependency type: "+context.getClass().getSimpleName());
         return null;*/
     }
 }

@@ -76,6 +76,6 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
 
     @Override
     public String toString() {
-        return location + ":" + line + ":" + column + ": " + kind + ": " + message;
+        return (location == null ? "" : location + ":") + line + ":" + column + ": " + kind + ": " + message;
     }
 }

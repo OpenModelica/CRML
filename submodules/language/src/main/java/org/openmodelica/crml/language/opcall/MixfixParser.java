@@ -15,6 +15,7 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import com.google.common.collect.Iterables;
 
 import org.openmodelica.crml.language.dom.BuildContext;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.model.metamodel.Binding;
 import org.openmodelica.crml.model.metamodel.ComputedValue;
 import org.openmodelica.crml.model.metamodel.CustomOperator;
@@ -103,7 +104,7 @@ public class MixfixParser {
             return null;
         }
         if (complete.size() > 1) {
-            builder.reportError("Ambiguous operator call " + describe(sequence) + ", it can be read as: "
+            builder.reportError(sequence, CrmlDiagnostic.Kind.OPERATOR_CALL, "Ambiguous operator call " + describe(sequence) + ", it can be read as: "
                     + complete.stream().map(Node::describe).collect(Collectors.joining(" or ")));
             return null;
         }

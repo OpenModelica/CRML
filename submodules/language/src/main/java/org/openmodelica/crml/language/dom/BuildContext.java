@@ -5,6 +5,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.dom.util.ScopeResolutionOptions;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.CRMLPackage;
 
@@ -28,11 +29,23 @@ public interface BuildContext {
         link(host, reference, id, null);
     };
     
-    default void reportImplementationError(String text){
-        throw new RuntimeException(text);
-    }
+    /**
+     * Records that the construct at {@code at} is valid CRML that is not
+     * supported yet. Building goes on; the file then has no DOM.
+     */
+    void reportImplementationError(ParseTree at, String message);
 
-    default void reportError(String text){
-        throw new RuntimeException(text);
-    }
+    /**
+     * Records an error in the model at {@code at}, as a
+     * {@link CrmlDiagnostic.Kind#DOM_BUILD} diagnostic at its position.
+     * Building goes on, so that one run reports all such errors; the file
+     * then has no DOM.
+     */
+    void reportError(ParseTree at, String message);
+
+    /**
+     * Records an error found after building, at the position {@code at} was
+     * built from (or that of its closest container that has one).
+     */
+    void reportError(EObject at, CrmlDiagnostic.Kind kind, String message);
 }

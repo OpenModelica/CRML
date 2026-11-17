@@ -53,7 +53,7 @@ public class ClassBuilder {
 //            } else if(res instanceof org.openmodelica.crml.model.metamodel.Class) {
 //                model.getClasses().add((Class) res);
             } else {
-                builder.reportError("Element type was not recognized:: "+ elemets.getClass().getSimpleName());
+                builder.reportError(elemets, "Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }
         }
 

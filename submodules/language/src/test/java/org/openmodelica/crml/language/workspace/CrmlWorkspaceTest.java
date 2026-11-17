@@ -15,7 +15,9 @@ import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
+import org.openmodelica.crml.language.opcall.MixfixParser;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
 import org.openmodelica.crml.language.workspace.InspectingWorkspace.Stage;
 import org.openmodelica.crml.model.metamodel.Model;
@@ -109,13 +111,15 @@ public class CrmlWorkspaceTest {
         assertEquals("undefinedName", ws.trace(r).link.unresolved().get(0).id());
         assertEquals("[UNRESOLVED_REFERENCE]", kinds(r));
         assertEquals(ws.trace(r).link.diagnostics(), r.getErrors());
+        CrmlDiagnostic error = (CrmlDiagnostic) r.getErrors().get(0);
+        assertEquals(2, error.getLine(), () -> "at the reference: " + error);
+        assertEquals(13, error.getColumn(), () -> "at the reference: " + error);
         assertEquals(Diagnostic.ERROR, ws.validate(r).getSeverity());
     }
 
     @Test
-    void stageExceptionKeepsItsCause() {
-        // Two operators with the same header: the call is ambiguous, and the
-        // operator-call parser reports that by throwing.
+    void ambiguousCallIsReportedAtItsPosition() {
+        // Two operators with the same header: the call can be read as either.
         InspectingWorkspace ws = new InspectingWorkspace();
         CrmlResource r = ws.load("model M is {\n"
             + "Operator [ Boolean ] 'neg' Boolean a = not a;\n"
@@ -128,13 +132,70 @@ public class CrmlWorkspaceTest {
 
         assertEquals("[OPERATOR_CALL]", kinds(r));
         CrmlDiagnostic diagnostic = (CrmlDiagnostic) r.getErrors().get(0);
-        assertNotNull(diagnostic.getCause());
+        assertTrue(diagnostic.getMessage().startsWith("Ambiguous operator call"), diagnostic.getMessage());
+        assertEquals(5, diagnostic.getLine());
+        assertNull(diagnostic.getCause(), "an error in the model, not an exception");
+        assertSame(diagnostic, ws.trace(r).calls.diagnostics().get(0));
+        // The call stays a Sequence, and the later stages still ran.
+        assertEquals(1, ws.trace(r).calls.unresolved().size());
+        assertNotNull(ws.trace(r).lift);
+    }
+
+    @Test
+    void stageExceptionKeepsItsCause() {
+        IllegalStateException thrown = new IllegalStateException("thrown by the stage");
+        InspectingWorkspace ws = new InspectingWorkspace() {
+            @Override
+            MixfixParser operatorParser(CrmlResource resource) {
+                return new MixfixParser((Model) resource.getRoot(), resource.getVisitor()) {
+                    @Override
+                    public void perform(EObject root) {
+                        throw thrown;
+                    }
+                };
+            }
+        };
+        CrmlResource r = ws.load(CALL);
+
+        ws.resolve();
+
+        assertEquals("[OPERATOR_CALL]", kinds(r));
+        CrmlDiagnostic diagnostic = (CrmlDiagnostic) r.getErrors().get(0);
+        assertSame(thrown, diagnostic.getCause());
         assertSame(diagnostic, ws.trace(r).calls.diagnostics().get(0));
         // The later stages still ran.
         assertNotNull(ws.trace(r).lift);
         Diagnostic validation = ws.validate(r);
         assertEquals(Diagnostic.ERROR, validation.getSeverity());
-        assertSame(diagnostic.getCause(), validation.getChildren().get(0).getException());
+        assertSame(thrown, validation.getChildren().get(0).getException());
+    }
+
+    @Test
+    void syntaxErrorsHaveTheirPosition() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource r = ws.load(URI.createURI("inline:/S.crml"), "model M is {\nBoolean ;\n};");
+
+        CrmlDiagnostic error = (CrmlDiagnostic) r.getErrors().get(0);
+        assertEquals(Kind.SYNTAX, error.getKind());
+        assertEquals("inline:/S.crml", error.getLocation());
+        assertEquals(2, error.getLine());
+        assertEquals(8, error.getColumn());
+        assertSame(error, r.getParsed().syntax().errors().get(0), "the parser's own diagnostic");
+    }
+
+    @Test
+    void buildErrorsHaveTheirPosition() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource r = ws.load(URI.createURI("inline:/P.crml"), "\n  package P is {\n};");
+
+        assertEquals(CrmlResource.State.BUILD_FAILED, r.getState(), () -> "errors: " + r.getErrors());
+        assertNull(r.getRoot());
+        assertEquals("[DOM_BUILD]", kinds(r));
+        CrmlDiagnostic error = (CrmlDiagnostic) r.getErrors().get(0);
+        assertEquals("inline:/P.crml", error.getLocation());
+        assertEquals(2, error.getLine());
+        assertEquals(2, error.getColumn());
+        assertNull(error.getCause());
     }
 
     @Test
