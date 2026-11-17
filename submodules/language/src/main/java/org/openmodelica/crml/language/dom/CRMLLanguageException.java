@@ -28,16 +28,6 @@ public abstract class CRMLLanguageException extends RuntimeException {
         }
     }
 
-    public static CRMLLinkerFailure linkerFailure(List<?> errors){
-        return new CRMLLinkerFailure(errors);
-    }
-    public static class CRMLLinkerFailure extends CRMLLanguageException{
-
-        public CRMLLinkerFailure(List<?> errors) {
-            super("Unable to resolve tasks:"+stringify(errors));
-        }
-    }
-
     private static String stringify(List<?> data){
             StringBuilder b = new StringBuilder();
             data.forEach(entry -> {

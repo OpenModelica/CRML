@@ -26,10 +26,19 @@ public final class RootHeader {
     public static final class DependencyName {
         private final String name;
         private final boolean flattened;
+        private final int line;
+        private final int column;
 
         public DependencyName(String name, boolean flattened) {
+            this(name, flattened, 0, 0);
+        }
+
+        /** @param line 1-based, as in ANTLR; 0 if unknown */
+        public DependencyName(String name, boolean flattened, int line, int column) {
             this.name = name;
             this.flattened = flattened;
+            this.line = line;
+            this.column = column;
         }
 
         /** The declared name of the library or model depended on. */
@@ -37,6 +46,12 @@ public final class RootHeader {
 
         /** True if it came from {@code flatten { A, B } union}. */
         public boolean flattened() { return flattened; }
+
+        /** Where the name is written: its line, 0 if unknown. */
+        public int line() { return line; }
+
+        /** Where the name is written: its column in {@link #line()}. */
+        public int column() { return column; }
 
         @Override
         public String toString() {
@@ -73,15 +88,20 @@ public final class RootHeader {
             if (dependency instanceof SingleDependencyContext) {
                 IdContext id = ((SingleDependencyContext) dependency).id();
                 if (id != null) {
-                    dependencies.add(new DependencyName(id.getText(), false));
+                    dependencies.add(dependency(id, false));
                 }
             } else if (dependency instanceof DependencySetContext) {
                 for (IdContext id : ((DependencySetContext) dependency).id()) {
-                    dependencies.add(new DependencyName(id.getText(), true));
+                    dependencies.add(dependency(id, true));
                 }
             }
         }
         return new RootHeader(definition.definition_type().getText(), definition.id().getText(), dependencies);
+    }
+
+    private static DependencyName dependency(IdContext id, boolean flattened) {
+        return new DependencyName(id.getText(), flattened,
+            id.getStart().getLine(), id.getStart().getCharPositionInLine());
     }
 
     /** {@code model}, {@code library} or {@code package}, as written. */

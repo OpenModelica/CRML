@@ -78,16 +78,10 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         crossrefTasks.add(new LinkerTask(host, reference, id, options));
     }
 
-    public void linker(){
-        if(!link().isEmpty()){
-            throw CRMLLanguageException.linkerFailure(crossrefTasks);
-        }
-    }
-
     /**
-     * Runs the queued link tasks until no more of them resolves, like
-     * {@link #linker()}, but returns what is left instead of throwing.
-     * The unresolved tasks stay queued, so a later call retries them.
+     * Runs the queued link tasks until no more of them resolves and returns
+     * what is left. The unresolved tasks stay queued, so a later call retries
+     * them.
      *
      * @return the references that could not be resolved; empty if all were
      */
@@ -122,9 +116,16 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     }
 
     /**
-     * Replaces the operator calls of the built root with {@code parser} and
-     * applies the replacements. Unlike {@link #resolveOperatorCalls()}, it does
-     * not link the lifted values afterwards.
+     * Replaces the natural-language operator calls in the built root - parsed
+     * as raw Sequences, since the grammar cannot know which operators are in
+     * scope - with ComputedValue calls to the operators {@code parser} knows,
+     * and applies the replacements.
+     *
+     * <p>Run this after {@link #link()}: matching a call against an operator
+     * needs the operator declarations resolved. A Sequence that names no
+     * operator in scope is left as it is, so a consumer can report it rather
+     * than silently receiving a wrong tree. Lifted values ({@code x.element})
+     * are linked afterwards, by {@link LiftBuilder#linkAll}.
      *
      * @return the applied replacements, in the order they were applied
      */
@@ -134,30 +135,6 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         }
         parser.perform(builtRoot);
         return modify();
-    }
-    
-    /**
-     * Replaces the natural-language operator calls in the built model - parsed
-     * as raw Sequences, since the grammar cannot know which operators are in
-     * scope - with ComputedValue calls to the operators they name.
-     *
-     * <p>Run this after {@link #linker()}: matching a call against an operator
-     * needs the operator declarations resolved. A Sequence that names no
-     * operator in scope is left as it is, so a consumer can report it rather
-     * than silently receiving a wrong tree.
-     *
-     * <p>Afterwards links every ScatteredValue ({@code x.element}) to the
-     * Liftable it is a direct operand of (see {@link LiftBuilder#link}).
-     */
-    public void resolveOperatorCalls(){
-        MixfixParser parser = operatorParser();
-        if (parser == null) {
-            return;
-        }
-        resolveOperatorCalls(parser);
-        // Only now are the ComputedValue calls in the tree, so a ScatteredValue
-        // can find the Liftable it is an operand of.
-        LiftBuilder.linkAll(builtRoot);
     }
 
     @Override

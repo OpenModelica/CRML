@@ -17,6 +17,7 @@ import org.openmodelica.crml.compiler.crmlcv2.verification.engine.VerificationCa
 import org.openmodelica.crml.compiler.util.CodeWrapper;
 import org.openmodelica.crml.compiler.util.DiagnosticsWrapper;
 import org.openmodelica.crml.compiler.util.OutputsWrapper;
+import org.openmodelica.crml.compiler.util.ResourceDiagnosticsWrapper;
 import org.openmodelica.crml.compiler.util.ThrowableWrapper;
 import org.openmodelica.crml.testutil.ReportedTest;
 
@@ -58,8 +59,11 @@ public abstract class VerificationTest extends ReportedTest {
             emit(CodeWrapper.of(translation.text()), "Modelica");
             emit(DiagnosticsWrapper.of(translation.diagnostics()), "Diagnostics");
         }
-        if (verification.frontEnd().error() != null) {
-            emit(ThrowableWrapper.of(verification.frontEnd().error()), "Error");
+        if (!verification.frontEnd().diagnostics().isEmpty()) {
+            emit(ResourceDiagnosticsWrapper.of(verification.frontEnd().diagnostics()), "Errors");
+        }
+        if (verification.frontEnd().translationError() != null) {
+            emit(ThrowableWrapper.of(verification.frontEnd().translationError()), "Error");
         }
         if (!verification.outputs().isEmpty()) {
             emit(OutputsWrapper.of(verification.outputs()), "Outputs");

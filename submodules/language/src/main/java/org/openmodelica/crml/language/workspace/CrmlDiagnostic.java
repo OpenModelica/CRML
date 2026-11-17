@@ -25,7 +25,13 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
         /** Operator-call resolution failed, e.g. an ambiguous call. */
         OPERATOR_CALL,
         /** Linking the lifted values failed. */
-        LIFTING
+        LIFTING,
+        /**
+         * A dependency is declared by a file that has syntax or build errors.
+         * Reported by validation, on the dependent; the dependency's own
+         * errors are not repeated.
+         */
+        BROKEN_DEPENDENCY
     }
 
     private final Kind kind;

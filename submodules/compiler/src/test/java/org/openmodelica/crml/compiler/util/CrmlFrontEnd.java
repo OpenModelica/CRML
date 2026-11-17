@@ -11,8 +11,6 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
 import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
-import org.openmodelica.crml.language.dom.CRMLLanguageException;
-import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.model.metamodel.Model;
@@ -23,25 +21,28 @@ import org.openmodelica.crml.model.metamodel.Model;
  * resolve operator calls), then translate with {@link OMCv2}.
  *
  * <p>Shared by the specification report and the verification suite, so both
- * see exactly the same front end. Never throws for a problem in the model: each
- * stage records what it produced and the first failure, and the later stages
- * are skipped.
+ * see exactly the same front end. Never throws for a problem in the model:
+ * loading and resolving report {@link #diagnostics() diagnostics}, the
+ * translation is skipped if there are any, and an exception thrown by the
+ * translation is kept as {@link #translationError()}.
  */
 public final class CrmlFrontEnd {
 
     private final Path source;
     private final List<String> syntaxErrors;
+    private final List<Resource.Diagnostic> diagnostics;
     private final EObject dom;
     private final TranslationResult translation;
-    private final Throwable error;
+    private final Throwable translationError;
 
-    private CrmlFrontEnd(Path source, List<String> syntaxErrors, EObject dom,
-            TranslationResult translation, Throwable error) {
+    private CrmlFrontEnd(Path source, List<String> syntaxErrors, List<Resource.Diagnostic> diagnostics,
+            EObject dom, TranslationResult translation, Throwable translationError) {
         this.source = source;
         this.syntaxErrors = Collections.unmodifiableList(syntaxErrors);
+        this.diagnostics = Collections.unmodifiableList(new ArrayList<>(diagnostics));
         this.dom = dom;
         this.translation = translation;
-        this.error = error;
+        this.translationError = translationError;
     }
 
     public static CrmlFrontEnd run(Path source) throws IOException {
@@ -52,52 +53,24 @@ public final class CrmlFrontEnd {
             for (Resource.Diagnostic syntaxError : resource.getErrors()) {
                 syntaxErrors.add(String.valueOf(syntaxError));
             }
-            return new CrmlFrontEnd(source, syntaxErrors, null, null, null);
+            return new CrmlFrontEnd(source, syntaxErrors, Collections.<Resource.Diagnostic>emptyList(),
+                null, null, null);
         }
 
         // Natural-language operator calls are parsed as raw Sequences; resolving
         // turns the ones that name an operator in scope into calls.
         workspace.resolve();
         EObject dom = resource.getRoot();
-        Throwable error = error(resource.getErrors());
-        if (error != null) {
-            return new CrmlFrontEnd(source, syntaxErrors, dom, null, error);
-        }
-
-        if (!(dom instanceof Model)) {
-            return new CrmlFrontEnd(source, syntaxErrors, dom, null, null);
+        List<Resource.Diagnostic> diagnostics = resource.getErrors();
+        if (!diagnostics.isEmpty() || !(dom instanceof Model)) {
+            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, null, null);
         }
         try {
             TranslationResult translation = new OMCv2().translateModel((Model) dom);
-            return new CrmlFrontEnd(source, syntaxErrors, dom, translation, null);
+            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, translation, null);
         } catch (Throwable e) {
-            return new CrmlFrontEnd(source, syntaxErrors, dom, null, e);
+            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, null, e);
         }
-    }
-
-    /**
-     * The errors of loading and resolving as one exception, as the front end
-     * reported them before it used the workspace: the linker failure for
-     * unresolved references, else the exception behind the first error.
-     *
-     * <p>TODO: replace {@link #error()} with the diagnostics themselves.
-     */
-    private static Throwable error(List<Resource.Diagnostic> errors) {
-        List<Resource.Diagnostic> unresolved = new ArrayList<>();
-        for (Resource.Diagnostic error : errors) {
-            if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getKind() == CrmlDiagnostic.Kind.UNRESOLVED_REFERENCE) {
-                unresolved.add(error);
-            }
-        }
-        if (!unresolved.isEmpty()) {
-            return CRMLLanguageException.linkerFailure(unresolved);
-        }
-        for (Resource.Diagnostic error : errors) {
-            if (error instanceof CrmlDiagnostic && ((CrmlDiagnostic) error).getCause() != null) {
-                return ((CrmlDiagnostic) error).getCause();
-            }
-        }
-        return errors.isEmpty() ? null : CRMLLanguageException.inconsistent(errors.get(0).toString());
     }
 
     public Path source() {
@@ -127,9 +100,23 @@ public final class CrmlFrontEnd {
         return translation;
     }
 
-    /** What the object model build or the translation threw, or null. */
-    public Throwable error() {
-        return error;
+    /**
+     * The errors of loading and resolving the file (building the object
+     * model, linking, operator calls, lifting); empty if there was none.
+     * Syntax errors are in {@link #syntaxErrors()} instead.
+     */
+    public List<Resource.Diagnostic> diagnostics() {
+        return diagnostics;
+    }
+
+    /** What the translation threw, or null. */
+    public Throwable translationError() {
+        return translationError;
+    }
+
+    /** True if loading or resolving reported errors, or the translation threw. */
+    public boolean failed() {
+        return !diagnostics.isEmpty() || translationError != null;
     }
 
     /** The ERROR diagnostics of the translation; empty if there was none. */

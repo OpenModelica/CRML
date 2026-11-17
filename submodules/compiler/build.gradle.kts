@@ -15,7 +15,6 @@ dependencies {
     // :language exposes ANTLR types (Parser, DOMVisitor) but keeps the runtime
     // as an implementation dependency; the app package calls them directly.
     implementation("org.antlr:antlr4-runtime:$antlr4Version")
-    implementation(project(":model"))
     implementation(project(":modelica")) 
     implementation(project(":util"))
 

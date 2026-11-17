@@ -53,8 +53,11 @@ public final class TranslateModels {
         if (result.hasSyntaxErrors()) {
             return "ERROR unable to parse\n";
         }
-        if (result.error() != null) {
-            return "ERROR " + result.error() + "\n";
+        if (!result.diagnostics().isEmpty()) {
+            return "ERROR " + result.diagnostics().get(0) + "\n";
+        }
+        if (result.translationError() != null) {
+            return "ERROR " + result.translationError() + "\n";
         }
         if (result.translation() == null) {
             return "ERROR unable to build the object model\n";

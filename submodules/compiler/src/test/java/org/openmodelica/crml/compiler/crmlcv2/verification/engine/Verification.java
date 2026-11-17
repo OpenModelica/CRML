@@ -512,8 +512,11 @@ public final class Verification {
         if (frontEnd.hasSyntaxErrors()) {
             return "syntax errors: " + frontEnd.syntaxErrors();
         }
-        if (frontEnd.error() != null) {
-            return "threw " + frontEnd.error();
+        if (!frontEnd.diagnostics().isEmpty()) {
+            return "errors: " + frontEnd.diagnostics();
+        }
+        if (frontEnd.translationError() != null) {
+            return "threw " + frontEnd.translationError();
         }
         if (frontEnd.model() == null) {
             return "the definition is not a model";

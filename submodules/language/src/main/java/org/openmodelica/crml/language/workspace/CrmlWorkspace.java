@@ -84,10 +84,10 @@ public class CrmlWorkspace {
 
     /**
      * Loads every {@code .crml} file of the library path (not recursive),
-     * in file-name order. A file that does not parse is loaded too, with its
-     * errors, so a dependent can be told the dependency is broken.
-     *
-     * <p>TODO: decide whether discovery stays eager or looks files up lazily.
+     * in file-name order, whether or not a model uses it: libraries are found
+     * by their declared name, which is only known once a file is parsed. A
+     * file that does not parse is loaded too, with its errors, so a dependent
+     * can be told the dependency is broken.
      */
     public List<CrmlResource> loadLibraryPath() throws IOException {
         List<CrmlResource> loaded = new ArrayList<>();
@@ -356,10 +356,10 @@ public class CrmlWorkspace {
 
     /**
      * Validates {@code root}: the errors and warnings collected on its
-     * resource while loading and linking, then the CRML validation rules.
-     *
-     * <p>TODO: also include the resources of the root's dependencies, or
-     * report only that a dependency is broken (decide once rules exist).
+     * resource while loading and linking, a {@link Kind#BROKEN_DEPENDENCY}
+     * error for each dependency whose file has errors, then the CRML
+     * validation rules. The errors of the dependencies themselves are not
+     * included; they are reported when the dependency is validated.
      */
     public Diagnostic validate(EObject root) {
         BasicDiagnostic result = new BasicDiagnostic(CRMLValidator.DIAGNOSTIC_SOURCE, 0,
@@ -368,6 +368,9 @@ public class CrmlWorkspace {
         if (resource != null) {
             addAll(result, resource.getErrors(), Diagnostic.ERROR);
             addAll(result, resource.getWarnings(), Diagnostic.WARNING);
+        }
+        if (resource instanceof CrmlResource) {
+            addAll(result, brokenDependencies((CrmlResource) resource), Diagnostic.ERROR);
         }
         result.add(CRMLValidator.validate(root));
         return result;
@@ -384,6 +387,7 @@ public class CrmlWorkspace {
             "Validation of " + resource.getURI(), new Object[] { resource });
         addAll(result, resource.getErrors(), Diagnostic.ERROR);
         addAll(result, resource.getWarnings(), Diagnostic.WARNING);
+        addAll(result, brokenDependencies(resource), Diagnostic.ERROR);
         EObject root = resource.getRoot();
         if (root != null) {
             result.add(CRMLValidator.validate(root));
@@ -391,7 +395,30 @@ public class CrmlWorkspace {
         return result;
     }
 
-    private static void addAll(BasicDiagnostic target, List<Resource.Diagnostic> source, int severity) {
+    /**
+     * One {@link Kind#BROKEN_DEPENDENCY} error per dependency of
+     * {@code resource} that is declared by a file with syntax or build
+     * errors, at the dependency's name in the header. Missing and duplicate
+     * dependencies are left to the dependency validation rules.
+     */
+    private List<CrmlDiagnostic> brokenDependencies(CrmlResource resource) {
+        List<CrmlDiagnostic> broken = new ArrayList<>();
+        RootHeader header = resource.getHeader();
+        if (header == null) {
+            return broken;
+        }
+        for (RootHeader.DependencyName dependency : header.dependencies()) {
+            RootIndex.Lookup lookup = index.lookup(dependency.name());
+            if (lookup.status() == RootIndex.Lookup.Status.BROKEN) {
+                broken.add(new CrmlDiagnostic(Kind.BROKEN_DEPENDENCY,
+                    "Dependency " + dependency.name() + " has errors: " + lookup.resources().get(0).getURI(),
+                    resource.location(), dependency.line(), dependency.column()));
+            }
+        }
+        return broken;
+    }
+
+    private static void addAll(BasicDiagnostic target, List<? extends Resource.Diagnostic> source, int severity) {
         for (Resource.Diagnostic diagnostic : source) {
             Throwable cause = diagnostic instanceof CrmlDiagnostic ? ((CrmlDiagnostic) diagnostic).getCause() : null;
             Object[] data = cause == null ? new Object[] { diagnostic } : new Object[] { diagnostic, cause };

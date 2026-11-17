@@ -2,6 +2,7 @@ package org.openmodelica.crml.compiler.crmlcv2.specification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import org.openmodelica.crml.compiler.util.CompilerRoot;
 import org.openmodelica.crml.compiler.util.CrmlFrontEnd;
 import org.openmodelica.crml.compiler.util.DiagnosticsWrapper;
 import org.openmodelica.crml.compiler.util.ObjectModelWrapper;
+import org.openmodelica.crml.compiler.util.ResourceDiagnosticsWrapper;
 import org.openmodelica.crml.compiler.util.ThrowableWrapper;
 import org.openmodelica.crml.compiler.util.TraceWrapper;
 import org.openmodelica.crml.testresources.TestResourcesRoot;
@@ -69,7 +71,10 @@ public abstract class OMCv2SpecificationTest extends ReportedTest {
         if (run.dom() != null) {
             emit(ObjectModelWrapper.of(run.dom()), "Object Model");
         }
-        if (run.error() == null) {
+        if (!run.diagnostics().isEmpty()) {
+            emit(ResourceDiagnosticsWrapper.of(run.diagnostics()), "Errors");
+        }
+        if (run.diagnostics().isEmpty()) {
             Assumptions.assumeTrue(run.model() != null, "Definition is not a model (e.g. a library)");
         }
 
@@ -79,12 +84,13 @@ public abstract class OMCv2SpecificationTest extends ReportedTest {
             emit(TraceWrapper.of(result.trace()), "Trace");
             emit(DiagnosticsWrapper.of(result.diagnostics()), "Diagnostics");
         }
-        if (run.error() != null) {
-            emit(ThrowableWrapper.of(run.error()), "Error");
+        if (run.translationError() != null) {
+            emit(ThrowableWrapper.of(run.translationError()), "Error");
         }
 
         List<Diagnostic> errors = run.errors();
-        assertNull(run.error(), "OMCv2 translation threw an exception");
+        assertTrue(run.diagnostics().isEmpty(), "Building the object model reported errors: " + run.diagnostics());
+        assertNull(run.translationError(), "OMCv2 translation threw an exception");
         assertEquals(0, errors.size(), "OMCv2 recorded ERROR diagnostics: " + errors);
     }
 }

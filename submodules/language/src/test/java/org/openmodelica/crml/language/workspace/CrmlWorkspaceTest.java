@@ -181,6 +181,30 @@ public class CrmlWorkspaceTest {
         assertEquals(RootIndex.Lookup.Status.FOUND, ws.getIndex().lookup(first.getHeader().name()).status());
     }
 
+    @Test
+    void validationReportsABrokenDependencyOnly() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource library = ws.load("library L is { Boolean };");
+        CrmlResource model = ws.load("model M is L union {\nBoolean x is external;\n};");
+
+        ws.resolve();
+
+        assertEquals(CrmlResource.State.SYNTAX_ERRORS, library.getState());
+        assertTrue(model.getErrors().stream().noneMatch(d -> ((CrmlDiagnostic) d).getKind() == Kind.BROKEN_DEPENDENCY),
+            "a broken dependency is a validation error, not a load error");
+        List<String> messages = new ArrayList<>();
+        for (Diagnostic child : ws.validate(model).getChildren()) {
+            messages.add(child.getMessage());
+        }
+        List<String> broken = messages.stream()
+            .filter(m -> m.contains(Kind.BROKEN_DEPENDENCY.name()))
+            .collect(Collectors.toList());
+        assertEquals(1, broken.size(), () -> "validation: " + messages);
+        assertTrue(broken.get(0).startsWith(model.getURI() + ":1:11: "), broken.get(0));
+        assertTrue(messages.stream().noneMatch(m -> m.contains(Kind.SYNTAX.name())),
+            () -> "the dependency's own errors are not repeated: " + messages);
+    }
+
     private static String kinds(CrmlResource r) {
         return r.getErrors().stream()
             .map(d -> ((CrmlDiagnostic) d).getKind())
