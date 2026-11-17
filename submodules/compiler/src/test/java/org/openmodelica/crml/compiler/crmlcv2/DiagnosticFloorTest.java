@@ -136,7 +136,7 @@ public class DiagnosticFloorTest {
         category.setName("C");
         model.getOperators().add(category);
 
-        org.openmodelica.crml.model.metamodel.ModelDependency dependency = F.createModelDependency();
+        org.openmodelica.crml.model.metamodel.LibraryDependency dependency = F.createLibraryDependency();
         model.getSuperlibs().add(dependency);
 
         TranslationResult result = new OMCv2().translateModel(model);

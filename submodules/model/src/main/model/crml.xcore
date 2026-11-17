@@ -2,9 +2,24 @@
     bundleManifest="false",
     modelDirectory="crml-model/src-gen",
     complianceLevel="8.0",
-    prefix="CRML"
+    prefix="CRML",
+    rootExtendsClass="org.openmodelica.crml.model.base.CrmlObjectImpl",
+    rootExtendsInterface="org.openmodelica.crml.model.base.CrmlObject"
 )
 package org.openmodelica.crml.model.metamodel
+
+// Operations are one-line calls to static methods of hand-written Java
+// classes in org.openmodelica.crml.model.base, which hold the logic.
+import org.openmodelica.crml.model.base.NamespaceSupport
+
+/*
+ * CRML element that declares names: a {@link Class}, a {@link Library} (and
+ * so a {@link Model}) or a {@link CustomOperator}. Defined in Java, with the
+ * owned, inherited and all members of the namespace; see
+ * {@code org.openmodelica.crml.model.base.Namespace}.
+ */
+interface Namespace wraps org.openmodelica.crml.model.base.Namespace {
+}
 
 /*
  * Entity of a CRML model that has a name.
@@ -322,7 +337,7 @@ class BinaryOperator extends Operator, Value, Liftable {
  * {@link Operator} defined in CRML. Its signature is a sequence of keywords and
  * parameters, so calls to it can be written in natural language syntax.
  */
-abstract class CustomOperator extends Operator {
+abstract class CustomOperator extends Operator, Namespace {
     /*
      * Signature elements of an operator.
      * Sequence of {@link Variable} parameters and {@link Keyword} objects
@@ -364,6 +379,18 @@ abstract class CustomOperator extends Operator {
      */
     op boolean endsWithValue() {
         !header.isEmpty && header.get(header.size - 1) instanceof Variable
+    }
+    /*
+     * Members declared by the operator: its {@link #getVariables() parameters}.
+     */
+    op NamedEntity[] getOwnedMembers() {
+        NamespaceSupport.ownedMembers(this)
+    }
+    /*
+     * None: an operator inherits no members.
+     */
+    op Namespace[] getBaseNamespaces() {
+        NamespaceSupport.baseNamespaces(this)
     }
 }
 
@@ -535,7 +562,7 @@ class Set<D> extends Element, Value {
 /*
  * CRML class: a {@link Domain} of objects that have the same variables.
  */
-class Class extends Domain, NamedEntity {
+class Class extends Domain, NamedEntity, Namespace {
     // Domain of all objects, have the same attributes but no devinition (is it really practical? default values?)
     // TODO: A domain is a finite or infinite set of elements of the same kind.
     // TODO: a domain can be extended
@@ -555,6 +582,32 @@ class Class extends Domain, NamedEntity {
     contains Variable[] variables
 
     // TODO class specialization
+
+    /*
+     * Members declared by the class: its {@link #getVariables() variables}.
+     */
+    op NamedEntity[] getOwnedMembers() {
+        NamespaceSupport.ownedMembers(this)
+    }
+    /*
+     * The {@link #getSuperClasses() superclasses} that are set.
+     */
+    op Namespace[] getBaseNamespaces() {
+        NamespaceSupport.baseNamespaces(this)
+    }
+    /*
+     * Variables of the class, then the inherited ones it does not redeclare.
+     */
+    op Variable[] getAllVariables() {
+        NamespaceSupport.allVariables(this)
+    }
+    /*
+     * The variable of the given name: the class's own, else the first
+     * inherited one; null if there is none.
+     */
+    op Variable getVariable(String name) {
+        NamespaceSupport.variable(this, name)
+    }
 }
 
 /*
@@ -570,11 +623,10 @@ class PowerClass {
  * CRML library: a reusable collection of classes and operators
  * ({@code library L is { ... };}).
  */
-class Library extends NamedEntity {
+class Library extends NamedEntity, Namespace {
     //contains Element[] elements // TODO derived maybe?
     /*
      * Libraries and models that this one is built upon ({@code L union}).
-     * Not filled in by the parser yet.
      */
     contains Dependency[] superlibs
     // TODO: A library can contain domain extensions
@@ -589,6 +641,35 @@ class Library extends NamedEntity {
     contains Operator[] operators
     //contains Template[] templates // Not in specs, but might be good to have
     // TODO: A library can contain categories
+
+    /*
+     * Members declared by the library: its {@link #getClasses() classes},
+     * then its {@link #getOperators() operators}.
+     */
+    op NamedEntity[] getOwnedMembers() {
+        NamespaceSupport.ownedMembers(this)
+    }
+    /*
+     * The libraries and models of the {@link #getSuperlibs() dependencies}
+     * that are bound.
+     */
+    op Namespace[] getBaseNamespaces() {
+        NamespaceSupport.baseNamespaces(this)
+    }
+    /*
+     * Classes of the library, then those of its dependencies that it does
+     * not redeclare.
+     */
+    op Class[] getAllClasses() {
+        NamespaceSupport.allClasses(this)
+    }
+    /*
+     * Operators of the library, then those of its dependencies that it does
+     * not redeclare.
+     */
+    op Operator[] getAllOperators() {
+        NamespaceSupport.allOperators(this)
+    }
 }
 
 /*
@@ -613,6 +694,22 @@ class Model extends Library {
      * Time period in which the model is evaluated.
      */
     contains Period frame
+
+    /*
+     * Members declared by the model: those of a {@link Library}, then its
+     * {@link #getVariables() variables}, {@link #getObjects() objects} and
+     * {@link #getSets() sets}.
+     */
+    op NamedEntity[] getOwnedMembers() {
+        NamespaceSupport.ownedMembers(this)
+    }
+    /*
+     * Variables of the model, then those of the models it depends on that it
+     * does not redeclare.
+     */
+    op Variable[] getAllVariables() {
+        NamespaceSupport.allVariables(this)
+    }
 }
 
 /*
@@ -1112,12 +1209,18 @@ abstract class Dependency {
 }
 
 /*
- * Dependency on a {@link Model}.
- * Not produced by the parser yet, and not supported by the compiler.
+ * Dependency on a library or model by its declared name, as written in the
+ * header ({@code L union}; {@code flatten { A, B } union} gives one per name).
  */
-class ModelDependency extends Dependency {
+class LibraryDependency extends Dependency {
     /*
-     * The model depended on.
+     * The declared name of the library or model depended on.
      */
-    refers Model referedModel
+    String name
+    /*
+     * The library or model of that name (a {@link Model} is a
+     * {@link Library}); null until the workspace binds it, and left null if
+     * no single file that builds declares the name.
+     */
+    refers Library library
 }
