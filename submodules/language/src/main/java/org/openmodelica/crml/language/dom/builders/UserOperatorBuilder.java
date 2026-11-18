@@ -1,5 +1,8 @@
 package org.openmodelica.crml.language.dom.builders;
 
+import crml.language.grammar.crmlParser.ExpContext;
+import org.openmodelica.crml.language.dom.Recovery;
+
 import crml.language.grammar.crmlParser.OperatorContext;
 import crml.language.grammar.crmlParser.OperatorKeywordContext;
 import crml.language.grammar.crmlParser.OperatorParameterContext;
@@ -44,7 +47,7 @@ public class UserOperatorBuilder {
 
                     TypeReference paramtyperef = (TypeReference) builder.build(param.domain, SingleBuildResult.class).<TypeReference>result();
                     v.setDomain(paramtyperef);
-                    v.setName(param.name.getText());
+                    v.setName(Recovery.required(param.name, "parameter name"));
                     operator.getHeader().add(v);
                 } else if(p instanceof OperatorKeywordContext){
                     OperatorKeywordContext kwc = (OperatorKeywordContext) p;
@@ -55,10 +58,7 @@ public class UserOperatorBuilder {
                 }
             }
 
-            if(naturalContext.value!=null){
-                Value value = (Value) builder.build(naturalContext.value, SingleBuildResult.class).<Value>result();
-                operator.setDefinition(value);
-            }
+            definition(operator, naturalContext.value);
         } else {
             ProgramOperatorDefContext programContext = (ProgramOperatorDefContext) context.operator_def(); 
             for(Operator_parameter_programContext param : programContext.args){
@@ -66,17 +66,22 @@ public class UserOperatorBuilder {
 
                 TypeReference paramtyperef = (TypeReference) builder.build(param.domain, SingleBuildResult.class).<TypeReference>result();
                 v.setDomain(paramtyperef);
-                v.setName(param.name.getText());
+                v.setName(Recovery.required(param.name, "parameter name"));
                 operator.getHeader().add(v);
             }
 
-            if(programContext.value!=null){
-                Value value = (Value) builder.build(programContext.value, SingleBuildResult.class).<Value>result();
-                operator.setDefinition(value);
-            }
+            definition(operator, programContext.value);
         }
 
         return operator;
+    }
+
+    /** Left out if it cannot be built: the operator can still be called. */
+    private void definition(UserOperator operator, ExpContext value) {
+        SingleBuildResult<?> definition = builder.buildPart(value, SingleBuildResult.class);
+        if (definition != null) {
+            operator.setDefinition(definition.<Value>result());
+        }
     }
 }
 

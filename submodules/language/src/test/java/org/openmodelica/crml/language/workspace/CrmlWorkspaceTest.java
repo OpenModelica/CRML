@@ -199,17 +199,20 @@ public class CrmlWorkspaceTest {
     }
 
     @Test
-    void syntaxErrorsCanBeValidatedWithoutADom() {
+    void syntaxErrorsGiveAPartialDomThatCanBeValidated() {
         CrmlWorkspace ws = new CrmlWorkspace();
         CrmlResource r = ws.load("model M is { Boolean };");
 
         ws.resolve();
 
         assertEquals(CrmlResource.State.SYNTAX_ERRORS, r.getState());
-        assertNull(r.getRoot());
+        assertFalse(r.isComplete());
+        Model m = (Model) r.getRoot();
+        assertEquals("M", m.getName());
+        assertTrue(m.getVariables().isEmpty(), "the variable without a name is left out");
         assertNotNull(r.getHeader(), "the header is read even with syntax errors");
         assertEquals("M", r.getHeader().name());
-        assertTrue(kinds(r).startsWith("[SYNTAX"));
+        assertTrue(kinds(r).matches("\\[SYNTAX(, SYNTAX)*\\]"), () -> "leaving out the variable is not reported again: " + kinds(r));
         assertEquals(Diagnostic.ERROR, ws.validate(r).getSeverity());
     }
 

@@ -1,6 +1,7 @@
 package org.openmodelica.crml.language.dom.builders;
 
-import static org.openmodelica.crml.language.dom.builders.util.DomUtils.text;
+import org.openmodelica.crml.language.dom.Recovery;
+
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -26,7 +27,7 @@ public class ClassBuilder {
 
     public Class buildClass(Class_defContext context){
         Class cls = factory.createClass();
-        cls.setName(text(context.id()));
+        cls.setName(Recovery.required(context.id(), "class name"));
 
         cls.setPartial(context.partial!=null);
 
@@ -41,8 +42,9 @@ public class ClassBuilder {
         }
         
         for(Class_var_defContext elemets : context.class_var_def()){
-            SingleBuildResult<?> buildres = builder.build(elemets, SingleBuildResult.class);
-            if(buildres == null) {
+            SingleBuildResult<?> buildres = builder.buildPart(elemets, SingleBuildResult.class);
+            if(buildres == null || (buildres.result() == null && Recovery.hasSyntaxError(elemets))) {
+                // Given up, or nothing was written: the syntax error says why.
                 continue;
             }
                 

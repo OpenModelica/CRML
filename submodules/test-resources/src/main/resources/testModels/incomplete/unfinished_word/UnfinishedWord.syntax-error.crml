@@ -1,0 +1,5 @@
+// A word is being typed after a value.
+model UnfinishedWord is {
+	Boolean x is true;
+	Boolean y is x an
+};

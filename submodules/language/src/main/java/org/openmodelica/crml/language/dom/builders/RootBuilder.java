@@ -1,6 +1,8 @@
 package org.openmodelica.crml.language.dom.builders;
 
-import static org.openmodelica.crml.language.dom.builders.util.DomUtils.text;
+import org.openmodelica.crml.language.dom.Recovery;
+
+import static org.openmodelica.crml.language.dom.builders.util.DomUtils.name;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,15 +52,16 @@ public class RootBuilder {
     private Model processModel(DefinitionContext context){
         Model model = factory.createModel();
         
-        model.setName(text(context.id()));
+        model.setName(name(context.id()));
 
         for(DependencyContext depcontext : context.dependency()){
             model.getSuperlibs().addAll(parse(depcontext));
         }
 
         for(Element_defContext elemets : context.element_def()){
-            SingleBuildResult<?> buildres = builder.build(elemets, SingleBuildResult.class);
-            if(buildres == null) {
+            SingleBuildResult<?> buildres = builder.buildPart(elemets, SingleBuildResult.class);
+            if(buildres == null || (buildres.result() == null && Recovery.hasSyntaxError(elemets))) {
+                // Given up, or nothing was written: the syntax error says why.
                 continue;
             }
                 
@@ -82,15 +85,16 @@ public class RootBuilder {
     private Library processLibrary(DefinitionContext context){
         Library library = factory.createLibrary();
         
-        library.setName(text(context.id()));
+        library.setName(name(context.id()));
 
         for(DependencyContext depcontext : context.dependency()){
             library.getSuperlibs().addAll(parse(depcontext));
         }
 
         for(Element_defContext elemets : context.element_def()){
-            SingleBuildResult<?> buildres = builder.build(elemets, SingleBuildResult.class);
-            if(buildres == null) {
+            SingleBuildResult<?> buildres = builder.buildPart(elemets, SingleBuildResult.class);
+            if(buildres == null || (buildres.result() == null && Recovery.hasSyntaxError(elemets))) {
+                // Given up, or nothing was written: the syntax error says why.
                 continue;
             }
                 
@@ -116,12 +120,14 @@ public class RootBuilder {
         List<Dependency> dependencies = new ArrayList<>();
         if (context instanceof SingleDependencyContext) {
             IdContext id = ((SingleDependencyContext) context).id();
-            if (id != null) {
+            if (!Recovery.isMissing(id)) {
                 dependencies.add(dependency(id));
             }
         } else if (context instanceof DependencySetContext) {
             for (IdContext id : ((DependencySetContext) context).id()) {
-                dependencies.add(dependency(id));
+                if (!Recovery.isMissing(id)) {
+                    dependencies.add(dependency(id));
+                }
             }
         } else {
             builder.reportError(context, "Unknown dependency type: "+context.getClass().getSimpleName());
@@ -131,7 +137,7 @@ public class RootBuilder {
 
     private LibraryDependency dependency(IdContext id) {
         LibraryDependency dependency = factory.createLibraryDependency();
-        dependency.setName(id.getText());
+        dependency.setName(Recovery.required(id, "dependency name"));
         builder.position(dependency, id);
         return dependency;
     }

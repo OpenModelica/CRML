@@ -1,5 +1,7 @@
 package org.openmodelica.crml.language.dom.builders;
 
+import org.openmodelica.crml.language.dom.Recovery;
+
 import crml.language.grammar.crmlParser.Var_defContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
@@ -24,7 +26,7 @@ public class VariableBuilder {
 
         var.setCollection(false);
         
-        var.setName(context.id().getText());
+        var.setName(Recovery.required(context.id(), "variable name"));
 
         var.setConstant(context.cnst!=null);
 
@@ -33,9 +35,10 @@ public class VariableBuilder {
         TypeReference typeref = (TypeReference) builder.build(context.type(), SingleBuildResult.class).<TypeReference>result();
         var.setDomain(typeref);
 
-        if(context.exp()!=null){
-            Value value = (Value) builder.build(context.exp(), SingleBuildResult.class).<Value>result();
-            var.setDefinition(value);
+        // Left out if it cannot be built: the variable is still declared.
+        SingleBuildResult<?> definition = builder.buildPart(context.exp(), SingleBuildResult.class);
+        if(definition != null){
+            var.setDefinition(definition.<Value>result());
         }
         
         return var;

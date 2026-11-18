@@ -1,0 +1,5 @@
+// The name of the first variable is not written yet: it is left out.
+model MissingName is {
+	Boolean ;
+	Boolean y is true;
+};

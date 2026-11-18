@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
+import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -21,9 +23,12 @@ import org.openmodelica.crml.language.util.Parser;
  * other resources cannot be resolved before every file of the run is loaded.
  * The {@link CrmlWorkspace} links it later, see {@link #getState()}.
  *
- * <p>A file with syntax errors still gets a resource: its errors are in
- * {@link #getErrors()}, its {@link #getHeader() header} may be readable, but
- * it has no contents ("load as much as possible").
+ * <p>A file with syntax or build errors still gets a resource ("load as
+ * much as possible"): its errors are in {@link #getErrors()}, its
+ * {@link #getHeader() header} may be readable, and it has a partial DOM if
+ * the parser could recover enough of it: what could not be built is left
+ * out (see {@link #isComplete()}). Its {@link #getSourceMap() source map}
+ * tells where each object of the DOM is in the text.
  */
 public class CrmlResource extends ResourceImpl {
 
@@ -31,13 +36,21 @@ public class CrmlResource extends ResourceImpl {
     public enum State {
         /** Not loaded yet. */
         NEW,
-        /** Parsed with syntax errors: no DOM. */
+        /**
+         * Parsed with syntax errors. The DOM, if any, is partial: built from
+         * what the parser recovered. It is resolved like a complete one, but
+         * the state stays.
+         */
         SYNTAX_ERRORS,
-        /** Parsed, but building the DOM failed: no DOM. */
+        /**
+         * Parsed, but building the DOM reported errors. The DOM, if any, is
+         * partial: it lacks what could not be built. It is resolved like a
+         * complete one, but the state stays.
+         */
         BUILD_FAILED,
-        /** DOM built, not linked yet. */
+        /** Complete DOM built, not linked yet. */
         BUILT,
-        /** Linked, operator calls resolved, lifted. Done. */
+        /** Complete DOM linked, operator calls resolved, lifted. Done. */
         RESOLVED
     }
 
@@ -46,6 +59,9 @@ public class CrmlResource extends ResourceImpl {
     private String location;
     private Parser.ParserResult parsed;
     private RootHeader header;
+    private SourceMap sourceMap;
+    /** True once the workspace resolved the DOM, complete or partial. */
+    private boolean resolved;
 
     /**
      * The visitor that built the DOM. It holds the queued link tasks until
@@ -61,23 +77,24 @@ public class CrmlResource extends ResourceImpl {
     protected void doLoad(InputStream inputStream, Map<?, ?> options) throws IOException {
         parsed = new Parser().parse(CharStreams.fromString(read(inputStream), location()));
         header = RootHeader.read(parsed.ast());
+        boolean syntaxErrors = parsed.syntax().hasErrors();
+        getErrors().addAll(parsed.syntax().errors());
 
-        if (parsed.syntax().hasErrors()) {
-            getErrors().addAll(parsed.syntax().errors());
-            state = State.SYNTAX_ERRORS;
-            return;
-        }
-
-        visitor = new DOMVisitor();
+        // Built from what the parser recovered if there are syntax errors.
+        sourceMap = new SourceMap((BufferedTokenStream) parsed.parser().getTokenStream());
+        visitor = new DOMVisitor(sourceMap);
         EObject root = visitor.buildRoot(parsed.ast());
-        getErrors().addAll(visitor.takeErrors());
+        List<CrmlDiagnostic> buildErrors = visitor.takeErrors();
+        getErrors().addAll(buildErrors);
+        sourceMap.collectHoles(parsed.ast());
+        eAdapters().add(sourceMap);
+
+        state = syntaxErrors ? State.SYNTAX_ERRORS : !buildErrors.isEmpty() ? State.BUILD_FAILED : State.BUILT;
         if (root == null) {
             visitor = null;
-            state = State.BUILD_FAILED;
             return;
         }
         getContents().add(root);
-        state = State.BUILT;
     }
 
     /**
@@ -102,6 +119,11 @@ public class CrmlResource extends ResourceImpl {
         parsed = null;
         header = null;
         visitor = null;
+        resolved = false;
+        if (sourceMap != null) {
+            eAdapters().remove(sourceMap);
+            sourceMap = null;
+        }
     }
 
     /** The root of the DOM, or null if the file did not get that far. */
@@ -110,6 +132,24 @@ public class CrmlResource extends ResourceImpl {
     }
 
     public State getState() { return state; }
+
+    /**
+     * True if the file was loaded without syntax or build errors, so its DOM
+     * (if any) has all it declares. A file that is not complete is
+     * {@link RootIndex.Lookup.Status#BROKEN broken} for its dependents, which
+     * still see what its partial DOM has.
+     */
+    public boolean isComplete() {
+        return state == State.BUILT || state == State.RESOLVED;
+    }
+
+    /** True if there is a DOM the workspace has not resolved yet. */
+    public boolean needsResolving() {
+        return getRoot() != null && !resolved;
+    }
+
+    /** Where each object of the DOM is in the text; null before loading. */
+    public SourceMap getSourceMap() { return sourceMap; }
 
     /** The parse result, or null before loading. */
     public Parser.ParserResult getParsed() { return parsed; }
@@ -125,7 +165,10 @@ public class CrmlResource extends ResourceImpl {
 
     /** Called by the workspace once linking and operator-call resolution are done. */
     void markResolved() {
-        state = State.RESOLVED;
+        if (state == State.BUILT) {
+            state = State.RESOLVED;
+        }
+        resolved = true;
         visitor = null;
     }
 

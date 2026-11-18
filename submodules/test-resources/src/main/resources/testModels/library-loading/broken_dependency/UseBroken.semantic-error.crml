@@ -1,5 +1,6 @@
-// Expected: validation error on the dependency, Logic could not be loaded
-// (Logic has a syntax error). Must not crash the run.
+// Expected: validation error on the dependency, as Logic has a syntax error.
+// What of Logic could be built is still used: 'or' resolves. Must not crash
+// the run.
 model UseBroken is Logic union {
 	Boolean x is external;
 	Boolean y is external;

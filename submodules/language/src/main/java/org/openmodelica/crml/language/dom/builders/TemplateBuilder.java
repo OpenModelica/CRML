@@ -1,5 +1,7 @@
 package org.openmodelica.crml.language.dom.builders;
 
+import org.openmodelica.crml.language.dom.Recovery;
+
 import crml.language.grammar.crmlParser.TemplateContext;
 import crml.language.grammar.crmlParser.TemplateKeywordContext;
 import crml.language.grammar.crmlParser.TemplateParameterContext;
@@ -41,7 +43,7 @@ public class TemplateBuilder {
                 ref2.setBuiltinType(BuiltinType.BOOLEAN);
                 v.setDomain(ref2);
 
-                v.setName(param.name.getText());
+                v.setName(Recovery.required(param.name, "parameter name"));
                 template.getHeader().add(v);
             } else if(p instanceof TemplateKeywordContext){
                 TemplateKeywordContext kwc = (TemplateKeywordContext) p;
@@ -53,9 +55,10 @@ public class TemplateBuilder {
         }
         
 
-        if(context.value!=null){
-            Value value = (Value) builder.build(context.value, SingleBuildResult.class).<Value>result();
-            template.setDefinition(value);
+        // Left out if it cannot be built: the template can still be called.
+        SingleBuildResult<?> definition = builder.buildPart(context.value, SingleBuildResult.class);
+        if (definition != null) {
+            template.setDefinition(definition.<Value>result());
         }
 
         return template;

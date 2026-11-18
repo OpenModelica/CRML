@@ -1,5 +1,7 @@
 package org.openmodelica.crml.language.dom.builders;
 
+import org.openmodelica.crml.language.dom.Recovery;
+
 import org.eclipse.emf.ecore.EClass;
 
 import crml.language.grammar.crmlParser.TypeContext;
@@ -42,7 +44,7 @@ public class TypeReferenceBuilder {
             builder.link(
                 ref, 
                 refclass.getEStructuralFeature("domain"), 
-                context.id().getText()
+                Recovery.required(context.id(), "type name")
             );
             return ref;
         }

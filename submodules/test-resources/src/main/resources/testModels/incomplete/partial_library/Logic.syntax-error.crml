@@ -1,0 +1,5 @@
+// One operator of the library is broken; the other can still be used.
+library Logic is {
+	Operator [ Boolean ] 'broken' Boolean b = b and ;
+	Template b1 'or' b2 = not (not b1 and not b2);
+};

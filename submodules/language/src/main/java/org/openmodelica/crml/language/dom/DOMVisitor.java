@@ -1,9 +1,7 @@
 package org.openmodelica.crml.language.dom;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.antlr.v4.runtime.IntStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -42,6 +40,7 @@ import org.openmodelica.crml.language.opcall.MixfixParser;
 import org.openmodelica.crml.language.scope.Resolution;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
+import org.openmodelica.crml.language.workspace.SourceMap;
 import org.openmodelica.crml.model.metamodel.Library;
 import org.openmodelica.crml.model.metamodel.Sequence;
 
@@ -52,8 +51,8 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final List<ModificationTask> modificationTasks = new ArrayList<>();
     /** Reported with {@link #reportError}, not yet taken by {@link #takeErrors()}. */
     private final List<CrmlDiagnostic> errors = new ArrayList<>();
-    /** Where each built object starts in the source: the innermost node it was built from. */
-    private final Map<EObject, Token> starts = new IdentityHashMap<>();
+    /** Where each built object is in the source: the innermost node it was built from. */
+    private final SourceMap sources;
 
     private final RootBuilder root = new RootBuilder(this);
     private final ClassBuilder cls = new ClassBuilder(this);
@@ -65,13 +64,32 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final UserOperatorBuilder userop =  new UserOperatorBuilder(this);
     private final TemplateBuilder templates =  new TemplateBuilder(this);
 
+    /** A visitor that traces what it builds in a source map of its own, without the tokens. */
+    public DOMVisitor() {
+        this(new SourceMap(null));
+    }
+
+    /** A visitor that traces what it builds in {@code sources}. */
+    public DOMVisitor(SourceMap sources) {
+        this.sources = sources;
+    }
+
+    /** Where each object built so far is in the source. */
+    public SourceMap sourceMap() {
+        return sources;
+    }
+
     /**
      * Builds the DOM of a whole parse tree. Never throws: what goes wrong is
      * in {@link #takeErrors()}, each error at its position in the source; an
      * exception thrown while building is reported at the innermost node being
      * built, with the exception as its cause.
      *
-     * @return the root, or null if building reported any error
+     * <p>A file with syntax errors is built from the tree the parser
+     * recovered; a part of it that cannot be built is left out (see
+     * {@link #buildPart}). The root is then partial.
+     *
+     * @return the root, or null if none could be built
      */
     public EObject buildRoot(ParseTree tree) {
         EObject result = null;
@@ -88,11 +106,15 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         if (result == null && errors.isEmpty()) {
             errors.add(diagnostic(Kind.DOM_BUILD, start(tree), "The file does not define a model or a library", null));
         }
-        return errors.isEmpty() ? result : null;
+        return result;
     }
 
     // recursion funnels through here, so dispatch stays in one place
     @Override public BuildResult build(ParseTree n) {
+        if (n instanceof ParserRuleContext && Recovery.isMissing(n)) {
+            // The parser expected a rule here, but nothing of it was written.
+            return BuildResult.wrap((EObject) null);
+        }
         BuildResult result;
         try {
             result = visit(n);
@@ -113,6 +135,20 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
         }
     }
 
+    @Override public <T extends BuildResult> T buildPart(ParseTree n, Class<T> type) {
+        if (n == null) {
+            return null;
+        }
+        try {
+            return build(n, type);
+        } catch (BuildFailure e) {
+            if (!Recovery.hasSyntaxError(n)) {
+                errors.add(diagnostic(Kind.DOM_BUILD, e.start, message(e.getCause()), e.getCause()));
+            }
+            return null;
+        }
+    }
+
     @Override
     public void reportError(ParseTree at, String message) {
         errors.add(diagnostic(Kind.DOM_BUILD, start(at), message, null));
@@ -125,10 +161,7 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
 
     @Override
     public void position(EObject object, ParseTree source) {
-        Token start = start(source);
-        if (object != null && start != null) {
-            starts.putIfAbsent(object, start);
-        }
+        sources.record(object, source);
     }
 
     @Override
@@ -152,30 +185,17 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
      * is none (e.g. {@code at} was not built by this visitor).
      */
     public CrmlDiagnostic diagnosticAt(EObject at, Kind kind, String message, Throwable cause) {
-        Token start = null;
-        for (EObject object = at; object != null && start == null; object = object.eContainer()) {
-            start = starts.get(object);
-        }
-        return diagnostic(kind, start, message, cause);
+        return diagnostic(kind, sources.position(at), message, cause);
     }
 
     private void remember(BuildResult result, ParseTree n) {
-        Token start = start(n);
-        if (start == null) {
-            return;
-        }
         // The innermost node is built first, so it wins over the nodes that
         // only pass its result on.
         if (result instanceof BuildResult.SingleBuildResult) {
-            EObject object = ((BuildResult.SingleBuildResult<?>) result).result();
-            if (object != null) {
-                starts.putIfAbsent(object, start);
-            }
+            sources.record(((BuildResult.SingleBuildResult<?>) result).<EObject>result(), n);
         } else if (result instanceof BuildResult.MultiBuildResult) {
             for (EObject object : ((BuildResult.MultiBuildResult<?>) result).<EObject>results()) {
-                if (object != null) {
-                    starts.putIfAbsent(object, start);
-                }
+                sources.record(object, n);
             }
         }
     }
@@ -308,6 +328,9 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
                 return false;
             }
             applied.add(task.applied());
+            if (task.oldValue instanceof EObject) {
+                sources.replace((EObject) task.oldValue, task.value);
+            }
             return true;
         }));
 

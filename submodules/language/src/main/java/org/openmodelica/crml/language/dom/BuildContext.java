@@ -13,6 +13,18 @@ public interface BuildContext {
     BuildResult build(ParseTree node);
     <T extends BuildResult> T build(ParseTree node, Class<T> type);
 
+    /**
+     * Builds a part that can be left out of what contains it, e.g. one
+     * element of a model or the definition of a variable: as
+     * {@link #build(ParseTree, Class)}, but if building it fails, only the
+     * part is given up and null is returned. The failure is reported unless
+     * the part has a syntax error, which is reported already (the parser
+     * recovered, and the part is what it made of the text).
+     *
+     * @param node the part; null if the parser found none, which gives null
+     */
+    <T extends BuildResult> T buildPart(ParseTree node, Class<T> type);
+
     default CRMLFactory factory(){
         return CRMLFactory.eINSTANCE;
     }
@@ -31,15 +43,15 @@ public interface BuildContext {
     
     /**
      * Records that the construct at {@code at} is valid CRML that is not
-     * supported yet. Building goes on; the file then has no DOM.
+     * supported yet. Building goes on; the DOM of the file is then partial.
      */
     void reportImplementationError(ParseTree at, String message);
 
     /**
      * Records an error in the model at {@code at}, as a
      * {@link CrmlDiagnostic.Kind#DOM_BUILD} diagnostic at its position.
-     * Building goes on, so that one run reports all such errors; the file
-     * then has no DOM.
+     * Building goes on, so that one run reports all such errors; the DOM of
+     * the file is then partial.
      */
     void reportError(ParseTree at, String message);
 

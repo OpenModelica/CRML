@@ -11,7 +11,9 @@
  * <ol>
  * <li><b>Per file</b> ({@link org.openmodelica.crml.language.workspace.CrmlResource#load}):
  *     parse, read the {@link org.openmodelica.crml.language.workspace.RootHeader header},
- *     build the DOM. No linking.</li>
+ *     build the DOM and its {@link org.openmodelica.crml.language.workspace.SourceMap source map}.
+ *     No linking. A file with syntax or build errors gets a partial DOM: what
+ *     could be built from the text the parser recovered.</li>
  * <li><b>Per run</b> ({@link org.openmodelica.crml.language.workspace.CrmlWorkspace#resolve()}):
  *     index the roots by declared name, bind the dependencies, order the roots
  *     dependencies-first, then link, resolve operator calls and lift, root by root.</li>

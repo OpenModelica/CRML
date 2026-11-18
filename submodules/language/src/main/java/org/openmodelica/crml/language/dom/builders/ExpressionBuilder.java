@@ -1,5 +1,7 @@
 package org.openmodelica.crml.language.dom.builders;
 
+import org.openmodelica.crml.language.dom.Recovery;
+
 import org.eclipse.emf.ecore.EClass;
 
 import crml.language.grammar.crmlParser.DurationContext;
@@ -128,7 +130,7 @@ public class ExpressionBuilder {
 
         } else if(context.id() != null) {
             VariableReference ref = factory.createVariableReference();
-            builder.link(ref, varref.getEStructuralFeature("variable"), context.id().getText());
+            builder.link(ref, varref.getEStructuralFeature("variable"), Recovery.required(context.id(), "name"));
             return ref;
         } else if(context.integrate() != null) {
             IntegrateContext intcontext = context.integrate();

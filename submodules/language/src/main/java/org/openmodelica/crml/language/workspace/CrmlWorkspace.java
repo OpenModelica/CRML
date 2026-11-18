@@ -227,9 +227,9 @@ public class CrmlWorkspace {
     }
 
     /**
-     * Resolves every resource that is {@link CrmlResource.State#BUILT built}
-     * but not resolved yet. Resolved resources are skipped, so a library
-     * shared by several models is resolved once.
+     * Resolves every resource that has a DOM, complete or partial, but is not
+     * resolved yet. Resolved resources are skipped, so a library shared by
+     * several models is resolved once.
      *
      * <ol>
      * <li>{@link #bind}: the dependencies of every root are bound to the roots
@@ -248,7 +248,7 @@ public class CrmlWorkspace {
     public void resolve() {
         List<CrmlResource> bound = new ArrayList<>();
         for (CrmlResource resource : resources()) {
-            if (resource.getState() == CrmlResource.State.BUILT && bind(resource) != null) {
+            if (resource.needsResolving() && bind(resource) != null) {
                 bound.add(resource);
             }
         }
@@ -259,8 +259,10 @@ public class CrmlWorkspace {
 
     /**
      * Stage 0: binds each {@link LibraryDependency} of the root to the root
-     * its name is declared by, if exactly one file that builds declares it.
-     * Others stay unbound; reporting them is left to validation.
+     * its name is declared by, if exactly one file declares it and it has a
+     * DOM, even a partial one: a dependent then gets what of it could be
+     * built. Others stay unbound. Reporting problems, a broken dependency
+     * included, is left to validation.
      *
      * @return what the stage did; null stops the resolution of {@code resource}
      */

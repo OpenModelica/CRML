@@ -1,0 +1,7 @@
+// Depending on a library with errors is a validation error, but what of it
+// could be built is used: 'or' resolves.
+model UseLogic is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

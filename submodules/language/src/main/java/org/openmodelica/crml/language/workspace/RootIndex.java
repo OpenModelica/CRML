@@ -27,9 +27,12 @@ public class RootIndex extends AdapterImpl {
     /** The result of looking up a declared name. */
     public static final class Lookup {
         public enum Status {
-            /** Exactly one file declares the name and its DOM was built. */
+            /** Exactly one file declares the name and its DOM was built completely. */
             FOUND,
-            /** One file declares the name, but it has syntax or build errors. */
+            /**
+             * One file declares the name, but it has syntax or build errors.
+             * Its DOM, if any, is partial: {@link Lookup#root()} still gives it.
+             */
             BROKEN,
             /** No file declares the name. */
             MISSING,
@@ -50,9 +53,13 @@ public class RootIndex extends AdapterImpl {
         /** The resources declaring the name; empty if missing. */
         public List<CrmlResource> resources() { return resources; }
 
-        /** The root if {@link Status#FOUND}, null otherwise. */
+        /**
+         * The root if exactly one file declares the name: complete if
+         * {@link Status#FOUND}, partial or null if {@link Status#BROKEN}.
+         * Null otherwise.
+         */
         public EObject root() {
-            return status == Status.FOUND ? resources.get(0).getRoot() : null;
+            return status == Status.FOUND || status == Status.BROKEN ? resources.get(0).getRoot() : null;
         }
     }
 
@@ -103,7 +110,9 @@ public class RootIndex extends AdapterImpl {
         if (declaring.size() > 1) {
             return new Lookup(Lookup.Status.DUPLICATE, copy);
         }
-        return new Lookup(declaring.get(0).getRoot() != null ? Lookup.Status.FOUND : Lookup.Status.BROKEN, copy);
+        CrmlResource resource = declaring.get(0);
+        boolean complete = resource.getRoot() != null && resource.isComplete();
+        return new Lookup(complete ? Lookup.Status.FOUND : Lookup.Status.BROKEN, copy);
     }
 
     /** The declared names, in the order they were first indexed. */

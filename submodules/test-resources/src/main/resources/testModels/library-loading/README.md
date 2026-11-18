@@ -76,14 +76,14 @@ on through `L union` / `flatten { A, B } union`. Each case tests one thing.
 | `unused_dependency` | dependency never used | correct |
 | `empty_library` | empty library | correct |
 | `file_name_differs` | lookup by declared name, not file name | correct |
-| `unrelated_broken_file` | a file with a syntax error that nothing depends on | model correct |
+| `unrelated_broken_file` | a file with a syntax error that nothing depends on; it is loaded partially | model correct |
 | `missing_library` | dependency not found | semantic error |
 | `not_in_scope_without_union` | a library loaded in the run but not unioned is not in scope | semantic error |
 | `dependency_is_one_way` | a library cannot use what its dependent declares | semantic error |
 | `library_depends_on_model` | library depends on a model | semantic error |
 | `self_dependency` | library depends on itself | semantic error |
 | `cycle` | A depends on B depends on A | semantic error (both) |
-| `broken_dependency` | dependency has a syntax error | syntax error + semantic error |
+| `broken_dependency` | dependency has a syntax error; what of it builds is still used | syntax error + semantic error |
 | `unresolved_name_in_library` | unknown name inside a library (NPE today) | library semantic error, model correct |
 | `etl` | Category-free ETL with four models (see below) | correct |
 
