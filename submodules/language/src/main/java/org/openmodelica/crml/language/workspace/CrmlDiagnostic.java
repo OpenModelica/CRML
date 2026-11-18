@@ -24,6 +24,11 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
         AMBIGUOUS_REFERENCE,
         /** A name is used in its own declaration, e.g. {@code Boolean x is x;}. */
         SELF_REFERENCE,
+        /**
+         * A name denotes a declaration that cannot be used where it is
+         * written, e.g. a variable of the model in an operator body.
+         */
+        INACCESSIBLE_REFERENCE,
         DUPLICATE_DECLARATION,
         /** Operator-call resolution failed, e.g. an ambiguous call. */
         OPERATOR_CALL,

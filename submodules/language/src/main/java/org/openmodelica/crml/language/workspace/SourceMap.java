@@ -252,6 +252,58 @@ public final class SourceMap extends AdapterImpl {
         return Collections.unmodifiableList(holes);
     }
 
+    /**
+     * True if the parser recovered from a syntax error within the source of
+     * {@code object}, from its first to its last token, or on the token just
+     * before it. Such an object may be made of fragments of the text around
+     * the error: after a missing {@code ;}, {@code Real d is time from e;}
+     * also gives a variable {@code e} of type {@code from}, and after an
+     * unexpected {@code .}, {@code during env.on ensure b;} gives a variable
+     * {@code ensure} of type {@code on}. Positions are compared by line and
+     * column, since the token the parser conjures for a missing one has no
+     * index. A declaration that follows an error directly is counted too,
+     * even if it is well written.
+     */
+    public boolean recovered(EObject object) {
+        Token start = start(object);
+        Token stop = stop(object);
+        if (start == null || stop == null) {
+            return false;
+        }
+        int before = previousOnDefaultChannel(start);
+        for (Hole hole : holes) {
+            Token at = hole.at();
+            if (at == null) {
+                continue;
+            }
+            if (compare(start, at) <= 0 && compare(at, stop) <= 0) {
+                return true;
+            }
+            if (before >= 0 && at.getTokenIndex() == before) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The index of the token before {@code token}, comments and white space skipped; -1 if unknown. */
+    private int previousOnDefaultChannel(Token token) {
+        if (tokens == null || token.getTokenIndex() < 0) {
+            return -1;
+        }
+        for (int i = token.getTokenIndex() - 1; i >= 0; i--) {
+            if (tokens.get(i).getChannel() == Token.DEFAULT_CHANNEL) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int compare(Token a, Token b) {
+        return a.getLine() != b.getLine() ? Integer.compare(a.getLine(), b.getLine())
+            : Integer.compare(a.getCharPositionInLine(), b.getCharPositionInLine());
+    }
+
     // ---------------------------------------------------------------------
     // Comments
     // ---------------------------------------------------------------------

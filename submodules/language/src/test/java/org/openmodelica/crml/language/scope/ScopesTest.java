@@ -43,13 +43,13 @@ public class ScopesTest {
     @Test
     void listsTheNearestNamespaceFirst() {
         CrmlResource r = resolved("model M is {\n"
-            + "Integer m is external;\n"
+            + "constant Integer m is 1;\n"
             + "class C is { Integer c is external; Integer d is c; };\n"
             + "};");
         EObject context = variable(r, "d").getDefinition();
 
         assertEquals("[c, m]", names(scopes.list(context, P.getVariable(), ScopeMode.RESOLUTION)),
-            "the class's own variables, then the model's; d itself is left out");
+            "the class's own variables, then the model's constants; d itself is left out");
     }
 
     @Test
@@ -110,6 +110,10 @@ public class ScopesTest {
     // resolve
     // ---------------------------------------------------------------------
 
+    // Name conflicts between a root and its dependencies are validation
+    // errors (NameConflicts); lookup still hides and reports ambiguities,
+    // which these tests check.
+
     @Test
     void twoDependenciesDeclaringTheNameAreAmbiguous() {
         CrmlWorkspace ws = new CrmlWorkspace();
@@ -159,14 +163,70 @@ public class ScopesTest {
     }
 
     @Test
-    void anOperatorBodySeesTheModelsVariables() {
+    void anOperatorBodyDoesNotSeeTheModelsVariables() {
         CrmlResource r = resolved("model M is {\n"
             + "Boolean x is external;\n"
             + "Operator [ Boolean ] 'f' Boolean a = a and x;\n"
             + "Boolean y is 'f' x;\n"
             + "};");
 
+        assertEquals("[INACCESSIBLE_REFERENCE]", kinds(r));
+        assertEquals(3, r.getErrors().get(0).getLine());
+        String message = r.getErrors().get(0).getMessage();
+        assertTrue(message.contains("'x'") && message.contains("Variable x of M") && message.contains("only constants"),
+            message);
+
+        CustomOperator f = (CustomOperator) ((Library) r.getRoot()).getOperators().get(0);
+        Resolution resolution = scopes.resolve(f.getDefinition(), P.getVariable(), "x");
+        assertEquals(Resolution.Status.NOT_ACCESSIBLE, resolution.status());
+        assertNull(resolution.target());
+        assertEquals(AccessRestriction.ENCLOSING_NON_CONSTANT, resolution.candidates().get(0).restriction());
+        assertEquals("[a]", names(scopes.list(f.getDefinition(), P.getVariable(), ScopeMode.CONTENT_ASSIST)),
+            "a variable that cannot be used is not offered");
+    }
+
+    @Test
+    void aClassDoesNotSeeTheModelsVariables() {
+        CrmlResource r = resolved("model M is {\n"
+            + "Boolean x is external;\n"
+            + "class C is { Boolean y is not x; };\n"
+            + "};");
+
+        assertEquals("[INACCESSIBLE_REFERENCE]", kinds(r));
+        assertEquals(3, r.getErrors().get(0).getLine());
+    }
+
+    @Test
+    void aParameterHidesAVariableOfTheModel() {
+        CrmlResource r = resolved("model M is {\n"
+            + "Boolean x is external;\n"
+            + "Operator [ Boolean ] 'f' Boolean x = not x;\n"
+            + "};");
+
         assertTrue(r.getErrors().isEmpty(), () -> "errors: " + r.getErrors());
+    }
+
+    @Test
+    void constantsOfTheNamespacesAroundAreVisible() {
+        CrmlResource r = resolved("model M is {\n"
+            + "constant Boolean k is true;\n"
+            + "Operator [ Boolean ] 'f' Boolean a = a and k;\n"
+            + "class C is { Boolean y is not k; };\n"
+            + "};");
+
+        assertTrue(r.getErrors().isEmpty(), () -> "errors: " + r.getErrors());
+        CustomOperator f = (CustomOperator) ((Library) r.getRoot()).getOperators().get(0);
+        assertEquals("[a, k]", names(scopes.list(f.getDefinition(), P.getVariable(), ScopeMode.RESOLUTION)));
+    }
+
+    @Test
+    void aModelSeesTheVariablesOfTheModelsItDependsOn() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        ws.load("model Base is { Boolean x is external; };");
+        CrmlResource m = ws.load("model M is Base union {\nBoolean y is not x;\n};");
+        ws.resolve();
+
+        assertTrue(m.getErrors().isEmpty(), () -> "errors: " + m.getErrors());
     }
 
     @Test

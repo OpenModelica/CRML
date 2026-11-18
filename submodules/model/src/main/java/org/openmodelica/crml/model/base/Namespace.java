@@ -39,7 +39,10 @@ public interface Namespace extends CrmlObject {
      * members and the inherited ones it does not redeclare. A member reached
      * along several paths is listed once; two different members with the
      * same name and kind are both listed (for the resolver, an ambiguity).
-     * Cycles are cut.
+     * Cycles are cut. For a root, the hiding of dependency members by owned
+     * ones and the ambiguity between dependencies only arise in a model that
+     * validation already rejects, since the names of a {@code union} must be
+     * unique (see {@link NamespaceSupport#hides(NamedEntity, NamedEntity)}).
      *
      * @return an unmodifiable list, nearest bases first
      */

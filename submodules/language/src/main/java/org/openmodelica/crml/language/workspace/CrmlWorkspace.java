@@ -370,8 +370,8 @@ public class CrmlWorkspace {
 
     /**
      * The diagnostic for a reference that was not linked, at the position of
-     * the object holding it: not found, ambiguous (with the candidates) or a
-     * self-reference.
+     * the object holding it: not found, ambiguous (with the candidates), a
+     * self-reference, or not accessible (with the reason).
      */
     private static CrmlDiagnostic unresolved(CrmlResource resource, UnresolvedLink link) {
         Resolution resolution = link.resolution();
@@ -388,11 +388,27 @@ public class CrmlWorkspace {
                 message = "'" + link.id() + "' cannot refer to itself (" + link.host().eClass().getName()
                     + "." + link.feature().getName() + ")";
                 break;
+            case NOT_ACCESSIBLE:
+                kind = Kind.INACCESSIBLE_REFERENCE;
+                message = "'" + link.id() + "' cannot be used here: " + restricted(resolution);
+                break;
             default:
                 kind = Kind.UNRESOLVED_REFERENCE;
                 message = "Unresolved reference " + link;
         }
         return resource.getVisitor().diagnosticAt(link.host(), kind, message, null);
+    }
+
+    /**
+     * The declarations of a {@link Status#NOT_ACCESSIBLE} resolution, e.g.
+     * "it is the Variable x of M, and of the namespaces around this one,
+     * only constants can be used".
+     */
+    private static String restricted(Resolution resolution) {
+        ScopeEntry first = resolution.candidates().get(0);
+        String in = first.namespace() instanceof NamedEntity ? " of " + ((NamedEntity) first.namespace()).getName() : "";
+        return "it is the " + first.element().eClass().getName() + " " + first.name() + in
+            + ", and " + first.restriction().explanation();
     }
 
     /** The candidates of an ambiguous resolution: each with the namespace declaring it and its file name. */

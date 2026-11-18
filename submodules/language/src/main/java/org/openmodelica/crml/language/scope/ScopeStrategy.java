@@ -13,9 +13,12 @@ import org.openmodelica.crml.model.metamodel.NamedEntity;
 public interface ScopeStrategy {
 
     /**
-     * The declarations visible at {@code context}, nearest first, with hidden
+     * The declarations found at {@code context}, nearest first, with hidden
      * ones and the {@link #declaration(EObject) enclosing declaration} left
-     * out. Not filtered by kind, without built-ins.
+     * out. Not filtered by kind, without built-ins. Declarations that are
+     * found but cannot be used there are included as
+     * {@linkplain ScopeEntry#restricted restricted} entries, so that a name
+     * denoting one is reported as not accessible.
      */
     List<ScopeEntry> entries(EObject context);
 

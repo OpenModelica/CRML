@@ -15,6 +15,7 @@ import org.eclipse.emf.ecore.EValidator;
 import org.eclipse.emf.ecore.impl.EValidatorRegistryImpl;
 import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.util.EObjectValidator;
+import org.openmodelica.crml.language.validation.rules.NameConflicts;
 import org.openmodelica.crml.language.validation.rules.UnnamedOperatorHasKeyword;
 import org.openmodelica.crml.model.metamodel.CRMLPackage;
 
@@ -55,6 +56,7 @@ public class CRMLValidator extends EObjectValidator {
     public static List<ValidationRule<?>> defaultRules() {
         List<ValidationRule<?>> rules = new ArrayList<>();
         rules.add(new UnnamedOperatorHasKeyword());
+        rules.add(new NameConflicts());
         return rules;
     }
 

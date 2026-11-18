@@ -16,6 +16,12 @@ public final class Resolution {
         AMBIGUOUS,
         /** Only the declaration the name is written in has the name. */
         SELF_REFERENCE,
+        /**
+         * The name denotes declarations that cannot be used here, e.g. a
+         * variable of the model in an operator body: {@link #candidates()},
+         * each with its {@link ScopeEntry#restriction() reason}.
+         */
+        NOT_ACCESSIBLE,
         /** No declaration. */
         NOT_FOUND
     }
@@ -38,6 +44,11 @@ public final class Resolution {
         return new Resolution(name, matches.isEmpty() ? Status.NOT_FOUND : Status.AMBIGUOUS, matches);
     }
 
+    /** The result for declarations named {@code name} that cannot be used here; not empty. */
+    static Resolution notAccessible(String name, List<ScopeEntry> restricted) {
+        return new Resolution(name, Status.NOT_ACCESSIBLE, restricted);
+    }
+
     static Resolution selfReference(String name) {
         return new Resolution(name, Status.SELF_REFERENCE, Collections.<ScopeEntry>emptyList());
     }
@@ -54,7 +65,10 @@ public final class Resolution {
         return found() ? candidates.get(0).element() : null;
     }
 
-    /** The matching declarations: one if found, several if ambiguous, none otherwise. */
+    /**
+     * The matching declarations: one if found, several if ambiguous, those
+     * that cannot be used if not accessible, none otherwise.
+     */
     public List<ScopeEntry> candidates() { return candidates; }
 
     @Override

@@ -14,13 +14,11 @@ import org.eclipse.emf.ecore.EObject;
 import org.openmodelica.crml.model.metamodel.Class;
 import org.openmodelica.crml.model.metamodel.CustomOperator;
 import org.openmodelica.crml.model.metamodel.Dependency;
-import org.openmodelica.crml.model.metamodel.Keyword;
 import org.openmodelica.crml.model.metamodel.Library;
 import org.openmodelica.crml.model.metamodel.LibraryDependency;
 import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.NamedEntity;
 import org.openmodelica.crml.model.metamodel.Operator;
-import org.openmodelica.crml.model.metamodel.OperatorHeaderElement;
 import org.openmodelica.crml.model.metamodel.Variable;
 
 /**
@@ -177,6 +175,13 @@ public final class NamespaceSupport {
      * True if declaring {@code nearer} hides {@code farther}: they are
      * different members of the same {@link MemberKind kind} with the same
      * {@link #hidingKey(NamedEntity) hiding key}.
+     *
+     * <p>Between a root and its {@code union} dependencies this hiding only
+     * matters for a model that is already wrong: the CRML specification
+     * requires the names of a merged set to be unique, and the
+     * {@code NameConflicts} validation rule of {@code :language} reports a
+     * member that is also declared by a dependency. Lookup still hides, so a
+     * model with such an error keeps resolving its own declarations.
      */
     public static boolean hides(NamedEntity nearer, NamedEntity farther) {
         if (nearer == farther) {
@@ -189,25 +194,20 @@ public final class NamespaceSupport {
     /**
      * What a member is identified by when deciding whether another member
      * hides it: its name; for an operator without a name (one written in
-     * natural syntax, such as {@code 'neg'}), its signature: the header with
-     * each parameter written as {@code _}, e.g. {@code _ 'and' _}.
+     * natural syntax, such as {@code 'neg'}), its
+     * {@link CustomOperator#getSignature() signature}, e.g. {@code _ 'and' _}.
      *
      * @return the key, or null for an unnamed member that is not an
      *         operator; such a member never hides nor is hidden
      */
+    // TODO: operator overloading; see CustomOperator.getSignature(), which
+    // leaves parameter types out, so overloads by type hide each other here.
     public static String hidingKey(NamedEntity member) {
         if (member.getName() != null) {
             return member.getName();
         }
         if (member instanceof CustomOperator) {
-            StringBuilder signature = new StringBuilder();
-            for (OperatorHeaderElement element : ((CustomOperator) member).getHeader()) {
-                if (signature.length() > 0) {
-                    signature.append(' ');
-                }
-                signature.append(element instanceof Keyword ? ((Keyword) element).getKeyword() : "_");
-            }
-            return signature.toString();
+            return ((CustomOperator) member).getSignature();
         }
         return null;
     }

@@ -11,6 +11,7 @@ package org.openmodelica.crml.model.metamodel
 // Operations are one-line calls to static methods of hand-written Java
 // classes in org.openmodelica.crml.model.base, which hold the logic.
 import org.openmodelica.crml.model.base.NamespaceSupport
+import org.openmodelica.crml.model.base.OperatorSupport
 
 /*
  * CRML element that declares names: a {@link Class}, a {@link Library} (and
@@ -379,6 +380,14 @@ abstract class CustomOperator extends Operator, Namespace {
      */
     op boolean endsWithValue() {
         !header.isEmpty && header.get(header.size - 1) instanceof Variable
+    }
+    /*
+     * The keyword signature: the {@link #getHeader() header} with each keyword
+     * as written and each parameter as {@code _}, e.g. {@code _ 'and' _}.
+     * Parameter types are left out, so overloads by type are not told apart.
+     */
+    op String getSignature() {
+        OperatorSupport.signature(this)
     }
     /*
      * Members declared by the operator: its {@link #getVariables() parameters}.

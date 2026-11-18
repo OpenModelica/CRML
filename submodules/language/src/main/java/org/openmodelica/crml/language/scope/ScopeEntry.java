@@ -13,22 +13,33 @@ public final class ScopeEntry {
     private final NamedEntity element;
     private final Namespace namespace;
     private final MemberKind kind;
+    private final AccessRestriction restriction;
 
-    private ScopeEntry(String name, NamedEntity element, Namespace namespace, MemberKind kind) {
+    private ScopeEntry(String name, NamedEntity element, Namespace namespace, MemberKind kind,
+            AccessRestriction restriction) {
         this.name = name;
         this.element = element;
         this.namespace = namespace;
         this.kind = kind;
+        this.restriction = restriction;
     }
 
     /** {@code member}, available as a member of {@code namespace}. */
     public static ScopeEntry of(NamedEntity member, Namespace namespace) {
-        return new ScopeEntry(member.getName(), member, namespace, MemberKind.of(member));
+        return new ScopeEntry(member.getName(), member, namespace, MemberKind.of(member), null);
+    }
+
+    /**
+     * {@code member} of {@code namespace}, found by a lookup but not usable
+     * where the name is written, for the reason {@code restriction}.
+     */
+    public static ScopeEntry restricted(NamedEntity member, Namespace namespace, AccessRestriction restriction) {
+        return new ScopeEntry(member.getName(), member, namespace, MemberKind.of(member), restriction);
     }
 
     /** A built-in type or operator. */
     public static ScopeEntry builtIn(String name, MemberKind kind) {
-        return new ScopeEntry(name, null, null, kind);
+        return new ScopeEntry(name, null, null, kind, null);
     }
 
     /** The name, or null for an operator written in natural syntax, which has none. */
@@ -45,12 +56,18 @@ public final class ScopeEntry {
 
     public boolean builtIn() { return element == null; }
 
+    /** Why it cannot be used where the lookup was made; null if it can. */
+    public AccessRestriction restriction() { return restriction; }
+
+    /** True if it can be used where the lookup was made. */
+    public boolean accessible() { return restriction == null; }
+
     @Override
     public String toString() {
         if (builtIn()) {
             return name + " (built-in " + kind + ")";
         }
         String in = namespace instanceof NamedEntity ? " in " + ((NamedEntity) namespace).getName() : "";
-        return name + " (" + element.eClass().getName() + in + ")";
+        return name + " (" + element.eClass().getName() + in + (accessible() ? "" : ", not accessible") + ")";
     }
 }

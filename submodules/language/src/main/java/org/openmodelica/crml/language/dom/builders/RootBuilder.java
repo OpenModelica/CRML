@@ -104,6 +104,11 @@ public class RootBuilder {
             } else if (res instanceof org.openmodelica.crml.model.metamodel.Operator) {
                 library.getOperators().add((org.openmodelica.crml.model.metamodel.Operator)res);
             } else {
+                // TODO: constants of a library. The CRML specification allows
+                // them (constant Real pi is 3.141592;), but Library has no
+                // variables in the metamodel, so they are rejected here. Once
+                // they are kept, UpwardScopeStrategy already makes them
+                // visible in the classes and operators around them.
                 builder.reportError(elemets, "Element type was not recognized:: "+ elemets.getClass().getSimpleName());
             }
         }

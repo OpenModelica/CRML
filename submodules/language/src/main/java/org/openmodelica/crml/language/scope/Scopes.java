@@ -62,11 +62,14 @@ public class Scopes {
         return finish(upward.entriesFrom(start, null), kind, mode);
     }
 
-    /** Filters by kind and, for content assist, appends the built-ins. */
+    /**
+     * Keeps the entries of kind {@code kind} that can be used and, for
+     * content assist, appends the built-ins.
+     */
     private static List<ScopeEntry> finish(List<ScopeEntry> entries, EClass kind, ScopeMode mode) {
         List<ScopeEntry> result = new ArrayList<>();
         for (ScopeEntry entry : entries) {
-            if (kind.isInstance(entry.element())) {
+            if (entry.accessible() && kind.isInstance(entry.element())) {
                 result.add(entry);
             }
         }
@@ -94,18 +97,28 @@ public class Scopes {
         return resolve(context, kind, name, upward);
     }
 
-    /** As {@link #resolve(EObject, EClass, String)}, looked up with {@code strategy}. */
+    /**
+     * As {@link #resolve(EObject, EClass, String)}, looked up with
+     * {@code strategy}. Declarations that can be used decide the result;
+     * only if there are none, a self-reference, then declarations that are
+     * found but cannot be used ({@link Resolution.Status#NOT_ACCESSIBLE}),
+     * are reported.
+     */
     public Resolution resolve(EObject context, EClass kind, String name, ScopeStrategy strategy) {
         List<ScopeEntry> matches = new ArrayList<>();
-        for (ScopeEntry entry : list(context, kind, ScopeMode.RESOLUTION, strategy)) {
-            if (Objects.equals(name, entry.name())) {
-                matches.add(entry);
+        List<ScopeEntry> restricted = new ArrayList<>();
+        for (ScopeEntry entry : strategy.entries(context)) {
+            if (Objects.equals(name, entry.name()) && kind.isInstance(entry.element())) {
+                (entry.accessible() ? matches : restricted).add(entry);
             }
         }
         if (matches.isEmpty()) {
             NamedEntity self = strategy.declaration(context);
             if (self != null && kind.isInstance(self) && Objects.equals(name, self.getName())) {
                 return Resolution.selfReference(name);
+            }
+            if (!restricted.isEmpty()) {
+                return Resolution.notAccessible(name, restricted);
             }
         }
         return Resolution.of(name, matches);
