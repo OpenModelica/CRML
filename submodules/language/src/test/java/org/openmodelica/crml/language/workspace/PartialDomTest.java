@@ -3,6 +3,7 @@ package org.openmodelica.crml.language.workspace;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -63,7 +64,7 @@ public class PartialDomTest {
         ws.resolve();
 
         assertEquals(RootIndex.Lookup.Status.BROKEN, ws.getIndex().lookup("L").status());
-        assertTrue(ws.getIndex().lookup("L").root() == library.getRoot(), "the partial root is given out");
+        assertSame(library.getRoot(), ws.getIndex().lookup("L").root(), "the partial root is given out");
         assertTrue(((Model) model.getRoot()).getVariables().get(1).getDefinition()
             instanceof org.openmodelica.crml.model.metamodel.ComputedValue, "'or' is resolved");
         List<String> problems = ws.validate(model).getChildren().stream()

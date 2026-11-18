@@ -160,7 +160,7 @@ public class SourceMapTest {
         ws.load(uri, CALL);
 
         assertFalse(r.eAdapters().contains(first));
-        assertEquals(1, r.eAdapters().stream().filter(a -> a instanceof SourceMap).count());
+        assertEquals(1, r.eAdapters().stream().filter(SourceMap.class::isInstance).count());
         assertSame(r.getSourceMap(), SourceMap.of(r));
     }
 
@@ -181,7 +181,8 @@ public class SourceMapTest {
     private static CustomOperator operator(CrmlResource r, String keyword) {
         for (EObject operator : ((Library) r.getRoot()).getOperators()) {
             List<String> keywords = ((CustomOperator) operator).getHeader().stream()
-                .filter(e -> e instanceof Keyword).map(e -> ((Keyword) e).getKeyword()).collect(Collectors.toList());
+                .filter(Keyword.class::isInstance).map(Keyword.class::cast).map(Keyword::getKeyword)
+                .collect(Collectors.toList());
             if (keywords.contains(keyword)) {
                 return (CustomOperator) operator;
             }

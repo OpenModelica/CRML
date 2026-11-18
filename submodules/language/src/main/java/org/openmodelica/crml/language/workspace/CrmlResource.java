@@ -89,7 +89,15 @@ public class CrmlResource extends ResourceImpl {
         sourceMap.collectHoles(parsed.ast());
         eAdapters().add(sourceMap);
 
-        state = syntaxErrors ? State.SYNTAX_ERRORS : !buildErrors.isEmpty() ? State.BUILD_FAILED : State.BUILT;
+        if(syntaxErrors){
+            state = State.SYNTAX_ERRORS;
+        } else {
+            if(buildErrors.isEmpty()){
+                state = State.BUILT;
+            } else {
+                state = State.BUILD_FAILED;
+            }
+        }
         if (root == null) {
             visitor = null;
             return;

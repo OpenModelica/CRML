@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.eclipse.emf.common.util.DiagnosticChain;
 import org.openmodelica.crml.language.validation.ValidationRule;
-import org.openmodelica.crml.model.metamodel.CRMLPackage;
 import org.openmodelica.crml.model.metamodel.CustomOperator;
 
 /**

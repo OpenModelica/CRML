@@ -2,6 +2,7 @@ package org.openmodelica.crml.language.workspace;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +112,7 @@ public final class SourceMap extends AdapterImpl {
      * record wins: the innermost node is built first, the nodes that only
      * pass its result on come later.
      */
+    @java.lang.SuppressWarnings("squid:S6213") //record refers to a modelica constuct. No naming conflict on Java8.
     public void record(EObject object, ParseTree node) {
         if (object != null && node != null) {
             nodes.putIfAbsent(object, node);
@@ -215,6 +217,7 @@ public final class SourceMap extends AdapterImpl {
      * are equally long. Null if no object contains it, e.g. after the last
      * token of a file whose root is not closed.
      */
+    @SuppressWarnings("java:S135") // guard clauses: skip objects with no known source, then those not containing index
     public EObject objectAt(int index) {
         EObject best = null;
         int bestLength = Integer.MAX_VALUE;
@@ -276,7 +279,7 @@ public final class SourceMap extends AdapterImpl {
             if (at == null) {
                 continue;
             }
-            if (compare(start, at) <= 0 && compare(at, stop) <= 0) {
+            if (BY_POSITION.compare(start, at) <= 0 && BY_POSITION.compare(at, stop) <= 0) {
                 return true;
             }
             if (before >= 0 && at.getTokenIndex() == before) {
@@ -299,10 +302,9 @@ public final class SourceMap extends AdapterImpl {
         return -1;
     }
 
-    private static int compare(Token a, Token b) {
-        return a.getLine() != b.getLine() ? Integer.compare(a.getLine(), b.getLine())
-            : Integer.compare(a.getCharPositionInLine(), b.getCharPositionInLine());
-    }
+    /** Orders tokens by position in the source: line, then column. */
+    private static final Comparator<Token> BY_POSITION =
+        Comparator.comparingInt(Token::getLine).thenComparingInt(Token::getCharPositionInLine);
 
     // ---------------------------------------------------------------------
     // Comments
@@ -328,25 +330,26 @@ public final class SourceMap extends AdapterImpl {
         }
         // Walk up from the object: whitespace may separate it from the
         // comments, but not a blank line.
-        Token below = start;
-        for (int i = hidden.size() - 1; i >= 0; i--) {
+        for (int i = hidden.size() - 1; i >= 0 && !endsDocumentation(hidden.get(i)); i--) {
             Token token = hidden.get(i);
-            if (token.getType() == crmlLexer.WS) {
-                if (blankLineBetween(token, below)) {
-                    break;
-                }
-                continue;
+            if (token.getType() != crmlLexer.WS) {
+                comments.add(0, token);
             }
-            if (token.getType() != crmlLexer.LINE_COMMENT && token.getType() != crmlLexer.ML_COMMENT) {
-                break;
-            }
-            if (endsCode(token)) {
-                break;
-            }
-            comments.add(0, token);
-            below = token;
         }
         return comments;
+    }
+
+    /**
+     * True if the walk up from an object for its comments stops at the hidden
+     * {@code token}: a blank line, anything other than a comment, or a comment
+     * that ends a line of code.
+     */
+    private boolean endsDocumentation(Token token) {
+        if (token.getType() == crmlLexer.WS) {
+            return blankLineBetween(token);
+        }
+        boolean comment = token.getType() == crmlLexer.LINE_COMMENT || token.getType() == crmlLexer.ML_COMMENT;
+        return !comment || endsCode(token);
     }
 
     /**
@@ -380,11 +383,11 @@ public final class SourceMap extends AdapterImpl {
     }
 
     /**
-     * True if the whitespace {@code ws} leaves a blank line before
-     * {@code below}: a line comment ends its own line, so one more line
-     * break makes a blank line; after anything else it takes two.
+     * True if the whitespace {@code ws} contains a blank line: a line
+     * comment ends its own line, so one more line break makes a blank
+     * line; after anything else it takes two.
      */
-    private boolean blankLineBetween(Token ws, Token below) {
+    private boolean blankLineBetween(Token ws) {
         int breaks = lineBreaks(ws.getText());
         Token before = ws.getTokenIndex() > 0 ? tokens.get(ws.getTokenIndex() - 1) : null;
         int needed = before != null && before.getType() == crmlLexer.LINE_COMMENT ? 1 : 2;

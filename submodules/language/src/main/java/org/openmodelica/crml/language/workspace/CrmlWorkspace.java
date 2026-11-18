@@ -561,6 +561,7 @@ public class CrmlWorkspace {
      * </ul>
      * Listing the same dependency twice is not a problem.
      */
+    @java.lang.SuppressWarnings("squid:S135")
     private List<CrmlDiagnostic> dependencyProblems(CrmlResource resource) {
         List<CrmlDiagnostic> problems = new ArrayList<>();
         RootHeader header = resource.getHeader();

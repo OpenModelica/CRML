@@ -108,6 +108,7 @@ public final class NamespaceSupport {
     }
 
     /** None: an operator inherits nothing. */
+    @SuppressWarnings("java:S1172") // parameter selects the overload backing CustomOperator.getBaseNamespaces() in crml.xcore
     public static EList<Namespace> baseNamespaces(CustomOperator operator) {
         return ECollections.emptyEList();
     }

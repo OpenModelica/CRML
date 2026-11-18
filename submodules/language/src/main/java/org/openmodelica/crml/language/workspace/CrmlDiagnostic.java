@@ -102,9 +102,13 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
 
     /** {@code location:line:column: KIND: message}, the location as {@code style} says. */
     public String format(LocationStyle style) {
-        String shown = style == LocationStyle.NONE ? null
-            : style == LocationStyle.FILE_NAME ? fileName(location)
-            : location;
+        String shown = null;
+        if(style != LocationStyle.NONE) {
+            if(style == LocationStyle.FILE_NAME)
+                shown = fileName(location);
+            else 
+                shown = location;
+        }
         return (shown == null ? "" : shown + ":") + line + ":" + column + ": " + kind + ": " + message;
     }
 
