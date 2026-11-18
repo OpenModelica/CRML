@@ -48,4 +48,11 @@ public interface BuildContext {
      * built from (or that of its closest container that has one).
      */
     void reportError(EObject at, CrmlDiagnostic.Kind kind, String message);
+
+    /**
+     * Records that {@code object} was built from {@code source}, for an
+     * object a builder creates without {@link #build(ParseTree)}: errors
+     * found at it later are reported at that position.
+     */
+    void position(EObject object, ParseTree source);
 }

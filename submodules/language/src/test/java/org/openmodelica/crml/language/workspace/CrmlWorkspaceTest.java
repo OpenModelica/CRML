@@ -266,6 +266,120 @@ public class CrmlWorkspaceTest {
             () -> "the dependency's own errors are not repeated: " + messages);
     }
 
+    // ---------------------------------------------------------------------
+    // Multi-library: binding, order, dependency validation
+    // ---------------------------------------------------------------------
+
+    @Test
+    void bindRecordsEachDependencyAndBindsTheFoundOnes() {
+        InspectingWorkspace ws = InspectingWorkspace.upTo(Stage.BIND);
+        CrmlResource logic = ws.load("library Logic is { };");
+        CrmlResource model = ws.load("model M is Logic union Missing union { };");
+
+        ws.resolve();
+
+        StageResult.BindResult bind = ws.trace(model).bind;
+        assertEquals(2, bind.dependencies().size());
+        assertSame(logic.getRoot(), bind.dependencies().get(0).getLibrary());
+        assertEquals(RootIndex.Lookup.Status.FOUND, bind.status(bind.dependencies().get(0)));
+        assertNull(bind.dependencies().get(1).getLibrary());
+        assertEquals(RootIndex.Lookup.Status.MISSING, bind.status(bind.dependencies().get(1)));
+        assertNull(ws.trace(model).link, "cut after BIND");
+        assertEquals(CrmlResource.State.BUILT, model.getState());
+    }
+
+    @Test
+    void librariesAreLinkedBeforeTheirDependents() {
+        List<StageResult> linked = new ArrayList<>();
+        InspectingWorkspace ws = new InspectingWorkspace(new ArrayList<>(), Stage.LIFT, (stage, trace) -> {
+            if (stage == Stage.LINK) {
+                linked.add(trace.link);
+            }
+        });
+        // Loaded in the opposite order.
+        CrmlResource model = ws.load("model M is B union { };");
+        CrmlResource b = ws.load("library B is A union { };");
+        CrmlResource a = ws.load("library A is { };");
+
+        ws.resolve();
+
+        assertEquals(3, linked.size());
+        assertSame(ws.trace(a).link, linked.get(0));
+        assertSame(ws.trace(b).link, linked.get(1));
+        assertSame(ws.trace(model).link, linked.get(2));
+    }
+
+    @Test
+    void missingDependency() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource model = ws.load("model M is Missing union { };");
+        ws.resolve();
+
+        assertEquals("[MISSING_DEPENDENCY at 1:11]", dependencyProblems(ws, model));
+    }
+
+    @Test
+    void ambiguousDependency() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        ws.load("library L is { };");
+        ws.load("library L is { };");
+        CrmlResource model = ws.load("model M is L union { };");
+        ws.resolve();
+
+        assertEquals("[AMBIGUOUS_DEPENDENCY at 1:11]", dependencyProblems(ws, model));
+    }
+
+    @Test
+    void cycleIsReportedOnEveryRootOfIt() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource a = ws.load("library A is B union { };");
+        CrmlResource b = ws.load("library B is A union { };");
+        CrmlResource self = ws.load("library S is S union { };");
+        ws.resolve();
+
+        assertEquals("[DEPENDENCY_CYCLE at 1:13]", dependencyProblems(ws, a));
+        assertEquals("[DEPENDENCY_CYCLE at 1:13]", dependencyProblems(ws, b));
+        assertEquals("[DEPENDENCY_CYCLE at 1:13]", dependencyProblems(ws, self));
+    }
+
+    @Test
+    void libraryDependingOnAModel() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        ws.load("model M is { };");
+        CrmlResource library = ws.load("library L is M union { };");
+        ws.resolve();
+
+        assertEquals("[LIBRARY_DEPENDS_ON_MODEL at 1:13]", dependencyProblems(ws, library));
+    }
+
+    @Test
+    void listingADependencyTwiceIsNotAProblem() {
+        CrmlWorkspace ws = new CrmlWorkspace();
+        ws.load("library L is { };");
+        CrmlResource model = ws.load("model M is L union L union { };");
+        ws.resolve();
+
+        assertEquals("[]", dependencyProblems(ws, model));
+        assertEquals(Diagnostic.OK, ws.validate(model).getSeverity());
+    }
+
+    /** The dependency problems {@code validate} reports for {@code resource}, as {@code KIND at line:column}. */
+    private static String dependencyProblems(CrmlWorkspace ws, CrmlResource resource) {
+        List<String> problems = new ArrayList<>();
+        for (Diagnostic child : ws.validate(resource).getChildren()) {
+            for (Kind kind : new Kind[] { Kind.MISSING_DEPENDENCY, Kind.BROKEN_DEPENDENCY, Kind.AMBIGUOUS_DEPENDENCY,
+                    Kind.DEPENDENCY_CYCLE, Kind.LIBRARY_DEPENDS_ON_MODEL }) {
+                String marker = ": " + kind.name() + ": ";
+                if (child.getMessage().contains(marker)) {
+                    String position = child.getMessage().substring(0, child.getMessage().indexOf(marker));
+                    position = position.substring(resource.location().length() + 1);
+                    problems.add(kind.name() + " at " + position);
+                }
+            }
+        }
+        return problems.toString();
+    }
+
     private static String kinds(CrmlResource r) {
         return r.getErrors().stream()
             .map(d -> ((CrmlDiagnostic) d).getKind())

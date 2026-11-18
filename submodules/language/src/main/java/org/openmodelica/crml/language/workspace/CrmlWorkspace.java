@@ -10,7 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,12 +31,21 @@ import org.openmodelica.crml.language.dom.DomModification;
 import org.openmodelica.crml.language.dom.UnresolvedLink;
 import org.openmodelica.crml.language.dom.builders.LiftBuilder;
 import org.openmodelica.crml.language.opcall.MixfixParser;
+import org.openmodelica.crml.language.scope.Resolution;
+import org.openmodelica.crml.language.scope.Resolution.Status;
+import org.openmodelica.crml.language.scope.ScopeEntry;
 import org.openmodelica.crml.language.validation.CRMLValidator;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
+import org.openmodelica.crml.language.workspace.StageResult.BindResult;
 import org.openmodelica.crml.language.workspace.StageResult.CallResult;
 import org.openmodelica.crml.language.workspace.StageResult.LiftResult;
 import org.openmodelica.crml.language.workspace.StageResult.LinkResult;
+import org.openmodelica.crml.model.base.Namespace;
+import org.openmodelica.crml.model.metamodel.Dependency;
+import org.openmodelica.crml.model.metamodel.Library;
+import org.openmodelica.crml.model.metamodel.LibraryDependency;
 import org.openmodelica.crml.model.metamodel.Liftable;
+import org.openmodelica.crml.model.metamodel.NamedEntity;
 import org.openmodelica.crml.model.metamodel.Sequence;
 
 /**
@@ -214,34 +227,96 @@ public class CrmlWorkspace {
     }
 
     /**
-     * Links every resource that is {@link CrmlResource.State#BUILT built} but
-     * not resolved yet, in load order. Resolved resources are skipped, so a
-     * library shared by several models is resolved once.
+     * Resolves every resource that is {@link CrmlResource.State#BUILT built}
+     * but not resolved yet. Resolved resources are skipped, so a library
+     * shared by several models is resolved once.
      *
-     * <p>Per resource, the stages are {@link #link}, {@link #operatorParser},
-     * {@link #resolveOperatorCalls} and {@link #lift}. A stage that fails
-     * reports its problems as diagnostics of the resource (no exception), and
-     * the next stages still run ("load as much as possible").
-     *
-     * <p>For now each resource is linked on its own, as before: references
-     * into other resources are not resolved. Steps still to do (TODO):
      * <ol>
-     * <li>bind each {@code Dependency} of each root to the root found by
-     *     {@link RootIndex#lookup}; leave it unbound when missing, broken or
-     *     duplicate (a validation rule reports it);</li>
-     * <li>order the roots dependencies-first (post-order over the dependency
-     *     graph, cutting cycles);</li>
-     * <li>link with a scope of the root's own members followed by those of
-     *     its transitive dependencies, never the whole resource set;</li>
-     * <li>resolve operator calls with the operators of the transitive
-     *     dependencies (dependencies first) followed by the root's own.</li>
+     * <li>{@link #bind}: the dependencies of every root are bound to the roots
+     *     of their names, before any root is linked;</li>
+     * <li>the roots are ordered dependencies first, so a model is linked after
+     *     the libraries it uses (cycles are cut, load order breaks ties);</li>
+     * <li>per root, in that order: {@link #link}, {@link #operatorParser},
+     *     {@link #resolveOperatorCalls} and {@link #lift}.</li>
      * </ol>
+     *
+     * <p>A stage that fails reports its problems as diagnostics of the
+     * resource (no exception), and the next stages still run ("load as much
+     * as possible"). Dependency problems are not reported here but by
+     * {@link #validate(CrmlResource)}.
      */
     public void resolve() {
+        List<CrmlResource> bound = new ArrayList<>();
         for (CrmlResource resource : resources()) {
-            if (resource.getState() == CrmlResource.State.BUILT) {
-                resolve(resource);
+            if (resource.getState() == CrmlResource.State.BUILT && bind(resource) != null) {
+                bound.add(resource);
             }
+        }
+        for (CrmlResource resource : dependenciesFirst(bound)) {
+            resolve(resource);
+        }
+    }
+
+    /**
+     * Stage 0: binds each {@link LibraryDependency} of the root to the root
+     * its name is declared by, if exactly one file that builds declares it.
+     * Others stay unbound; reporting them is left to validation.
+     *
+     * @return what the stage did; null stops the resolution of {@code resource}
+     */
+    BindResult bind(CrmlResource resource) {
+        Map<LibraryDependency, RootIndex.Lookup.Status> lookups = new LinkedHashMap<>();
+        for (LibraryDependency dependency : dependencies(resource)) {
+            RootIndex.Lookup lookup = index.lookup(dependency.getName());
+            lookups.put(dependency, lookup.status());
+            EObject root = lookup.root();
+            dependency.setLibrary(root instanceof Library ? (Library) root : null);
+        }
+        return new BindResult(lookups, Collections.<CrmlDiagnostic>emptyList());
+    }
+
+    /** The {@link LibraryDependency LibraryDependencies} of the root of {@code resource}. */
+    private static List<LibraryDependency> dependencies(CrmlResource resource) {
+        List<LibraryDependency> result = new ArrayList<>();
+        if (resource.getRoot() instanceof Library) {
+            for (Dependency dependency : ((Library) resource.getRoot()).getSuperlibs()) {
+                if (dependency instanceof LibraryDependency) {
+                    result.add((LibraryDependency) dependency);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * {@code resources} ordered so that each comes after the resources its
+     * bound dependencies are in: depth first over the dependencies, in load
+     * order; a cycle is cut where it closes.
+     */
+    private static List<CrmlResource> dependenciesFirst(List<CrmlResource> resources) {
+        Set<CrmlResource> wanted = new HashSet<>(resources);
+        Set<CrmlResource> visited = new HashSet<>();
+        List<CrmlResource> ordered = new ArrayList<>();
+        for (CrmlResource resource : resources) {
+            visit(resource, wanted, visited, ordered);
+        }
+        return ordered;
+    }
+
+    private static void visit(CrmlResource resource, Set<CrmlResource> wanted, Set<CrmlResource> visited,
+            List<CrmlResource> ordered) {
+        if (!visited.add(resource)) {
+            return;
+        }
+        for (LibraryDependency dependency : dependencies(resource)) {
+            Library library = dependency.getLibrary();
+            Resource file = library == null ? null : library.eResource();
+            if (file instanceof CrmlResource) {
+                visit((CrmlResource) file, wanted, visited, ordered);
+            }
+        }
+        if (wanted.contains(resource)) {
+            ordered.add(resource);
         }
     }
 
@@ -283,13 +358,59 @@ public class CrmlWorkspace {
         try {
             unresolved = resource.getVisitor().link();
             for (UnresolvedLink link : unresolved) {
-                report(resource, resource.getVisitor().diagnosticAt(link.host(), Kind.UNRESOLVED_REFERENCE,
-                    "Unresolved reference " + link, null), diagnostics);
+                report(resource, unresolved(resource, link), diagnostics);
             }
         } catch (RuntimeException | StackOverflowError e) {
             report(resource, CrmlDiagnostic.of(Kind.LINKING, e, resource.location()), diagnostics);
         }
         return new LinkResult(unresolved, diagnostics);
+    }
+
+    /**
+     * The diagnostic for a reference that was not linked, at the position of
+     * the object holding it: not found, ambiguous (with the candidates) or a
+     * self-reference.
+     */
+    private static CrmlDiagnostic unresolved(CrmlResource resource, UnresolvedLink link) {
+        Resolution resolution = link.resolution();
+        Status status = resolution == null ? Status.NOT_FOUND : resolution.status();
+        Kind kind;
+        String message;
+        switch (status) {
+            case AMBIGUOUS:
+                kind = Kind.AMBIGUOUS_REFERENCE;
+                message = "Ambiguous reference " + link + ", it can denote: " + candidates(resolution);
+                break;
+            case SELF_REFERENCE:
+                kind = Kind.SELF_REFERENCE;
+                message = "'" + link.id() + "' cannot refer to itself (" + link.host().eClass().getName()
+                    + "." + link.feature().getName() + ")";
+                break;
+            default:
+                kind = Kind.UNRESOLVED_REFERENCE;
+                message = "Unresolved reference " + link;
+        }
+        return resource.getVisitor().diagnosticAt(link.host(), kind, message, null);
+    }
+
+    /** The candidates of an ambiguous resolution: each with the namespace declaring it and its file name. */
+    private static String candidates(Resolution resolution) {
+        StringBuilder text = new StringBuilder();
+        for (ScopeEntry candidate : resolution.candidates()) {
+            if (text.length() > 0) {
+                text.append(", ");
+            }
+            text.append(candidate.element().eClass().getName()).append(' ').append(candidate.name());
+            Namespace declaring = candidate.element().getNamespace();
+            if (declaring instanceof NamedEntity) {
+                text.append(" of ").append(((NamedEntity) declaring).getName());
+            }
+            Resource file = candidate.element().eResource();
+            if (file instanceof CrmlResource) {
+                text.append(" (").append(CrmlDiagnostic.fileName(((CrmlResource) file).location())).append(')');
+            }
+        }
+        return text.toString();
     }
 
     /**
@@ -366,10 +487,11 @@ public class CrmlWorkspace {
 
     /**
      * Validates {@code root}: the errors and warnings collected on its
-     * resource while loading and linking, a {@link Kind#BROKEN_DEPENDENCY}
-     * error for each dependency whose file has errors, then the CRML
-     * validation rules. The errors of the dependencies themselves are not
-     * included; they are reported when the dependency is validated.
+     * resource while loading and linking, an error for each problem of its
+     * dependencies (missing, broken, ambiguous, cyclic, a library depending
+     * on a model), then the CRML validation rules. The errors of the
+     * dependencies themselves are not included; they are reported when the
+     * dependency is validated.
      */
     public Diagnostic validate(EObject root) {
         BasicDiagnostic result = new BasicDiagnostic(CRMLValidator.DIAGNOSTIC_SOURCE, 0,
@@ -380,7 +502,7 @@ public class CrmlWorkspace {
             addAll(result, resource.getWarnings(), Diagnostic.WARNING);
         }
         if (resource instanceof CrmlResource) {
-            addAll(result, brokenDependencies((CrmlResource) resource), Diagnostic.ERROR);
+            addAll(result, dependencyProblems((CrmlResource) resource), Diagnostic.ERROR);
         }
         result.add(CRMLValidator.validate(root));
         return result;
@@ -388,7 +510,9 @@ public class CrmlWorkspace {
 
     /**
      * Validates one resource: the errors and warnings collected while loading
-     * and linking it, then, if it has a root, the CRML validation rules. Unlike
+     * and linking it, the problems of its dependencies (as for
+     * {@link #validate(EObject)}), then, if it has a root, the CRML validation
+     * rules. Unlike
      * {@link #validate(EObject)}, this also works for a file that has no DOM,
      * e.g. because of syntax errors.
      */
@@ -397,7 +521,7 @@ public class CrmlWorkspace {
             "Validation of " + resource.getURI(), new Object[] { resource });
         addAll(result, resource.getErrors(), Diagnostic.ERROR);
         addAll(result, resource.getWarnings(), Diagnostic.WARNING);
-        addAll(result, brokenDependencies(resource), Diagnostic.ERROR);
+        addAll(result, dependencyProblems(resource), Diagnostic.ERROR);
         EObject root = resource.getRoot();
         if (root != null) {
             result.add(CRMLValidator.validate(root));
@@ -406,26 +530,88 @@ public class CrmlWorkspace {
     }
 
     /**
-     * One {@link Kind#BROKEN_DEPENDENCY} error per dependency of
-     * {@code resource} that is declared by a file with syntax or build
-     * errors, at the dependency's name in the header. Missing and duplicate
-     * dependencies are left to the dependency validation rules.
+     * The problems of the dependencies of {@code resource}, each at the
+     * dependency's name in the header. Read from the headers, so they are
+     * also found for files whose DOM was not built.
+     * <ul>
+     * <li>{@link Kind#MISSING_DEPENDENCY}: no file declares the name;</li>
+     * <li>{@link Kind#BROKEN_DEPENDENCY}: the file declaring it has syntax or
+     *     build errors (they are not repeated here);</li>
+     * <li>{@link Kind#AMBIGUOUS_DEPENDENCY}: several files declare it;</li>
+     * <li>{@link Kind#DEPENDENCY_CYCLE}: the dependency leads back to this root;</li>
+     * <li>{@link Kind#LIBRARY_DEPENDS_ON_MODEL}: a library depends on a model.</li>
+     * </ul>
+     * Listing the same dependency twice is not a problem.
      */
-    private List<CrmlDiagnostic> brokenDependencies(CrmlResource resource) {
-        List<CrmlDiagnostic> broken = new ArrayList<>();
+    private List<CrmlDiagnostic> dependencyProblems(CrmlResource resource) {
+        List<CrmlDiagnostic> problems = new ArrayList<>();
         RootHeader header = resource.getHeader();
         if (header == null) {
-            return broken;
+            return problems;
         }
         for (RootHeader.DependencyName dependency : header.dependencies()) {
             RootIndex.Lookup lookup = index.lookup(dependency.name());
-            if (lookup.status() == RootIndex.Lookup.Status.BROKEN) {
-                broken.add(new CrmlDiagnostic(Kind.BROKEN_DEPENDENCY,
-                    "Dependency " + dependency.name() + " has errors: " + lookup.resources().get(0).location(),
-                    resource.location(), dependency.line(), dependency.column()));
+            String name = dependency.name();
+            switch (lookup.status()) {
+                case MISSING:
+                    problems.add(problem(resource, dependency, Kind.MISSING_DEPENDENCY,
+                        "No file declares the dependency " + name));
+                    continue;
+                case BROKEN:
+                    problems.add(problem(resource, dependency, Kind.BROKEN_DEPENDENCY,
+                        "Dependency " + name + " has errors: " + lookup.resources().get(0).location()));
+                    break;
+                case DUPLICATE:
+                    problems.add(problem(resource, dependency, Kind.AMBIGUOUS_DEPENDENCY,
+                        "Dependency " + name + " is declared by several files: " + locations(lookup.resources())));
+                    continue;
+                default:
+                    break;
+            }
+            RootHeader target = lookup.resources().get(0).getHeader();
+            if (!header.isModel() && target != null && target.isModel()) {
+                problems.add(problem(resource, dependency, Kind.LIBRARY_DEPENDS_ON_MODEL,
+                    header.kind() + " " + header.name() + " cannot depend on the model " + name));
+            }
+            if (reaches(name, header.name(), new HashSet<String>())) {
+                problems.add(problem(resource, dependency, Kind.DEPENDENCY_CYCLE,
+                    header.name() + " depends on itself through " + name));
             }
         }
-        return broken;
+        return problems;
+    }
+
+    /** True if the root named {@code from}, or one it depends on, depends on {@code target}. */
+    private boolean reaches(String from, String target, Set<String> visited) {
+        if (from.equals(target)) {
+            return true;
+        }
+        if (!visited.add(from)) {
+            return false;
+        }
+        RootIndex.Lookup lookup = index.lookup(from);
+        if (lookup.resources().size() != 1 || lookup.resources().get(0).getHeader() == null) {
+            return false;
+        }
+        for (RootHeader.DependencyName dependency : lookup.resources().get(0).getHeader().dependencies()) {
+            if (reaches(dependency.name(), target, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static CrmlDiagnostic problem(CrmlResource resource, RootHeader.DependencyName dependency, Kind kind,
+            String message) {
+        return new CrmlDiagnostic(kind, message, resource.location(), dependency.line(), dependency.column());
+    }
+
+    private static String locations(List<CrmlResource> resources) {
+        StringBuilder text = new StringBuilder();
+        for (CrmlResource resource : resources) {
+            text.append(text.length() == 0 ? "" : ", ").append(resource.location());
+        }
+        return text.toString();
     }
 
     private static void addAll(BasicDiagnostic target, List<? extends Resource.Diagnostic> source, int severity) {

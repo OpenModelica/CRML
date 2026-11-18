@@ -20,7 +20,10 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
         UNRESOLVED_REFERENCE,
         /** The linker failed with an exception. */
         LINKING,
+        /** A name denotes several declarations at the same level, e.g. one in each of two libraries. */
         AMBIGUOUS_REFERENCE,
+        /** A name is used in its own declaration, e.g. {@code Boolean x is x;}. */
+        SELF_REFERENCE,
         DUPLICATE_DECLARATION,
         /** Operator-call resolution failed, e.g. an ambiguous call. */
         OPERATOR_CALL,
@@ -31,7 +34,15 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
          * Reported by validation, on the dependent; the dependency's own
          * errors are not repeated.
          */
-        BROKEN_DEPENDENCY
+        BROKEN_DEPENDENCY,
+        /** No file of the run declares a dependency's name. Reported by validation. */
+        MISSING_DEPENDENCY,
+        /** Several files of the run declare a dependency's name. Reported by validation. */
+        AMBIGUOUS_DEPENDENCY,
+        /** A root depends on itself, directly or through others. Reported by validation. */
+        DEPENDENCY_CYCLE,
+        /** A library depends on a model. Reported by validation. */
+        LIBRARY_DEPENDS_ON_MODEL
     }
 
     /** How much of the location {@link #format} shows. */

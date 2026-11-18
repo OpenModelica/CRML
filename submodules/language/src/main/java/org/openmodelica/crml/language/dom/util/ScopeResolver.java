@@ -1,174 +1,55 @@
 package org.openmodelica.crml.language.dom.util;
 
-
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
-
-import com.google.common.base.Objects;
-
 import org.openmodelica.crml.language.dom.util.ScopeResolutionOptions.ResolutionStrategy;
-import org.openmodelica.crml.model.metamodel.Class;
-import org.openmodelica.crml.model.metamodel.ConstructorValue;
-import org.openmodelica.crml.model.metamodel.Domain;
-import org.openmodelica.crml.model.metamodel.Model;
-import org.openmodelica.crml.model.metamodel.OperatorHeaderElement;
-import org.openmodelica.crml.model.metamodel.Template;
-import org.openmodelica.crml.model.metamodel.TypeReference;
-import org.openmodelica.crml.model.metamodel.UserOperator;
-import org.openmodelica.crml.model.metamodel.UserTypereference;
-import org.openmodelica.crml.model.metamodel.Variable;
+import org.openmodelica.crml.language.scope.ConstructorBindingScopeStrategy;
+import org.openmodelica.crml.language.scope.Resolution;
+import org.openmodelica.crml.language.scope.ScopeStrategy;
+import org.openmodelica.crml.language.scope.Scopes;
 
+/**
+ * Links a reference of the DOM: resolves the name with {@link Scopes} and,
+ * if it denotes exactly one declaration, sets the reference to it.
+ */
 public class ScopeResolver {
-    public boolean link(EObject target, EStructuralFeature feature, String id, ScopeResolutionOptions options) {
+    private final Scopes scopes;
+    private final ScopeStrategy constructorBinding = new ConstructorBindingScopeStrategy();
+
+    public ScopeResolver() {
+        this(new Scopes());
+    }
+
+    public ScopeResolver(Scopes scopes) {
+        this.scopes = scopes;
+    }
+
+    /**
+     * Resolves {@code id} for {@code host.feature} and sets the reference if
+     * it was {@link Resolution#found() found}; a many-valued reference gets
+     * the declaration added.
+     *
+     * @return the resolution, whether found or not
+     */
+    @SuppressWarnings("unchecked")
+    public Resolution link(EObject host, EStructuralFeature feature, String id, ScopeResolutionOptions options) {
+        Resolution resolution = scopes.resolve(host, (EReference) feature, id, strategy(options));
+        if (resolution.found()) {
+            if (feature.isMany()) {
+                ((EList<EObject>) host.eGet(feature)).add(resolution.target());
+            } else {
+                host.eSet(feature, resolution.target());
+            }
+        }
+        return resolution;
+    }
+
+    private ScopeStrategy strategy(ScopeResolutionOptions options) {
         if (options != null && options.strategy == ResolutionStrategy.CONSTRUCTOR_BINDING) {
-            EObject container = target.eContainer();
-            while ((!(container instanceof ConstructorValue)) && (!(container instanceof Resource)) && (!(container instanceof ResourceSet))){
-                container =  container.eContainer();
-            }
-            if(container instanceof ConstructorValue){
-                ConstructorValue constructor = (ConstructorValue) container;
-                TypeReference typeref = constructor.getDomain();
-                if(typeref==null) return false;
-                if(typeref instanceof UserTypereference){
-                    UserTypereference userref = (UserTypereference) typeref;
-                    Domain domain = userref.getDomain();
-                    if(domain==null) return false;
-                    if(domain instanceof Class){
-                        Class cls = (Class) domain;
-                        for(Variable v :cls.getVariables()){
-                            if(id.equals(v.getName())){
-                                if (feature.isMany()) {
-                                    ((EList) target.eGet(feature)).add(v);
-                                } else {
-                                    target.eSet(feature, v);
-                                }
-                                return true;
-                            }
-                        }
-
-                    }
-                    
-                }
-            }
-            return false;
-        } else {
-            EObject candidate = getCandidate(target.eContainer(), id, options);
-            if (candidate != null) {
-                if (feature.isMany()) {
-                    ((EList) target.eGet(feature)).add(candidate);
-                } else {
-                    target.eSet(feature, candidate);
-                }
-                return true;
-            }
-
-            return false;
+            return constructorBinding;
         }
-    }
-
-    private EObject getCandidate(EObject obj, String id, ScopeResolutionOptions options) {
-        // Idea is to have separate functions to resolve a variable from different
-        // contexts (Model, Class, etc)
-        // We move up level by level to find the closest match in a parent container
-        // Termination happens if a Resource/REsource set is reached
-        // If the current container is not in the processed one, we move a level up.
-        // E.g., if the container is a Varaible or Operator (that cannot have childrent)
-        // then we move to its container
-        if (obj instanceof Class) {
-            return getCandidate((Class) obj, id, options);
-        } else if (obj instanceof Model) {
-            return getCandidate((Model) obj, id, options);
-        } else if (obj instanceof UserOperator) {
-            return getCandidate((UserOperator) obj, id, options);
-        } else if (obj instanceof Template) {
-            return getCandidate((Template) obj, id, options);
-        } else if (obj instanceof Resource || obj instanceof ResourceSet) {
-            return null;
-        } else {
-            return getCandidate(obj.eContainer(), id, options);
-        }
-    }
-
-    private EObject getCandidate(Class class1, String id, ScopeResolutionOptions options) {
-        if (class1 == null) {
-            return null;
-        }
-
-        if (class1.getName().equals(id)) {
-            return class1;
-        }
-
-        for (Variable v : class1.getVariables()) {
-            if (v.getName().equals(id) && isReadCompatible(v.getDomain(), null)) {
-                return v;
-            }
-        }
-        return getCandidate(class1.eContainer(), id, null);
-    }
-
-    private EObject getCandidate(Model model, String id, ScopeResolutionOptions options) {
-        if (model == null) {
-            return null;
-        }
-
-        for (Variable v : model.getVariables()) {
-            if (v.getName().equals(id) && isReadCompatible(v.getDomain(), null)) {
-                return v;
-            }
-        }
-
-        for (Class v : model.getClasses()) {
-            if (v.getName().equals(id) && isReadCompatible(v, null)) {
-                return v;
-            }
-        }
-        return null; // Models do not have a parent (they are root resources)
-    }
-
-    private EObject getCandidate(UserOperator op, String id, ScopeResolutionOptions options) {
-        if (op == null) {
-            return null;
-        }
-
-        for (OperatorHeaderElement h : op.getHeader()) {
-            if (h instanceof Variable) {
-                Variable v = (Variable) h;
-                if(Objects.equal(id, v.getName()) && isReadCompatible(v.getDomain(), null) ){
-                    return v;
-                };
-            }
-        }
-        return getCandidate(op.eContainer(), id, null);
-    }
-
-    private EObject getCandidate(Template op, String id, ScopeResolutionOptions options) {
-        if (op == null) {
-            return null;
-        }
-
-        for (OperatorHeaderElement h : op.getHeader()) {
-            if (h instanceof Variable) {
-                Variable v = (Variable) h;
-                if(Objects.equal(id, v.getName()) && isReadCompatible(v.getDomain(), null) ){
-                    return v;
-                };
-            }
-        }
-        return getCandidate(op.eContainer(), id, null);
-    }
-
-
-    private boolean isReadCompatible(TypeReference variable, EClass required) {
-        return true;
-        // TODO: this is bad and has to be fixed.
-    }
-
-    private boolean isReadCompatible(Class variable, EClass required) {
-        return true;
-        // TODO: this is bad and has to be fixed.
+        return scopes.upward();
     }
 }

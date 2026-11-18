@@ -81,8 +81,8 @@ public final class ModelTransformer implements Modelica {
         }
         for (org.openmodelica.crml.model.metamodel.Dependency dependency : model.getSuperlibs()) {
             ctx.reportWithPlaceholder(Diagnostics.libraryGap("Library.superlibs",
-                "library dependencies are never resolved (RootBuilder.parse returns an empty list), "
-                + "so nothing can be emitted for this one", dependency));
+                "the contents of a library or model this one depends on are not emitted "
+                + "into the Modelica output yet", dependency));
         }
         for (org.openmodelica.crml.model.metamodel.Object object : model.getObjects()) {
             ctx.reportWithPlaceholder(Diagnostics.libraryGap("Object",

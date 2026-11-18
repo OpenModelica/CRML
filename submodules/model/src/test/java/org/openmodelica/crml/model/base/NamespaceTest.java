@@ -250,8 +250,65 @@ public class NamespaceTest {
     }
 
     // ---------------------------------------------------------------------
+    // Hiding keys of operators
+    // ---------------------------------------------------------------------
+
+    @Test
+    void unnamedOperatorsAreKeyedByTheirSignature() {
+        UserOperator and = natural("a", "'and'", "b");
+        assertEquals("_ 'and' _", NamespaceSupport.hidingKey(and));
+        UserOperator named = natural("a", "'and'", "b");
+        named.setName("conjunction");
+        assertEquals("conjunction", NamespaceSupport.hidingKey(named));
+    }
+
+    @Test
+    void unnamedOperatorsWithDifferentKeywordsDoNotHideEachOther() {
+        Library logic = library("Logic");
+        UserOperator or = natural("a", "'or'", "b");
+        logic.getOperators().add(or);
+        Model m = model("M");
+        UserOperator and = natural("a", "'and'", "b");
+        m.getOperators().add(and);
+        dependsOn(m, logic);
+
+        assertEquals(Arrays.asList(or), m.getInheritedMembers());
+        assertEquals(Arrays.asList(and, or), m.getAllOperators());
+    }
+
+    @Test
+    void anOwnOperatorHidesAnInheritedOneWithTheSameSignature() {
+        Library logic = library("Logic");
+        logic.getOperators().add(natural("a", "'neg'"));
+        Model m = model("M");
+        UserOperator neg = natural("x", "'neg'");
+        m.getOperators().add(neg);
+        dependsOn(m, logic);
+
+        assertTrue(m.getInheritedMembers().isEmpty());
+        assertEquals(Arrays.asList(neg), m.getAllOperators());
+    }
+
+    // ---------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------
+
+    /** An unnamed operator; arguments in quotes are keywords, the others parameters. */
+    private static UserOperator natural(String... header) {
+        UserOperator operator = F.createUserOperator();
+        for (String element : header) {
+            if (element.startsWith("'")) {
+                Keyword keyword = F.createKeyword();
+                keyword.setKeyword(element);
+                operator.getHeader().add(keyword);
+            } else {
+                Variable parameter = F.createVariable();
+                parameter.setName(element);
+                operator.getHeader().add(parameter);
+            }
+        }
+        return operator;
+    }
 
     private static List<NamedEntity> members(Library library) {
         return new ArrayList<>(library.getMembers());

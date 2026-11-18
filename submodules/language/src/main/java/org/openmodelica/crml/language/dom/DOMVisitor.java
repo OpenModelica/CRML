@@ -39,10 +39,10 @@ import org.openmodelica.crml.language.dom.util.BuildResult;
 import org.openmodelica.crml.language.dom.util.ScopeResolutionOptions;
 import org.openmodelica.crml.language.dom.util.ScopeResolver;
 import org.openmodelica.crml.language.opcall.MixfixParser;
+import org.openmodelica.crml.language.scope.Resolution;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic.Kind;
 import org.openmodelica.crml.model.metamodel.Library;
-import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.Sequence;
 
 public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildContext {
@@ -121,6 +121,14 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override
     public void reportImplementationError(ParseTree at, String message) {
         errors.add(diagnostic(Kind.DOM_BUILD, start(at), "Not supported yet: " + message, null));
+    }
+
+    @Override
+    public void position(EObject object, ParseTree source) {
+        Token start = start(source);
+        if (object != null && start != null) {
+            starts.putIfAbsent(object, start);
+        }
     }
 
     @Override
@@ -251,15 +259,14 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     }
 
     /**
-     * The operator-call parser for the built root: the operators of the root
-     * {@code Model} or {@code Library}, in declaration order.
+     * The operator-call parser for the built root: the operators visible in
+     * the root {@code Model} or {@code Library}, its own first, then those of
+     * its dependencies (see {@code Scopes.operators}).
      *
      * @return the parser, or null if the root is neither a Model nor a Library
      */
     public MixfixParser operatorParser(){
-        if (builtRoot instanceof Model) {
-            return new MixfixParser((Model) builtRoot, this);
-        } else if (builtRoot instanceof Library) {
+        if (builtRoot instanceof Library) {
             return new MixfixParser((Library) builtRoot, this);
         }
         return null;
@@ -327,13 +334,18 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
             this(host, feature, id, null );
         }
 
+        /** The result of the last attempt; null before the first. */
+        private Resolution last;
+
+        /** Tries to link; true if the reference is set. */
         @Override
         public Boolean apply() {
-            return resolver.link(source, feature, id, options);
+            last = resolver.link(source, feature, id, options);
+            return last.found();
         }
 
         private UnresolvedLink toUnresolvedLink() {
-            return new UnresolvedLink(source, feature, id, options);
+            return new UnresolvedLink(source, feature, id, options, last);
         }
 
         @Override

@@ -3,6 +3,7 @@ package org.openmodelica.crml.language.dom.builders;
 import crml.language.grammar.crmlParser.ExpContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
+import org.openmodelica.crml.language.scope.BuiltIns;
 import org.openmodelica.crml.language.dom.util.BuildResult.SingleBuildResult;
 import org.openmodelica.crml.model.metamodel.BuiltinUnaryOperatorKind;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
@@ -53,23 +54,10 @@ public class UnaryExpressionBuilder {
         throw new IllegalStateException("No binary operator found in context: "+context.getText());
     }
     private static BuiltinUnaryOperatorKind resolveUnaryOpCode(String text){
-        switch (text) {
-            case "sin": return BuiltinUnaryOperatorKind.SIN;
-            case "asin": return BuiltinUnaryOperatorKind.ASIN;
-            case "cos": return BuiltinUnaryOperatorKind.COS;
-            case "acos": return BuiltinUnaryOperatorKind.ACOS;
-            case "log10": return BuiltinUnaryOperatorKind.LOG10;
-            case "log": return BuiltinUnaryOperatorKind.LOG;
-            case "exp": return BuiltinUnaryOperatorKind.EXP_OP;
-            case "not": return BuiltinUnaryOperatorKind.NOT;
-            case "-": return BuiltinUnaryOperatorKind.SUB;
-            case "+": return BuiltinUnaryOperatorKind.ADD;
-            case "start": return BuiltinUnaryOperatorKind.START;
-            case "end": return BuiltinUnaryOperatorKind.END;
-            case "tick": return BuiltinUnaryOperatorKind.TICK;
-            case "card": return BuiltinUnaryOperatorKind.CARD;
-            default:
-                throw new IllegalStateException("Unary operator is not recognized: "+text);
+        BuiltinUnaryOperatorKind kind = BuiltIns.UNARY_OPERATORS.get(text);
+        if (kind == null) {
+            throw new IllegalStateException("Unary operator is not recognized: "+text);
         }
+        return kind;
     }
 }

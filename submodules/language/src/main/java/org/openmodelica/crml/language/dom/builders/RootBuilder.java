@@ -9,6 +9,9 @@ import org.eclipse.emf.ecore.EObject;
 
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.DependencyContext;
+import crml.language.grammar.crmlParser.DependencySetContext;
+import crml.language.grammar.crmlParser.IdContext;
+import crml.language.grammar.crmlParser.SingleDependencyContext;
 import crml.language.grammar.crmlParser.Element_defContext;
 import org.openmodelica.crml.model.metamodel.Class;
 import org.openmodelica.crml.model.metamodel.Dependency;
@@ -16,6 +19,7 @@ import org.openmodelica.crml.language.dom.BuildContext;
 import org.openmodelica.crml.language.dom.util.BuildResult.SingleBuildResult;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.Library;
+import org.openmodelica.crml.model.metamodel.LibraryDependency;
 import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.Variable;
 
@@ -102,28 +106,33 @@ public class RootBuilder {
         return library;
     }
 
+    /**
+     * The dependencies written in one {@code ... union} of the header: one
+     * per name, {@code flatten { A, B }} giving one for each of A and B. Only
+     * their names are set; the workspace binds them to the roots of those
+     * names.
+     */
     public List<Dependency> parse(DependencyContext context){
         List<Dependency> dependencies = new ArrayList<>();
-        return dependencies;
-        /*
-        if(context instanceof SingleDependencyContext){
-            SingleDependencyContext sdpc = (SingleDependencyContext) context;
-            ProxyDependency dependecy = factory.createProxyDependency();
-            dependecy.setName(sdpc.id().getText());
-
-            dependencies.add(dependecy);
-            return dependencies;
-        }
-        if(context instanceof DependencySetContext){
-            DependencySetContext dsc =  (DependencySetContext) context;
-            for(IdContext id : dsc.id()){
-                ProxyDependency dependency = factory.createProxyDependency();
-                dependency.setName(id.getText());
-                dependencies.add(dependency);
+        if (context instanceof SingleDependencyContext) {
+            IdContext id = ((SingleDependencyContext) context).id();
+            if (id != null) {
+                dependencies.add(dependency(id));
             }
-            return dependencies;
+        } else if (context instanceof DependencySetContext) {
+            for (IdContext id : ((DependencySetContext) context).id()) {
+                dependencies.add(dependency(id));
+            }
+        } else {
+            builder.reportError(context, "Unknown dependency type: "+context.getClass().getSimpleName());
         }
-        builder.reportError(context, "Unknown dependency type: "+context.getClass().getSimpleName());
-        return null;*/
+        return dependencies;
+    }
+
+    private LibraryDependency dependency(IdContext id) {
+        LibraryDependency dependency = factory.createLibraryDependency();
+        dependency.setName(id.getText());
+        builder.position(dependency, id);
+        return dependency;
     }
 }

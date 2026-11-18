@@ -14,11 +14,13 @@ import org.eclipse.emf.ecore.EObject;
 import org.openmodelica.crml.model.metamodel.Class;
 import org.openmodelica.crml.model.metamodel.CustomOperator;
 import org.openmodelica.crml.model.metamodel.Dependency;
+import org.openmodelica.crml.model.metamodel.Keyword;
 import org.openmodelica.crml.model.metamodel.Library;
 import org.openmodelica.crml.model.metamodel.LibraryDependency;
 import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.NamedEntity;
 import org.openmodelica.crml.model.metamodel.Operator;
+import org.openmodelica.crml.model.metamodel.OperatorHeaderElement;
 import org.openmodelica.crml.model.metamodel.Variable;
 
 /**
@@ -161,15 +163,53 @@ public final class NamespaceSupport {
         return result;
     }
 
-    /** True if a member of {@code owned} has the name and kind of {@code member}. */
+    /** True if a member of {@code owned} {@link #hides(NamedEntity, NamedEntity) hides} {@code member}. */
     private static boolean hides(List<NamedEntity> owned, NamedEntity member) {
-        MemberKind kind = MemberKind.of(member);
         for (NamedEntity own : owned) {
-            if (own != member && Objects.equals(own.getName(), member.getName()) && MemberKind.of(own) == kind) {
+            if (hides(own, member)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * True if declaring {@code nearer} hides {@code farther}: they are
+     * different members of the same {@link MemberKind kind} with the same
+     * {@link #hidingKey(NamedEntity) hiding key}.
+     */
+    public static boolean hides(NamedEntity nearer, NamedEntity farther) {
+        if (nearer == farther) {
+            return false;
+        }
+        String key = hidingKey(nearer);
+        return key != null && key.equals(hidingKey(farther)) && MemberKind.of(nearer) == MemberKind.of(farther);
+    }
+
+    /**
+     * What a member is identified by when deciding whether another member
+     * hides it: its name; for an operator without a name (one written in
+     * natural syntax, such as {@code 'neg'}), its signature: the header with
+     * each parameter written as {@code _}, e.g. {@code _ 'and' _}.
+     *
+     * @return the key, or null for an unnamed member that is not an
+     *         operator; such a member never hides nor is hidden
+     */
+    public static String hidingKey(NamedEntity member) {
+        if (member.getName() != null) {
+            return member.getName();
+        }
+        if (member instanceof CustomOperator) {
+            StringBuilder signature = new StringBuilder();
+            for (OperatorHeaderElement element : ((CustomOperator) member).getHeader()) {
+                if (signature.length() > 0) {
+                    signature.append(' ');
+                }
+                signature.append(element instanceof Keyword ? ((Keyword) element).getKeyword() : "_");
+            }
+            return signature.toString();
+        }
+        return null;
     }
 
     // ---------------------------------------------------------------------

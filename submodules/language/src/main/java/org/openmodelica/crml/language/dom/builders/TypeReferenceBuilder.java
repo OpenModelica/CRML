@@ -5,6 +5,7 @@ import org.eclipse.emf.ecore.EClass;
 import crml.language.grammar.crmlParser.TypeContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
+import org.openmodelica.crml.language.scope.BuiltIns;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.BuiltinTypeReference;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
@@ -28,49 +29,14 @@ public class TypeReferenceBuilder {
     public TypeReference reference(TypeContext context) {
         if (context.builtin_type() != null) {
             String typename = context.builtin_type().getText();
-            BuiltinTypeReference ref = factory.createBuiltinTypeReference();
-            switch (typename) {
-                case "String": {
-                    ref.setBuiltinType(BuiltinType.STRING);
-                    return ref;
-                }
-                case "Boolean": {
-                    ref.setBuiltinType(BuiltinType.BOOLEAN);
-                    return ref;
-                }
-                case "Integer": {
-                    ref.setBuiltinType(BuiltinType.INTEGER);
-                    return ref;
-                }
-                case "Real": {
-                    ref.setBuiltinType(BuiltinType.REAL);
-                    return ref;
-                }
-                case "Event": {
-                    ref.setBuiltinType(BuiltinType.EVENT);
-                    return ref;
-                }
-                case "Clock": {
-                    ref.setBuiltinType(BuiltinType.CLOCK);
-                    return ref;
-                }
-                case "Period": {
-                    ref.setBuiltinType(BuiltinType.PERIOD);
-                    return ref;
-                }
-                case "Periods": {
-                    ref.setBuiltinType(BuiltinType.PERIODS);
-                    return ref;
-                }
-                case "Requirement": {
-                    ref.setBuiltinType(BuiltinType.REQUIREMENT);
-                    return ref;
-                }
-                default: {
-                    builder.reportError(context.builtin_type(), "Unable to resolve built-in type: " + typename);
-                    return null;
-                }
+            BuiltinType type = BuiltIns.TYPES.get(typename);
+            if (type == null) {
+                builder.reportError(context.builtin_type(), "Unable to resolve built-in type: " + typename);
+                return null;
             }
+            BuiltinTypeReference ref = factory.createBuiltinTypeReference();
+            ref.setBuiltinType(type);
+            return ref;
         } else {
             UserTypereference ref =  factory.createUserTypereference();
             builder.link(

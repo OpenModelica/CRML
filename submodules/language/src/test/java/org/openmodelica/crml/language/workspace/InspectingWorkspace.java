@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.openmodelica.crml.language.opcall.MixfixParser;
+import org.openmodelica.crml.language.workspace.StageResult.BindResult;
 import org.openmodelica.crml.language.workspace.StageResult.CallResult;
 import org.openmodelica.crml.language.workspace.StageResult.LiftResult;
 import org.openmodelica.crml.language.workspace.StageResult.LinkResult;
@@ -34,13 +35,17 @@ import org.openmodelica.crml.language.workspace.StageResult.LinkResult;
  */
 public class InspectingWorkspace extends CrmlWorkspace {
 
-    /** The stages, in the order they run. Building happens while loading. */
+    /**
+     * The stages, in the order they run. Building happens while loading;
+     * binding runs for every resource before any is linked.
+     */
     public enum Stage {
-        BUILD, LINK, OPERATOR_CALLS, LIFT
+        BUILD, BIND, LINK, OPERATOR_CALLS, LIFT
     }
 
     /** What the stages did to one resource; a field stays null if its stage did not run. */
     public static final class Trace {
+        public BindResult bind;
         public LinkResult link;
         public MixfixParser parser;
         public CallResult calls;
@@ -75,6 +80,17 @@ public class InspectingWorkspace extends CrmlWorkspace {
     /** The trace of {@code resource}; empty if it was never resolved. */
     public Trace trace(CrmlResource resource) {
         return traces.computeIfAbsent(resource, r -> new Trace());
+    }
+
+    @Override
+    BindResult bind(CrmlResource resource) {
+        if (!runs(Stage.BIND)) {
+            return null;
+        }
+        BindResult result = super.bind(resource);
+        trace(resource).bind = result;
+        afterStage.accept(Stage.BIND, trace(resource));
+        return result;
     }
 
     @Override

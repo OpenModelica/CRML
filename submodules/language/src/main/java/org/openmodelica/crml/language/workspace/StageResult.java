@@ -2,10 +2,13 @@ package org.openmodelica.crml.language.workspace;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmodelica.crml.language.dom.DomModification;
 import org.openmodelica.crml.language.dom.UnresolvedLink;
+import org.openmodelica.crml.model.metamodel.LibraryDependency;
 import org.openmodelica.crml.model.metamodel.Liftable;
 import org.openmodelica.crml.model.metamodel.Sequence;
 
@@ -26,6 +29,22 @@ public abstract class StageResult {
 
     /** The diagnostics this stage reported. */
     public List<CrmlDiagnostic> diagnostics() { return diagnostics; }
+
+    /** Binding: each dependency of the root and what looking up its name gave. */
+    public static final class BindResult extends StageResult {
+        private final Map<LibraryDependency, RootIndex.Lookup.Status> lookups;
+
+        BindResult(Map<LibraryDependency, RootIndex.Lookup.Status> lookups, List<CrmlDiagnostic> diagnostics) {
+            super(diagnostics);
+            this.lookups = Collections.unmodifiableMap(new LinkedHashMap<>(lookups));
+        }
+
+        /** The dependencies of the root, in the order they are written. */
+        public List<LibraryDependency> dependencies() { return new ArrayList<>(lookups.keySet()); }
+
+        /** What looking up the name of {@code dependency} gave; bound only if {@link RootIndex.Lookup.Status#FOUND}. */
+        public RootIndex.Lookup.Status status(LibraryDependency dependency) { return lookups.get(dependency); }
+    }
 
     /** Linking: the references that stayed unresolved. */
     public static final class LinkResult extends StageResult {

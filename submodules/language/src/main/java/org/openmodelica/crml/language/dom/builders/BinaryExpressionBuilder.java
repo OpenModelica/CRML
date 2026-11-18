@@ -3,6 +3,7 @@ package org.openmodelica.crml.language.dom.builders;
 import crml.language.grammar.crmlParser.ExpContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
+import org.openmodelica.crml.language.scope.BuiltIns;
 import org.openmodelica.crml.language.dom.util.BuildResult.SingleBuildResult;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.BuiltinBinaryOperatorKind;
@@ -77,26 +78,10 @@ public class BinaryExpressionBuilder {
         throw new IllegalStateException("No binary operator found in context: "+context.getText());
     }
     private static BuiltinBinaryOperatorKind resolveBinaryOpCode(String text){
-        switch (text) {
-            case "<": return BuiltinBinaryOperatorKind.LT;
-            case "<=": return BuiltinBinaryOperatorKind.LE;
-            case ">": return BuiltinBinaryOperatorKind.GT;
-            case ">=": return BuiltinBinaryOperatorKind.GE;
-            case "at": return BuiltinBinaryOperatorKind.AT;
-            case "==": return BuiltinBinaryOperatorKind.EQ;
-            case "<>": return BuiltinBinaryOperatorKind.NEQ;
-            case "and": return BuiltinBinaryOperatorKind.AND;
-            case "*": return BuiltinBinaryOperatorKind.MUL;
-            case "/": return BuiltinBinaryOperatorKind.DIV;
-            case "+": return BuiltinBinaryOperatorKind.ADD;
-            case "-": return BuiltinBinaryOperatorKind.SUB;
-            case "or": return BuiltinBinaryOperatorKind.OR;
-            case "mod": return BuiltinBinaryOperatorKind.MOD;
-            case "^": return BuiltinBinaryOperatorKind.POW;
-            case "filter": return BuiltinBinaryOperatorKind.FILTER;
-        
-            default:
-                throw new IllegalStateException("Binary operator is not recognized: "+text);
+        BuiltinBinaryOperatorKind kind = BuiltIns.BINARY_OPERATORS.get(text);
+        if (kind == null) {
+            throw new IllegalStateException("Binary operator is not recognized: "+text);
         }
+        return kind;
     }
 }

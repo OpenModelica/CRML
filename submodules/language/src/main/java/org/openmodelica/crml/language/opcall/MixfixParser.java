@@ -15,6 +15,7 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import com.google.common.collect.Iterables;
 
 import org.openmodelica.crml.language.dom.BuildContext;
+import org.openmodelica.crml.language.scope.Scopes;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.model.metamodel.Binding;
 import org.openmodelica.crml.model.metamodel.ComputedValue;
@@ -22,7 +23,6 @@ import org.openmodelica.crml.model.metamodel.CustomOperator;
 import org.openmodelica.crml.model.metamodel.Keyword;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.Library;
-import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.OperatorHeaderElement;
 import org.openmodelica.crml.model.metamodel.Sequence;
 import org.openmodelica.crml.model.metamodel.SequenceKeyword;
@@ -51,19 +51,21 @@ public class MixfixParser {
     private final CRMLFactory factory;
     private final BuildContext builder;
 
+    // The operator whose body the current sequence is in: it cannot call
+    // itself (no self-reference), so it is left out of the parse.
+    private CustomOperator excluded;
+
     // Parses of the current sequence, by level and then by start position.
     // A null position is the end of the sequence.
     private final List<Map<Sequence, List<Parse>>> memo = new ArrayList<>();
 
 
-    public MixfixParser(Model model, BuildContext builder) {
-        this(model, builder, new TypeCheck() {});
-
-
-    }
-
-    public MixfixParser(Model model, BuildContext builder, TypeCheck typeCheck) {
-        this.levels    = OperatorUtil.load(model).stream()
+    /**
+     * A parser for calls to {@code operators}. Each operator is a precedence
+     * level of its own, in list order: an earlier operator binds tighter.
+     */
+    public MixfixParser(List<CustomOperator> operators, BuildContext builder, TypeCheck typeCheck) {
+        this.levels    = operators.stream()
                                   .map(Collections::singletonList)
                                   .collect(Collectors.toList());
         this.typeCheck = typeCheck;
@@ -71,20 +73,22 @@ public class MixfixParser {
         this.factory = builder.factory();
     }
 
-    public MixfixParser(Library library, BuildContext builder) {
-        this(library, builder, new TypeCheck() {});
+    public MixfixParser(List<CustomOperator> operators, BuildContext builder) {
+        this(operators, builder, new TypeCheck() {});
     }
 
-    public MixfixParser(Library library, BuildContext builder, TypeCheck typeCheck) {
-        this.levels    = OperatorUtil.load(library).stream()
-                                  .map(Collections::singletonList)
-                                  .collect(Collectors.toList());
-        this.typeCheck = typeCheck;
-        this.builder = builder;
-        this.factory = builder.factory();
+    /** A parser for the operators visible in {@code root}: see {@link Scopes#operators}. */
+    public MixfixParser(Library root, BuildContext builder) {
+        this(root, builder, new TypeCheck() {});
+    }
+
+    /** A parser for the operators visible in {@code root}: see {@link Scopes#operators}. */
+    public MixfixParser(Library root, BuildContext builder, TypeCheck typeCheck) {
+        this(new Scopes().operators(root), builder, typeCheck);
     }
 
     public Value parse(Sequence sequence) {
+        excluded = enclosingOperator(sequence);
         memo.clear();
         for (int level = 0; level <= levels.size(); level++) {
             memo.add(new IdentityHashMap<>());
@@ -109,6 +113,16 @@ public class MixfixParser {
             return null;
         }
         return complete.get(0).build();
+    }
+
+    /** The operator whose definition contains {@code object}, or null. */
+    private static CustomOperator enclosingOperator(EObject object) {
+        for (EObject container = object; container != null; container = container.eContainer()) {
+            if (container instanceof CustomOperator) {
+                return (CustomOperator) container;
+            }
+        }
+        return null;
     }
 
     /**
@@ -161,6 +175,9 @@ public class MixfixParser {
         List<CustomOperator> infixAndPostfixOperators = new ArrayList<>();
 
         for (CustomOperator op : Iterables.filter(levels.get(level), CustomOperator.class)) {
+            if (op == excluded) {
+                continue;
+            }
             if (op.startsWithValue())
                 infixAndPostfixOperators.add(op);
             else
