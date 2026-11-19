@@ -3,9 +3,6 @@ plugins {
     id("antlr")
 }
 
-group = "crml"
-version = "1.0-SNAPSHOT"
-
 val antlr4Version: String by rootProject.extra
 
 dependencies {

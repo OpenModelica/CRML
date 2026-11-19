@@ -2,8 +2,14 @@ import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.file.Files
 
-group = "crml"
-version = "1.0-SNAPSHOT"
+// The group and version of every project, and so of the Maven publications.
+// The version is -PcrmlVersion, set by .github/workflows/maven-publish.yml;
+// locally it is a snapshot:
+//   ./gradlew publish -PcrmlVersion=0.0.1
+allprojects {
+    group = "org.openmodelica.crml"
+    version = (findProperty("crmlVersion") as String?)?.takeIf { it.isNotBlank() } ?: "0.0.1-SNAPSHOT"
+}
 
 // ─────────────────────────────────────────────
 //  Shared version catalogue
@@ -67,6 +73,9 @@ allprojects {
 // every distribution archive of the application projects.
 subprojects {
     tasks.withType<Jar>().configureEach {
+        // The jars keep names without the version (compiler-all.jar, ...),
+        // which the Makefile and workflows refer to. Publishing names them.
+        archiveVersion.set("")
         metaInf {
             from(rootProject.file("OSMC-License.txt"))
             rename("OSMC-License.txt", "LICENSE")
@@ -76,6 +85,63 @@ subprojects {
         extensions.getByType<DistributionContainer>().configureEach {
             contents {
                 from(rootProject.file("OSMC-License.txt")) { rename { "LICENSE" } }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+//  Maven publication (GitHub Packages)
+// ─────────────────────────────────────────────
+// The library projects are published as org.openmodelica.crml:crml-<project>,
+// each with its sources and Javadoc; crml-compiler also carries compiler-all.jar
+// (classifier "all"), with the group and version declared at the top.
+// The repository is the GitHub Packages one of $GITHUB_REPOSITORY, with the
+// gpr.user/gpr.key properties or GITHUB_ACTOR/GITHUB_TOKEN as credentials;
+// .github/workflows/maven-publish.yml publishes there.
+val publishedProjects = setOf("util", "model", "modelica", "language", "compiler")
+val githubRepository = System.getenv("GITHUB_REPOSITORY") ?: "PELAB-LiU/CRML"
+
+configure(subprojects.filter { it.name in publishedProjects }) {
+    apply(plugin = "maven-publish")
+    extensions.configure<JavaPluginExtension> {
+        withSourcesJar()
+        withJavadocJar()
+    }
+    // Some projects name a source directory twice (src/main/java, the ANTLR
+    // output), which would put its files twice into the sources jar.
+    tasks.named<Jar>("sourcesJar") {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+    extensions.configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("maven") {
+                artifactId = "crml-${project.name}"
+                from(components["java"])
+                pom {
+                    name.set("CRML ${project.name}")
+                    description.set("The ${project.name} project of the CRML compiler")
+                    url.set("https://github.com/$githubRepository")
+                    licenses {
+                        license {
+                            name.set("OSMC Public License")
+                            url.set("https://github.com/$githubRepository/blob/main/OSMC-License.txt")
+                        }
+                    }
+                    scm {
+                        url.set("https://github.com/$githubRepository")
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/$githubRepository")
+                credentials {
+                    username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                    password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+                }
             }
         }
     }

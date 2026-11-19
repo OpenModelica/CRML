@@ -8,9 +8,6 @@ application {
     mainClass.set("crml.model.Main")
 }
 
-group = "org.example"
-version = "1.0.0"
-
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8

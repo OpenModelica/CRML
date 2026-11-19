@@ -19,9 +19,6 @@ plugins {
     id("org.teavm") version "0.16.0"
 }
 
-group = "crml"
-version = "1.0-SNAPSHOT"
-
 dependencies {
     // ANTLR 4.9.2, used by the language project, reads its parser tables with
     // java.util.UUID, which TeaVM does not provide; 4.10 and later do not.

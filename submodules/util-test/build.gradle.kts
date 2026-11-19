@@ -3,9 +3,6 @@ plugins {
     id("antlr")
 }
 
-group = "crml"
-version = "1.0-SNAPSHOT"
-
 dependencies {
     antlr("org.antlr:antlr4:4.9.2")
     implementation("org.antlr:antlr4:4.9.2")
