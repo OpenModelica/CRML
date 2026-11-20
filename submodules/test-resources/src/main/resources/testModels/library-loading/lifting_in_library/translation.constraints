@@ -1,0 +1,41 @@
+# Lifting inside a library operator.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseLifting"] == 3
+count [CustomOperator::@container.name == "Temporal"] == 2
+
+# ---- UseLifting
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseLifting"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseLifting.mo"
+[TraceLink::@file == "UseLifting.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseLifting"
+[TraceLink::@file == "UseLifting.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseLifting.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseLifting.mo"] == 0
+count [Reference::@file == "UseLifting.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseLifting.mo", target.@file != "UseLifting.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseLifting.mo"] == 3
+
+# UseLifting (own): each element once, of the right kind, directly in UseLifting's class.
+count [Variable::@container.name == "UseLifting"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "UseLifting"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseLifting.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseLifting", name == "x"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "UseLifting", name == "ps"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "ps"
+[Variable::@container.name == "UseLifting", name == "r"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "r"
+
+# Temporal: each element once, of the right kind, directly in UseLifting's class.
+count [CustomOperator::@container.name == "Temporal"].@referrers[TraceLink::@file == "UseLifting.trace", kind == "OPERATOR_TO_BLOCK"] == 2
+all [CustomOperator::@container.name == "Temporal"].@referrers[TraceLink::@file == "UseLifting.trace"].kind == "OPERATOR_TO_BLOCK"
+all [CustomOperator::@container.name == "Temporal"].@referrers[TraceLink::@file == "UseLifting.trace"].modelica.@container == [TraceLink::@file == "UseLifting.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# ---- Call sites and structure
+# r instantiates the 'during all' block, which instantiates the 'during' block per period.
+[Variable::@container.name == "UseLifting", name == "r"].definition.@referrers[TraceLink::@file == "UseLifting.trace", kind == "VALUE_TO_COMPONENT"].modelica.declaredType.target == [CustomOperator::@container.name == "Temporal", keywords.keyword contains "'during all'"].@referrers[TraceLink::@file == "UseLifting.trace"].modelica
+[CustomOperator::@container.name == "Temporal", keywords.keyword contains "'during all'"].@referrers[TraceLink::@file == "UseLifting.trace"].modelica.components.declaredType[Reference::target.name != ""].target contains [CustomOperator::@container.name == "Temporal", keywords.keyword contains "'during'"].@referrers[TraceLink::@file == "UseLifting.trace"].modelica

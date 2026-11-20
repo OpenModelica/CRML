@@ -76,14 +76,21 @@ final class Parser {
             selectors.add(selector());
         }
         List<Ast.Step> steps = new ArrayList<>();
-        while (acceptOp(".")) {
-            steps.add(step());
+        while (true) {
+            if (acceptOp(".")) {
+                steps.add(segment());
+            } else if (peek().is(Kind.OP, "[")) {
+                steps.add(new Ast.FilterStep(selector()));
+            } else {
+                break;
+            }
         }
         return new Ast.Chain(selectors, steps);
     }
 
-    // step ::= "." NAME | "." "@" PSEUDO   (the "." is already consumed)
-    private Ast.Step step() throws ParseException {
+    // step ::= "." segment | selector ;  segment ::= NAME | "@" PSEUDO
+    // (for a step, the "." is already consumed)
+    private Ast.Step segment() throws ParseException {
         if (acceptOp("@")) {
             Token pseudo = next();
             if (pseudo.kind == Kind.WORD) {
@@ -94,11 +101,14 @@ final class Parser {
                         return new Ast.PseudoStep(Ast.PseudoStep.Kind.CONTAINER);
                     case "file":
                         return new Ast.PseudoStep(Ast.PseudoStep.Kind.FILE);
+                    case "referrers":
+                        return new Ast.PseudoStep(Ast.PseudoStep.Kind.REFERRERS);
                     default:
                         break;
                 }
             }
-            throw new ParseException(pseudo.column, "expected root, container or file after '@', found " + pseudo);
+            throw new ParseException(pseudo.column,
+                "expected root, container, file or referrers after '@', found " + pseudo);
         }
         return new Ast.FeatureStep(name());
     }
@@ -118,12 +128,12 @@ final class Parser {
         return new Ast.Selector(type, filters);
     }
 
-    // filter ::= path ( "==" | "!=" | "contains" ) literal ;  path ::= NAME ( "." NAME )*
+    // filter ::= path ( "==" | "!=" | "contains" ) literal ;  path ::= segment ( "." segment )*
     private Ast.Filter filter() throws ParseException {
-        List<String> path = new ArrayList<>();
-        path.add(name());
+        List<Ast.Step> path = new ArrayList<>();
+        path.add(segment());
         while (acceptOp(".")) {
-            path.add(name());
+            path.add(segment());
         }
         Token op = next();
         String operator;

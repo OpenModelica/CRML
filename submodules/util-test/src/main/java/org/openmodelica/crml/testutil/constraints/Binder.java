@@ -104,16 +104,24 @@ final class Binder {
 
     private void check(Ast.Chain chain) throws BindException {
         for (Ast.Selector selector : chain.selectors) {
-            type(selector.type);
-            for (Ast.Filter filter : selector.filters) {
-                for (String name : filter.path) {
-                    name(name);
-                }
-            }
+            check(selector);
         }
-        for (Ast.Step step : chain.steps) {
+        steps(chain.steps);
+    }
+
+    private void check(Ast.Selector selector) throws BindException {
+        type(selector.type);
+        for (Ast.Filter filter : selector.filters) {
+            steps(filter.path);
+        }
+    }
+
+    private void steps(List<Ast.Step> steps) throws BindException {
+        for (Ast.Step step : steps) {
             if (step instanceof Ast.FeatureStep) {
                 name(((Ast.FeatureStep) step).name);
+            } else if (step instanceof Ast.FilterStep) {
+                check(((Ast.FilterStep) step).selector);
             }
         }
     }

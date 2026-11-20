@@ -1,0 +1,47 @@
+# Two libraries.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseTwo"] == 3
+count [CustomOperator::@container.name == "Logic"] == 1
+count [CustomOperator::@container.name == "Negation"] == 1
+
+# ---- UseTwo
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseTwo"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseTwo.mo"
+[TraceLink::@file == "UseTwo.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseTwo"
+[TraceLink::@file == "UseTwo.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseTwo.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseTwo.mo"] == 0
+count [Reference::@file == "UseTwo.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseTwo.mo", target.@file != "UseTwo.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseTwo.mo"] == 3
+
+# UseTwo (own): each element once, of the right kind, directly in UseTwo's class.
+count [Variable::@container.name == "UseTwo"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "UseTwo"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseTwo.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseTwo", name == "x"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "UseTwo", name == "y"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "y"
+[Variable::@container.name == "UseTwo", name == "nor"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "nor"
+
+# Logic: each element once, of the right kind, directly in UseTwo's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTwo.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTwo.trace"].modelica.@container == [TraceLink::@file == "UseTwo.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# Negation: each element once, of the right kind, directly in UseTwo's class.
+count [CustomOperator::@container.name == "Negation"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Negation"].@referrers[TraceLink::@file == "UseTwo.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Negation"].@referrers[TraceLink::@file == "UseTwo.trace"].modelica.@container == [TraceLink::@file == "UseTwo.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# ---- Call sites and structure
+# nor calls Negation's function on the result of Logic's.
+[Variable::@container.name == "UseTwo", name == "nor"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Negation", keywords.keyword contains "'negation of'"].@referrers[TraceLink::@file == "UseTwo.trace"].modelica
+[Variable::@container.name == "UseTwo", name == "nor"].@referrers[TraceLink::@file == "UseTwo.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.arguments[ParenthesizedExpression].inner.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "UseTwo.trace"].modelica

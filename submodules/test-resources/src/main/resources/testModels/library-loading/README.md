@@ -27,6 +27,27 @@ on through `L union` / `flatten { A, B } union`. Each case tests one thing.
   file and shows the results as a table in the report; any line that is not
   `pass` fails the case. For error cases, the constraints only describe the DOM;
   which validation error is reported cannot be stated yet.
+- **`translation.constraints`**, in every case with a valid model, states what
+  the generated Modelica must look like. `LibraryLoading` in `:compiler`
+  translates all valid models of the case in one run, adds each result as
+  `<Model>.mo` and `<Model>.trace`, and evaluates the file over the CRML, Modelica
+  and trace metamodels; see "Checking a translation" in `CONSTRAINT_LANGUAGE.md`.
+  Per model it checks:
+  - the class: its name, and `partial` exactly when a variable it has, own or
+    inherited, is unbound;
+  - nothing dropped at any depth (no `UNSUPPORTED` link, no `Placeholder`), no
+    unresolved name, no reference into another model's class;
+  - every top-level element of the model and of each library it reaches, once,
+    of the right kind (function or block for an operator), directly in the
+    model's class, with the CRML name for classes and variables; exact counts,
+    so nothing is emitted twice or extra;
+  - nothing of a root it does not reach (scope flows one way);
+  - call sites and structure: each call reaches the function or block of the
+    right library, operators call their dependencies, extends clauses and
+    component types point at the generated classes.
+
+  Every expected value follows from the CRML sources. The cases with only error
+  files have none.
 - A recurring line is `count [Model::name == "M"] / [Sequence] == 0`: no keyword
   call in `M` is left as an unparsed Sequence, i.e. every operator call was
   resolved.

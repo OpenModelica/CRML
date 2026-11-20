@@ -6,8 +6,10 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -17,6 +19,7 @@ import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EOperation;
+import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -59,6 +62,8 @@ final class Evaluator {
     private final Binder binder;
     /** Every object of every resource, in resource order and then tree order. */
     private final List<EObject> universe = new ArrayList<>();
+    /** For {@code .@referrers}: object to the objects referring to it; built on first use. */
+    private Map<EObject, Set<EObject>> referrers;
 
     Evaluator(Binder binder, ResourceSet resourceSet) {
         this.binder = binder;
@@ -226,7 +231,7 @@ final class Evaluator {
         return new Outcome(Truth.TRUE, t.size == 0 ? "vacuously true: 0 objects matched" : "");
     }
 
-    private Outcome count(Ast.Chain chain, List<EObject> matched, Ast.Count count) {
+    private Outcome count(Ast.Chain chain, List<EObject> matched, Ast.Count count) throws Binder.BindException {
         Set<Object> union = new LinkedHashSet<>();
         List<String> unresolved = new ArrayList<>();
         for (EObject o : matched) {
@@ -312,15 +317,11 @@ final class Evaluator {
     }
 
     /** True only if every filter is true; a path that cannot be followed is not true. */
-    private boolean filters(Ast.Selector selector, EObject candidate) {
+    private boolean filters(Ast.Selector selector, EObject candidate) throws Binder.BindException {
         for (Ast.Filter filter : selector.filters) {
-            List<Ast.Step> path = new ArrayList<>();
-            for (String name : filter.path) {
-                path.add(new Ast.FeatureStep(name));
-            }
             Set<Object> values;
             try {
-                values = steps(candidate, path);
+                values = steps(candidate, filter.path);
             } catch (Unresolved u) {
                 return false;
             }
@@ -344,16 +345,30 @@ final class Evaluator {
     }
 
     /** Applies the steps to {@code {start}}, mapping every value and flattening. */
-    private Set<Object> steps(EObject start, List<Ast.Step> steps) throws Unresolved {
+    private Set<Object> steps(EObject start, List<Ast.Step> steps) throws Unresolved, Binder.BindException {
         Set<Object> current = new LinkedHashSet<>(Collections.singleton(start));
         for (Ast.Step step : steps) {
             Set<Object> next = new LinkedHashSet<>();
-            for (Object value : current) {
-                apply(step, value, next);
+            if (step instanceof Ast.FilterStep) {
+                filter(((Ast.FilterStep) step).selector, current, next);
+            } else {
+                for (Object value : current) {
+                    apply(step, value, next);
+                }
             }
             current = next;
         }
         return current;
+    }
+
+    /** A filter step: the values that are objects of the selector's type and pass its filters. */
+    private void filter(Ast.Selector selector, Set<Object> values, Set<Object> into) throws Binder.BindException {
+        EClass type = binder.type(selector.type);
+        for (Object value : values) {
+            if (type.isInstance(value) && filters(selector, (EObject) value)) {
+                into.add(value);
+            }
+        }
     }
 
     private void apply(Ast.Step step, Object value, Set<Object> into) throws Unresolved {
@@ -411,8 +426,11 @@ final class Evaluator {
         return null;
     }
 
-    private static void pseudo(Ast.PseudoStep.Kind kind, EObject object, Set<Object> into) throws Unresolved {
+    private void pseudo(Ast.PseudoStep.Kind kind, EObject object, Set<Object> into) throws Unresolved {
         switch (kind) {
+            case REFERRERS:
+                into.addAll(referrers().getOrDefault(object, Collections.<EObject>emptySet()));
+                return;
             case ROOT:
                 if (object.eResource() == null) {
                     throw new Unresolved("step .@root on " + Describer.describe(object) + ": not in a resource");
@@ -434,6 +452,34 @@ final class Evaluator {
                 into.add(file);
                 return;
         }
+    }
+
+    /**
+     * The inverse of every non-containment reference between objects of the
+     * universe. Containment and container references are left out, as are
+     * derived ones, which only repeat what other features hold. Referrers are
+     * in universe order.
+     */
+    private Map<EObject, Set<EObject>> referrers() {
+        if (referrers == null) {
+            referrers = new IdentityHashMap<>();
+            for (EObject referrer : universe) {
+                for (EReference reference : referrer.eClass().getEAllReferences()) {
+                    if (reference.isContainment() || reference.isContainer() || reference.isDerived()) {
+                        continue;
+                    }
+                    Object value = referrer.eGet(reference);
+                    Collection<?> targets = reference.isMany() ? (Collection<?>) value
+                        : value == null ? Collections.emptySet() : Collections.singleton(value);
+                    for (Object target : targets) {
+                        if (target instanceof EObject && !((EObject) target).eIsProxy()) {
+                            referrers.computeIfAbsent((EObject) target, k -> new LinkedHashSet<>()).add(referrer);
+                        }
+                    }
+                }
+            }
+        }
+        return referrers;
     }
 
     // ---------------------------------------------------------------- conditions

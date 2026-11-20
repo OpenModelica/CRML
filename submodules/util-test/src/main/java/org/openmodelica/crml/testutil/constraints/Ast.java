@@ -29,7 +29,7 @@ public final class Ast {
         }
     }
 
-    /** {@code selector ( "/" selector )* step*}. */
+    /** {@code selector ( "/" selector )* step*}; a step is a feature, a pseudo step or a {@link FilterStep}. */
     public static final class Chain {
         public final List<Selector> selectors;
         public final List<Step> steps;
@@ -82,13 +82,17 @@ public final class Ast {
         }
     }
 
-    /** {@code path ( "==" | "!=" | "contains" ) literal}. */
+    /**
+     * {@code path ( "==" | "!=" | "contains" ) literal}, with
+     * {@code path ::= segment ( "." segment )*} and {@code segment ::= NAME | "@" PSEUDO}.
+     * The path is kept as {@link FeatureStep}s and {@link PseudoStep}s.
+     */
     public static final class Filter {
-        public final List<String> path;
+        public final List<Step> path;
         public final String op;
         public final Literal value;
 
-        Filter(List<String> path, String op, Literal value) {
+        Filter(List<Step> path, String op, Literal value) {
             this.path = Collections.unmodifiableList(new ArrayList<>(path));
             this.op = op;
             this.value = value;
@@ -96,7 +100,12 @@ public final class Ast {
 
         @Override
         public String toString() {
-            return String.join(".", path) + " " + op + " " + value;
+            StringBuilder text = new StringBuilder();
+            for (Step step : path) {
+                text.append(step);
+            }
+            // Steps print with a leading "."; a path does not start with one.
+            return text.substring(1) + " " + op + " " + value;
         }
     }
 
@@ -122,7 +131,7 @@ public final class Ast {
 
     /** {@code "." "@" PSEUDO}. */
     public static final class PseudoStep extends Step {
-        public enum Kind { ROOT, CONTAINER, FILE }
+        public enum Kind { ROOT, CONTAINER, FILE, REFERRERS }
 
         public final Kind kind;
 
@@ -133,6 +142,23 @@ public final class Ast {
         @Override
         public String toString() {
             return ".@" + kind.name().toLowerCase();
+        }
+    }
+
+    /**
+     * A selector used as a step: keeps the values that are objects of its type
+     * and pass its filters, and drops every other value.
+     */
+    public static final class FilterStep extends Step {
+        public final Selector selector;
+
+        FilterStep(Selector selector) {
+            this.selector = selector;
+        }
+
+        @Override
+        public String toString() {
+            return selector.toString();
         }
     }
 

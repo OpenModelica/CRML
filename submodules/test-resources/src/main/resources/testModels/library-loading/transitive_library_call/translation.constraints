@@ -1,0 +1,47 @@
+# A library operator calling one of its dependency.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseImplication"] == 3
+count [CustomOperator::@container.name == "Implication"] == 1
+count [CustomOperator::@container.name == "Logic"] == 1
+
+# ---- UseImplication
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseImplication"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseImplication.mo"
+[TraceLink::@file == "UseImplication.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseImplication"
+[TraceLink::@file == "UseImplication.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseImplication.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseImplication.mo"] == 0
+count [Reference::@file == "UseImplication.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseImplication.mo", target.@file != "UseImplication.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseImplication.mo"] == 3
+
+# UseImplication (own): each element once, of the right kind, directly in UseImplication's class.
+count [Variable::@container.name == "UseImplication"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "UseImplication"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseImplication.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseImplication", name == "x"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "UseImplication", name == "y"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "y"
+[Variable::@container.name == "UseImplication", name == "x_implies_y"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x_implies_y"
+
+# Implication: each element once, of the right kind, directly in UseImplication's class.
+count [CustomOperator::@container.name == "Implication"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Implication"].@referrers[TraceLink::@file == "UseImplication.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Implication"].@referrers[TraceLink::@file == "UseImplication.trace"].modelica.@container == [TraceLink::@file == "UseImplication.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# Logic: each element once, of the right kind, directly in UseImplication's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseImplication.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseImplication.trace"].modelica.@container == [TraceLink::@file == "UseImplication.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# ---- Call sites and structure
+# x_implies_y calls Implication's 'implies', which calls Logic's 'or'.
+[Variable::@container.name == "UseImplication", name == "x_implies_y"].@referrers[TraceLink::@file == "UseImplication.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Implication", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "UseImplication.trace"].modelica
+[CustomOperator::@container.name == "Implication", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "UseImplication.trace"].modelica.statements.value.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "UseImplication.trace"].modelica

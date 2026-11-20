@@ -306,6 +306,47 @@ class ConstraintEngineTest {
         isUnresolved("[EClass::name == \"Ghost\"].eSuperTypes.@container is empty");
     }
 
+    // ---------------------------------------------------------------- referrers and filter steps
+    //
+    // Machine is referred to by Pump and Valve (eSuperTypes) and by Sensor's
+    // reference owner (eType), and by generic types; Sensor only by Valve.
+
+    @Test
+    void referrersInvertCrossReferences() {
+        passes("count [EClass::name == \"Machine\"].@referrers[EClass] == 2");
+        passes("[EClass::name == \"Machine\"].@referrers[EClass].name contains \"Valve\"");
+        passes("[EClass::name == \"Machine\"].@referrers[EReference].name == \"owner\"");
+        passes("[EClass::name == \"Sensor\"].@referrers[EClass].name == \"Valve\"");
+        passes("[EClass::name == \"Pump\"].eSuperTypes.@referrers[EClass].@file == \"app.ecore\"");
+    }
+
+    @Test
+    void referrersLeaveOutContainmentAndAreNeverUnresolved() {
+        // Nothing but containment and the derived/container ePackage points at a package.
+        passes("[EPackage::name == \"app\"].@referrers is empty");
+        passes("[EClass::name == \"Lonely\"].@referrers is empty");
+        // Floating is outside every resource; its referrer Ghost is inside.
+        passes("[EClass::name == \"Ghost\"].eSuperTypes.@referrers[EClass].name == \"Ghost\"");
+    }
+
+    @Test
+    void filterStepKeepsMatchingObjectsOnly() {
+        passes("[EClass::name == \"Machine\"].@referrers[EClass::name == \"Pump\"].abstract == false");
+        passes("[EClass::name == \"Machine\"].@referrers[EClass::name == \"Nope\"] is empty");
+        passes("[EClass::name == \"Pump\"].name[EClass] is empty");                 // attribute values dropped
+        passes("[EClass::name == \"Valve\"].eSuperTypes[EClass::abstract == true].name == \"Machine\"");
+        isError("[EClass::name == \"Pump\"].eSuperTypes[Nope] is empty");
+        isError("[EClass::name == \"Pump\"].eSuperTypes[EClass::nosuch == 1] is empty");
+    }
+
+    @Test
+    void pseudoStepsInFilterPaths() {
+        passes("count [EClass::@container.name == \"app\"] == 4");
+        passes("count [EClass::@file == \"base.ecore\"] == 3");
+        passes("count [EClass::@root.name == \"base\", abstract == true] == 1");
+        passes("count [EClass::eSuperTypes.@file contains \"base.ecore\"] == 2");
+    }
+
     // ---------------------------------------------------------------- conditions and literals
 
     @Test

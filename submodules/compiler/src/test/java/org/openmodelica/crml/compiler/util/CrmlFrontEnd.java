@@ -36,10 +36,13 @@ public final class CrmlFrontEnd {
     private final EObject dom;
     private final TranslationResult translation;
     private final Throwable translationError;
+    private final List<CrmlResource> libraries;
 
-    private CrmlFrontEnd(Path source, List<String> syntaxErrors, List<Resource.Diagnostic> diagnostics,
-            EObject dom, TranslationResult translation, Throwable translationError) {
+    private CrmlFrontEnd(Path source, List<CrmlResource> libraries, List<String> syntaxErrors,
+            List<Resource.Diagnostic> diagnostics, EObject dom, TranslationResult translation,
+            Throwable translationError) {
         this.source = source;
+        this.libraries = Collections.unmodifiableList(libraries);
         this.syntaxErrors = Collections.unmodifiableList(syntaxErrors);
         this.diagnostics = Collections.unmodifiableList(new ArrayList<>(diagnostics));
         this.dom = dom;
@@ -48,14 +51,29 @@ public final class CrmlFrontEnd {
     }
 
     public static CrmlFrontEnd run(Path source) throws IOException {
-        CrmlWorkspace workspace = new CrmlWorkspace();
+        return run(new CrmlWorkspace(), source);
+    }
+
+    /**
+     * As {@link #run(Path)}, in a workspace of the caller's, e.g. to translate
+     * several models of one run against the same loaded libraries. Libraries
+     * must already be loaded ({@link CrmlWorkspace#loadLibraryPath()});
+     * resolving skips what an earlier run already resolved. With a library
+     * path, the {@link #diagnostics()} also hold the problems of the
+     * dependencies of {@code source} (missing, broken, ambiguous, cyclic, a
+     * library depending on a model); the errors of the other files are not
+     * included.
+     */
+    public static CrmlFrontEnd run(CrmlWorkspace workspace, Path source) throws IOException {
         CrmlResource resource = workspace.load(source);
+        List<CrmlResource> libraries = workspace.resources();
+        libraries.remove(resource);
         List<String> syntaxErrors = new ArrayList<>();
         if (resource.getState() == CrmlResource.State.SYNTAX_ERRORS) {
             for (Resource.Diagnostic syntaxError : resource.getErrors()) {
                 syntaxErrors.add(CrmlDiagnostic.format(syntaxError, LocationStyle.NONE));
             }
-            return new CrmlFrontEnd(source, syntaxErrors, Collections.<Resource.Diagnostic>emptyList(),
+            return new CrmlFrontEnd(source, libraries, syntaxErrors, Collections.<Resource.Diagnostic>emptyList(),
                 null, null, null);
         }
 
@@ -63,20 +81,49 @@ public final class CrmlFrontEnd {
         // turns the ones that name an operator in scope into calls.
         workspace.resolve();
         EObject dom = resource.getRoot();
-        List<Resource.Diagnostic> diagnostics = resource.getErrors();
+        List<Resource.Diagnostic> diagnostics = new ArrayList<>(resource.getErrors());
+        if (!workspace.getLibraryPath().isEmpty()) {
+            diagnostics.addAll(dependencyProblems(workspace, resource));
+        }
         if (!diagnostics.isEmpty() || !(dom instanceof Model)) {
-            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, null, null);
+            return new CrmlFrontEnd(source, libraries, syntaxErrors, diagnostics, dom, null, null);
         }
         try {
             TranslationResult translation = new OMCv2().translateModel((Model) dom);
-            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, translation, null);
+            return new CrmlFrontEnd(source, libraries, syntaxErrors, diagnostics, dom, translation, null);
         } catch (Throwable e) {
-            return new CrmlFrontEnd(source, syntaxErrors, diagnostics, dom, null, e);
+            return new CrmlFrontEnd(source, libraries, syntaxErrors, diagnostics, dom, null, e);
         }
+    }
+
+    /**
+     * The dependency problems of {@code resource}. The workspace reports them
+     * only as part of its validation, wrapped next to the resource's own
+     * errors, which are already in {@link #diagnostics()}.
+     */
+    private static List<Resource.Diagnostic> dependencyProblems(CrmlWorkspace workspace, CrmlResource resource) {
+        List<Resource.Diagnostic> problems = new ArrayList<>();
+        for (org.eclipse.emf.common.util.Diagnostic child : workspace.validate(resource).getChildren()) {
+            List<?> data = child.getData();
+            if (child.getSeverity() == org.eclipse.emf.common.util.Diagnostic.ERROR && !data.isEmpty()
+                    && data.get(0) instanceof Resource.Diagnostic && !resource.getErrors().contains(data.get(0))) {
+                problems.add((Resource.Diagnostic) data.get(0));
+            }
+        }
+        return problems;
     }
 
     public Path source() {
         return source;
+    }
+
+    /**
+     * The files loaded from the library path, other than {@link #source()},
+     * in load order; empty without a library path. Their DOMs are resolved
+     * as far as the run got.
+     */
+    public List<CrmlResource> libraries() {
+        return libraries;
     }
 
     public boolean hasSyntaxErrors() {

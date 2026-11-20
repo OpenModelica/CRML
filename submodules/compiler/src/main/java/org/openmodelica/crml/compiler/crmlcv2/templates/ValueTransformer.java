@@ -58,7 +58,14 @@ public final class ValueTransformer implements Modelica {
                 "a value is missing from the object model", null));
         }
         if (value instanceof VariableReference) {
-            return ref(((VariableReference) value).getVariable().getName());
+            org.openmodelica.crml.model.metamodel.Variable variable = ((VariableReference) value).getVariable();
+            if (variable == null) {
+                // Linking left the reference unresolved (and reported it on the
+                // CRML resource); the enclosing declaration becomes a placeholder.
+                throw CRMLCompilerException.unsupported(Diagnostics.error("VariableReference",
+                    "the reference to a variable is unresolved", value));
+            }
+            return ref(variable.getName());
         }
         if (value instanceof IfValue) {
             return transformIf(ctx, (IfValue) value);

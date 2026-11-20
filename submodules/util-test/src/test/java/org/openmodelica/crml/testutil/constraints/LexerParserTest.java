@@ -80,6 +80,21 @@ class LexerParserTest {
     }
 
     @Test
+    void filterStepsAndPseudoSegmentsRoundTrip() throws ParseException {
+        Ast.Constraint c = Parser.parse(
+            "all [A::@container.name == \"L\"].@referrers[T::kind != \"X\"].m[B].@file contains \"F\"");
+        assertEquals("[A::@container.name == \"L\"].@referrers[T::kind != \"X\"].m[B].@file", c.left.toString());
+        assertEquals(5, c.left.steps.size());
+        assertInstanceOf(Ast.FilterStep.class, c.left.steps.get(1));
+        assertEquals(Ast.PseudoStep.Kind.REFERRERS, ((Ast.PseudoStep) c.left.steps.get(0)).kind);
+        assertInstanceOf(Ast.PseudoStep.class, c.left.last().filters.get(0).path.get(0));
+        // A selector right after the first one is a filter step, not a second selector.
+        Ast.Constraint direct = Parser.parse("[A][B] is empty");
+        assertEquals(1, direct.left.selectors.size());
+        assertEquals(1, direct.left.steps.size());
+    }
+
+    @Test
     void quantifiersAndConditions() throws ParseException {
         assertEquals(Ast.Quantifier.ALL, Parser.parse("all [A].b is empty").quantifier);
         assertEquals(Ast.Quantifier.SOME, Parser.parse("some [A].b is not empty").quantifier);
@@ -108,6 +123,8 @@ class LexerParserTest {
         assertEquals(4, column("[A]"));                        // condition expected at end of line
         assertEquals(12, column("[A].b == 1 2"));              // end of line expected at '2'
         assertEquals(6, column("[A].@nope is empty"));         // unknown pseudo step
+        assertEquals(6, column("[A::@nope == 1] is empty"));   // unknown pseudo segment in a filter
+        assertEquals(7, column("[A].b[] is empty"));           // type expected in a filter step
         assertEquals(1, column("most [A] is empty"));          // unknown leading word
         assertEquals(11, column("count [A] = 1"));             // a single '=' is no token
         assertEquals(14, column("count [A] == x"));            // integer expected
