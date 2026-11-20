@@ -1,0 +1,5 @@
+# 'implies' is the model's own; the 'or' inside it is Logic's.
+[Variable::name == "x_implies_y"].definition.operator.@root.name == "MixLocal"
+[Template::keywords.keyword contains "'implies'"].definition.operator.@root.name == "Logic"
+# Some operator declared in MixLocal calls into Logic.
+some [Model::name == "MixLocal"] / [CustomOperator].definition.operator.@root.name == "Logic"

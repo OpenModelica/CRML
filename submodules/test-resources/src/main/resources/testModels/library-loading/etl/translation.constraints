@@ -1,0 +1,240 @@
+# Every operator and template of ETL is emitted into each of the four models.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "BecomesTrueInside"] == 3
+count [Variable::@container.name == "CheckOver"] == 3
+count [Variable::@container.name == "CountInside"] == 5
+count [Variable::@container.name == "Implies"] == 3
+count [CustomOperator::@container.name == "ETL"] == 15
+
+# ---- BecomesTrueInside
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "BecomesTrueInside"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "BecomesTrueInside.mo"
+[TraceLink::@file == "BecomesTrueInside.trace", kind == "MODEL_TO_CLASS"].modelica.name == "BecomesTrueInside"
+[TraceLink::@file == "BecomesTrueInside.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "BecomesTrueInside.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "BecomesTrueInside.mo"] == 0
+count [Reference::@file == "BecomesTrueInside.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "BecomesTrueInside.mo", target.@file != "BecomesTrueInside.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "BecomesTrueInside.mo"] == 16
+
+# BecomesTrueInside (own): each element once, of the right kind, directly in BecomesTrueInside's class.
+count [Variable::@container.name == "BecomesTrueInside"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "BecomesTrueInside"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "BecomesTrueInside.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "BecomesTrueInside", name == "b1"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b1"
+[Variable::@container.name == "BecomesTrueInside", name == "P1"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "P1"
+[Variable::@container.name == "BecomesTrueInside", name == "c_b1_becomes_true_inside_p1"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "c_b1_becomes_true_inside_p1"
+
+# ETL: each element once, of the right kind, directly in BecomesTrueInside's class.
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "OPERATOR_TO_FUNCTION"] == 7
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "OPERATOR_TO_BLOCK"] == 8
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'evaluate'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'decide'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'id'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_false'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_true'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].modelica.@container == [TraceLink::@file == "BecomesTrueInside.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What BecomesTrueInside does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "CheckOver"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Class::@container.name == "CheckOver"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Variable::@container.name == "CheckOver"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [CustomOperator::@container.name == "CountInside"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Class::@container.name == "CountInside"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Variable::@container.name == "CountInside"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [CustomOperator::@container.name == "Implies"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Class::@container.name == "Implies"].@referrers.@file not contains "BecomesTrueInside.trace"
+all [Variable::@container.name == "Implies"].@referrers.@file not contains "BecomesTrueInside.trace"
+
+# ---- CheckOver
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "CheckOver"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "CheckOver.mo"
+[TraceLink::@file == "CheckOver.trace", kind == "MODEL_TO_CLASS"].modelica.name == "CheckOver"
+[TraceLink::@file == "CheckOver.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "CheckOver.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "CheckOver.mo"] == 0
+count [Reference::@file == "CheckOver.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "CheckOver.mo", target.@file != "CheckOver.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "CheckOver.mo"] == 16
+
+# CheckOver (own): each element once, of the right kind, directly in CheckOver's class.
+count [Variable::@container.name == "CheckOver"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "CheckOver"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "CheckOver.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "CheckOver", name == "phi1"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "phi1"
+[Variable::@container.name == "CheckOver", name == "P1"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "P1"
+[Variable::@container.name == "CheckOver", name == "b_check_over"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b_check_over"
+
+# ETL: each element once, of the right kind, directly in CheckOver's class.
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "OPERATOR_TO_FUNCTION"] == 7
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CheckOver.trace", kind == "OPERATOR_TO_BLOCK"] == 8
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false inside'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'evaluate'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'decide'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'id'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_false'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_true'"].@referrers[TraceLink::@file == "CheckOver.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CheckOver.trace"].modelica.@container == [TraceLink::@file == "CheckOver.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What CheckOver does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CheckOver.trace"
+all [Class::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CheckOver.trace"
+all [Variable::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CheckOver.trace"
+all [CustomOperator::@container.name == "CountInside"].@referrers.@file not contains "CheckOver.trace"
+all [Class::@container.name == "CountInside"].@referrers.@file not contains "CheckOver.trace"
+all [Variable::@container.name == "CountInside"].@referrers.@file not contains "CheckOver.trace"
+all [CustomOperator::@container.name == "Implies"].@referrers.@file not contains "CheckOver.trace"
+all [Class::@container.name == "Implies"].@referrers.@file not contains "CheckOver.trace"
+all [Variable::@container.name == "Implies"].@referrers.@file not contains "CheckOver.trace"
+
+# ---- CountInside
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "CountInside"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "CountInside.mo"
+[TraceLink::@file == "CountInside.trace", kind == "MODEL_TO_CLASS"].modelica.name == "CountInside"
+[TraceLink::@file == "CountInside.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "CountInside.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "CountInside.mo"] == 0
+count [Reference::@file == "CountInside.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "CountInside.mo", target.@file != "CountInside.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "CountInside.mo"] == 16
+
+# CountInside (own): each element once, of the right kind, directly in CountInside's class.
+count [Variable::@container.name == "CountInside"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"] == 5
+all [Variable::@container.name == "CountInside"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "CountInside.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "CountInside", name == "b1"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b1"
+[Variable::@container.name == "CountInside", name == "P1"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "P1"
+[Variable::@container.name == "CountInside", name == "b2"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b2"
+[Variable::@container.name == "CountInside", name == "C1"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "C1"
+[Variable::@container.name == "CountInside", name == "i_count_ticks_of_c1_inside_p1"].@referrers[TraceLink::@file == "CountInside.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "i_count_ticks_of_c1_inside_p1"
+
+# ETL: each element once, of the right kind, directly in CountInside's class.
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CountInside.trace", kind == "OPERATOR_TO_FUNCTION"] == 7
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CountInside.trace", kind == "OPERATOR_TO_BLOCK"] == 8
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false inside'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'evaluate'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'decide'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'id'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_false'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_true'"].@referrers[TraceLink::@file == "CountInside.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "CountInside.trace"].modelica.@container == [TraceLink::@file == "CountInside.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What CountInside does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CountInside.trace"
+all [Class::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CountInside.trace"
+all [Variable::@container.name == "BecomesTrueInside"].@referrers.@file not contains "CountInside.trace"
+all [CustomOperator::@container.name == "CheckOver"].@referrers.@file not contains "CountInside.trace"
+all [Class::@container.name == "CheckOver"].@referrers.@file not contains "CountInside.trace"
+all [Variable::@container.name == "CheckOver"].@referrers.@file not contains "CountInside.trace"
+all [CustomOperator::@container.name == "Implies"].@referrers.@file not contains "CountInside.trace"
+all [Class::@container.name == "Implies"].@referrers.@file not contains "CountInside.trace"
+all [Variable::@container.name == "Implies"].@referrers.@file not contains "CountInside.trace"
+
+# ---- Implies
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "Implies"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "Implies.mo"
+[TraceLink::@file == "Implies.trace", kind == "MODEL_TO_CLASS"].modelica.name == "Implies"
+[TraceLink::@file == "Implies.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "Implies.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "Implies.mo"] == 0
+count [Reference::@file == "Implies.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "Implies.mo", target.@file != "Implies.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "Implies.mo"] == 16
+
+# Implies (own): each element once, of the right kind, directly in Implies's class.
+count [Variable::@container.name == "Implies"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "Implies"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "Implies.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "Implies", name == "b1"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b1"
+[Variable::@container.name == "Implies", name == "b2"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b2"
+[Variable::@container.name == "Implies", name == "b1_implies_b2"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b1_implies_b2"
+
+# ETL: each element once, of the right kind, directly in Implies's class.
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "Implies.trace", kind == "OPERATOR_TO_FUNCTION"] == 7
+count [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "Implies.trace", kind == "OPERATOR_TO_BLOCK"] == 8
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes false inside'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'evaluate'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_BLOCK"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'decide'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'id'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_false'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'cte_true'"].@referrers[TraceLink::@file == "Implies.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "ETL"].@referrers[TraceLink::@file == "Implies.trace"].modelica.@container == [TraceLink::@file == "Implies.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What Implies does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "BecomesTrueInside"].@referrers.@file not contains "Implies.trace"
+all [Class::@container.name == "BecomesTrueInside"].@referrers.@file not contains "Implies.trace"
+all [Variable::@container.name == "BecomesTrueInside"].@referrers.@file not contains "Implies.trace"
+all [CustomOperator::@container.name == "CheckOver"].@referrers.@file not contains "Implies.trace"
+all [Class::@container.name == "CheckOver"].@referrers.@file not contains "Implies.trace"
+all [Variable::@container.name == "CheckOver"].@referrers.@file not contains "Implies.trace"
+all [CustomOperator::@container.name == "CountInside"].@referrers.@file not contains "Implies.trace"
+all [Class::@container.name == "CountInside"].@referrers.@file not contains "Implies.trace"
+all [Variable::@container.name == "CountInside"].@referrers.@file not contains "Implies.trace"
+
+# ---- Call sites and structure
+# Each model's variable calls ETL's function, or instantiates ETL's block.
+[Variable::@container.name == "Implies", name == "b1_implies_b2"].@referrers[TraceLink::@file == "Implies.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "ETL", keywords.keyword contains "'implies'"].@referrers[TraceLink::@file == "Implies.trace"].modelica
+[Variable::@container.name == "BecomesTrueInside", name == "c_b1_becomes_true_inside_p1"].definition.@referrers[TraceLink::@file == "BecomesTrueInside.trace", kind == "VALUE_TO_COMPONENT"].modelica.declaredType.target == [CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].modelica
+[Variable::@container.name == "CheckOver", name == "b_check_over"].definition.@referrers[TraceLink::@file == "CheckOver.trace", kind == "VALUE_TO_COMPONENT"].modelica.declaredType.target == [CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "CheckOver.trace"].modelica
+[Variable::@container.name == "CountInside", name == "i_count_ticks_of_c1_inside_p1"].definition.@referrers[TraceLink::@file == "CountInside.trace", kind == "VALUE_TO_COMPONENT"].modelica.declaredType.target == [CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "CountInside.trace"].modelica
+# Operators calling operators of the same library.
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'becomes true inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].modelica.components.declaredType[Reference::target.name != ""].target contains [CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "BecomesTrueInside.trace"].modelica
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'count'"].@referrers[TraceLink::@file == "CountInside.trace"].modelica.components.declaredType[Reference::target.name != ""].target contains [CustomOperator::@container.name == "ETL", keywords.keyword == "'inside'"].@referrers[TraceLink::@file == "CountInside.trace"].modelica
+[CustomOperator::@container.name == "ETL", keywords.keyword contains "'check'"].@referrers[TraceLink::@file == "CheckOver.trace"].modelica.components.declaredType[Reference::target.name != ""].target contains [CustomOperator::@container.name == "ETL", keywords.keyword contains "'evaluate'"].@referrers[TraceLink::@file == "CheckOver.trace"].modelica

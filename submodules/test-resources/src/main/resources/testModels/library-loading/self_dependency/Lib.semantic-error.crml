@@ -1,0 +1,4 @@
+// Expected: validation error, a library depends on itself.
+library Lib is Lib union {
+	Template b1 'or' b2 = not (not b1 and not b2);
+};

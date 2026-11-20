@@ -1,0 +1,5 @@
+// The ';' after x is missing: both variables are there, and y refers to x.
+model MissingSemicolon is {
+	Boolean x is true
+	Boolean y is x;
+};

@@ -1,0 +1,3 @@
+count [Library::name == "Ops"] / [CustomOperator] == 2
+# 'twice' has no definition: it contains no value.
+count [UserOperator::keywords.keyword contains "'twice'"] / [Value] == 0

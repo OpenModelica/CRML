@@ -1,0 +1,48 @@
+# Logic, reached through Extended.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseTransitive"] == 4
+count [CustomOperator::@container.name == "Extended"] == 1
+count [CustomOperator::@container.name == "Logic"] == 1
+
+# ---- UseTransitive
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseTransitive"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseTransitive.mo"
+[TraceLink::@file == "UseTransitive.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseTransitive"
+[TraceLink::@file == "UseTransitive.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseTransitive.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseTransitive.mo"] == 0
+count [Reference::@file == "UseTransitive.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseTransitive.mo", target.@file != "UseTransitive.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseTransitive.mo"] == 3
+
+# UseTransitive (own): each element once, of the right kind, directly in UseTransitive's class.
+count [Variable::@container.name == "UseTransitive"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"] == 4
+all [Variable::@container.name == "UseTransitive"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseTransitive.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseTransitive", name == "x"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "UseTransitive", name == "y"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "y"
+[Variable::@container.name == "UseTransitive", name == "x_or_y"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x_or_y"
+[Variable::@container.name == "UseTransitive", name == "not_x"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "not_x"
+
+# Extended: each element once, of the right kind, directly in UseTransitive's class.
+count [CustomOperator::@container.name == "Extended"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Extended"].@referrers[TraceLink::@file == "UseTransitive.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Extended"].@referrers[TraceLink::@file == "UseTransitive.trace"].modelica.@container == [TraceLink::@file == "UseTransitive.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# Logic: each element once, of the right kind, directly in UseTransitive's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTransitive.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseTransitive.trace"].modelica.@container == [TraceLink::@file == "UseTransitive.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# ---- Call sites and structure
+# x_or_y calls the function of Logic's 'or'.
+[Variable::@container.name == "UseTransitive", name == "x_or_y"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "UseTransitive.trace"].modelica
+[Variable::@container.name == "UseTransitive", name == "not_x"].@referrers[TraceLink::@file == "UseTransitive.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Extended", keywords.keyword contains "'negation of'"].@referrers[TraceLink::@file == "UseTransitive.trace"].modelica

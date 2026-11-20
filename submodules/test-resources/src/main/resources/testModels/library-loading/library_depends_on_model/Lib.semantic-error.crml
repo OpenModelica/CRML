@@ -1,0 +1,4 @@
+// Expected: validation error, a library cannot depend on a model.
+library Lib is Base union {
+	Template b1 'or' b2 = not (not b1 and not b2);
+};

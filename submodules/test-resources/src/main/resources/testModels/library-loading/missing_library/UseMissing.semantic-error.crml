@@ -1,0 +1,4 @@
+// Expected: validation error on the dependency, library 'Missing' not found.
+model UseMissing is Missing union {
+	Boolean x is external;
+};

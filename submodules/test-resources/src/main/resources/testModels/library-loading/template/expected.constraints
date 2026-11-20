@@ -1,0 +1,2 @@
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+count [Model::name == "UseTemplate"] / [Sequence] == 0

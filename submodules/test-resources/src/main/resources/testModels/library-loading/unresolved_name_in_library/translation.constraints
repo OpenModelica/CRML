@@ -1,0 +1,40 @@
+# A model on a faulty library: Lib's operator refers to an unknown name.
+# UseLib's own elements reach the generated Modelica. Lib's operator does not:
+# translating it fails at the unresolved reference, which becomes the one
+# placeholder of UseLib.mo. <Model>.mo is the Modelica class generated for a
+# model, <Model>.trace its trace (see LibraryLoading in :compiler and
+# "Checking a translation" in CONSTRAINT_LANGUAGE.md).
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseLib"] == 1
+count [CustomOperator::@container.name == "Lib"] == 1
+
+# ---- UseLib
+
+# Its class, partial: x is external.
+[Model::name == "UseLib"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseLib.mo"
+[TraceLink::@file == "UseLib.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseLib"
+[TraceLink::@file == "UseLib.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# No unresolved name in the Modelica, no reference into another model's class.
+count [Reference::@file == "UseLib.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseLib.mo", target.@file != "UseLib.mo"] == 0
+
+# One generated class: Lib's operator is not emitted.
+count [ClassDefinition::@file == "UseLib.mo"] == 1
+
+# UseLib (own): each variable once, directly in UseLib's class.
+count [Variable::@container.name == "UseLib"].@referrers[TraceLink::@file == "UseLib.trace", kind == "VARIABLE_TO_COMPONENT"] == 1
+all [Variable::@container.name == "UseLib"].@referrers[TraceLink::@file == "UseLib.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseLib.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseLib", name == "x"].@referrers[TraceLink::@file == "UseLib.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+all [Variable::@container.name == "UseLib"].@referrers[TraceLink::kind == "UNSUPPORTED"] is empty
+
+# Lib's operator is not emitted ...
+all [CustomOperator::@container.name == "Lib"].@referrers[TraceLink] is empty
+# ... and the unresolved reference in it is the one placeholder, directly in UseLib's class.
+count [TraceLink::@file == "UseLib.trace", kind == "UNSUPPORTED"] == 1
+[TraceLink::kind == "UNSUPPORTED"].crml.@root.name == "Lib"
+[TraceLink::kind == "UNSUPPORTED"].crml is a VariableReference
+[TraceLink::kind == "UNSUPPORTED"].modelica is a Placeholder
+[TraceLink::kind == "UNSUPPORTED"].modelica.@container == [TraceLink::@file == "UseLib.trace", kind == "MODEL_TO_CLASS"].modelica
+count [Placeholder::@file == "UseLib.mo"] == 1

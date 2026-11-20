@@ -1,0 +1,5 @@
+# Union is idempotent: Logic is loaded once, and its 'or' exists once.
+count [Library::name == "Logic"] == 1
+count [Template::keywords.keyword contains "'or'"] == 1
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+count [Model::name == "UseTwice"] / [Sequence] == 0

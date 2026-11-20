@@ -1,0 +1,34 @@
+# Base is a valid model on its own; Lib, which wrongly depends on it, is not translated.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "Base"] == 1
+count [CustomOperator::@container.name == "Lib"] == 1
+
+# ---- Base
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "Base"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "Base.mo"
+[TraceLink::@file == "Base.trace", kind == "MODEL_TO_CLASS"].modelica.name == "Base"
+[TraceLink::@file == "Base.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "Base.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "Base.mo"] == 0
+count [Reference::@file == "Base.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "Base.mo", target.@file != "Base.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "Base.mo"] == 1
+
+# Base (own): each element once, of the right kind, directly in Base's class.
+count [Variable::@container.name == "Base"].@referrers[TraceLink::@file == "Base.trace", kind == "VARIABLE_TO_COMPONENT"] == 1
+all [Variable::@container.name == "Base"].@referrers[TraceLink::@file == "Base.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "Base.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "Base", name == "x"].@referrers[TraceLink::@file == "Base.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+
+# What Base does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "Lib"].@referrers.@file not contains "Base.trace"
+all [Class::@container.name == "Lib"].@referrers.@file not contains "Base.trace"
+all [Variable::@container.name == "Lib"].@referrers.@file not contains "Base.trace"

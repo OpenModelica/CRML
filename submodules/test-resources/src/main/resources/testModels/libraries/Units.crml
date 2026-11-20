@@ -1,0 +1,40 @@
+// Units library
+
+library Units is {
+
+    // Define the type of physical quantities in SI units by extending the type of real numbers
+    // partial indicates that the type must be extended or specialized afterwards
+    partial type Quantity is (Real q is rate*u + offset)  { 
+        String SIUnit;	// SI unit for quantity q
+        String userUnit;	// User unit for quantity q
+        String SIDimension;	// Unit for quantity q expressed in the fundamental units
+        String SIFUnits = "[m][kg][s][K]"; // Fundamental units of the chosen unit system
+        Real u;		// Quantity q expressed in user units
+        Real rate;		// Conversion rate between user units and SI units
+        Real offset;		// offset between user units and SI units
+    };
+
+    // Define physical units for pressures by specializing the domain of physical quantities
+    partial type Pressure is Quantity (SIUnit = "Pa", SIDimension="[kg][m-1][s-2]") ;
+    type PressureBar is Pressure (userUnit = "bar", rate = 1.e5, offset = 0) ;
+
+        // Define physical units for pressures with aliases   
+        type PressurePa is Pressure (userUnit = "Pa", rate = 1, offset = 0) alias 'Pa';
+        type PressureBar is Pressure (userUnit = "bar", rate = 1.e5, offset = 0) alias 'bar';
+
+    // Define physical units for absolute temperature and forbidding the use of temperature addition and multiplication 
+    partial type AbsoluteTemperature is Quantity (SIUnit = "K") forbid { +, * };
+
+        // Define physical units for temperatures with aliases
+        type AbsoluteTemperatureKelvin is AbsoluteTemperature (userUnit = "K", rate = 1, offset = 0) alias 'K';
+        type AbsoluteTemperatureCelsius is AbsoluteTemperature (userUnit = "Celsius", rate = 1, offset = 273.15) alias 'Celsius';
+
+    // Define other units
+    type Length is Quantity (SIUnit = "m", userUnit = "m", rate = 1, offset = 0) alias 'm';
+
+    partial type Time is Quantity (SIUnit = "s");
+    type TimeSecond is Time (userUnit = "s", rate = 1, offset = 0) alias 's';
+    type Hour is Time (userUnit = "h", rate = 3600, offset = 0) alias 'h';
+
+    type Acceleration is Quantity (SIUnit = "m/s2", userUnit = "m/s2", rate = 1, offset = 0) alias '[m/s2]';
+};

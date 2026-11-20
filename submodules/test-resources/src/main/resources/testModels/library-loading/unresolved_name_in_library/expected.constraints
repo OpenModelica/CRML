@@ -1,0 +1,6 @@
+# In 'b and undefinedName', b is the operator's parameter; undefinedName resolves to nothing.
+[CustomOperator::keywords.keyword contains "'broken'"].definition.lhs.variable.name == "b"
+[CustomOperator::keywords.keyword contains "'broken'"].definition.rhs is a VariableReference
+count [Library::name == "Lib"] / [VariableReference::variable.name == "undefinedName"] == 0
+# The model is unaffected.
+[Variable::name == "x"].domain is not empty

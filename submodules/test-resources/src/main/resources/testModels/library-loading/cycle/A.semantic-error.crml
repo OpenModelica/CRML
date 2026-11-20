@@ -1,0 +1,4 @@
+// Expected: validation error, dependency cycle A -> B -> A.
+library A is B union {
+	Template b1 'or' b2 = not (not b1 and not b2);
+};

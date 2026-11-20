@@ -1,0 +1,5 @@
+// Expected: validation error, 'undefinedName' does not resolve. (Today the
+// linker throws a NullPointerException in ScopeResolver for library roots.)
+library Lib is {
+	Operator [ Boolean ] 'broken' Boolean b = b and undefinedName;
+};

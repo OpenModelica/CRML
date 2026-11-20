@@ -1,0 +1,5 @@
+# Broken has a syntax error and is loaded partially: its operator is there,
+# without the definition it lacks. Nothing depends on it.
+count [Library::name == "Broken"] / [UserOperator] == 1
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"
+count [Model::name == "UseLogic"] / [Sequence] == 0

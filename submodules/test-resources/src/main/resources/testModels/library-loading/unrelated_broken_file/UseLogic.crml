@@ -1,0 +1,7 @@
+// Loading continues past a file with a syntax error. The broken library is
+// not a dependency here, so this model is unaffected.
+model UseLogic is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

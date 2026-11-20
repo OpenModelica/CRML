@@ -1,0 +1,5 @@
+// The body of an operator is not written yet: it can be called anyway.
+library Ops is {
+	Operator [ Boolean ] 'twice' Boolean b = ;
+	Template b1 'or' b2 = not (not b1 and not b2);
+};

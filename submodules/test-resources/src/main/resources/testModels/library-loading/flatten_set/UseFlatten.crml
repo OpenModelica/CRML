@@ -1,0 +1,6 @@
+// The 'flatten { ... } union' form brings every listed library into scope.
+model UseFlatten is flatten { Logic, Negation } union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean nor is 'negation of' (x 'or' y);
+};

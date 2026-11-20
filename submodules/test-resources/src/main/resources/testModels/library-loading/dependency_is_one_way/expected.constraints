@@ -1,0 +1,4 @@
+# 'negation of' is declared in Extended, which depends on Logic: Logic does not see it.
+[CustomOperator::keywords.keyword contains "'nor'"].definition is a Sequence
+# Extended itself is fine.
+count [Library::name == "Extended"] / [Sequence] == 0

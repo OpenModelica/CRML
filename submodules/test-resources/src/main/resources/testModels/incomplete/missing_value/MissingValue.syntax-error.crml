@@ -1,0 +1,5 @@
+// The value after 'is' is not written yet: x is still declared.
+model MissingValue is {
+	Boolean x is ;
+	Boolean y is true;
+};

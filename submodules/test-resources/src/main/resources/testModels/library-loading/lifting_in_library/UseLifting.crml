@@ -1,0 +1,7 @@
+// A library operator body uses lifting (P.element); the ScatteredValue must be
+// linked to its Liftable inside the library's resource.
+model UseLifting is Temporal union {
+	Boolean x is external;
+	Periods ps is external;
+	Boolean r is 'holds' x 'during all' ps;
+};

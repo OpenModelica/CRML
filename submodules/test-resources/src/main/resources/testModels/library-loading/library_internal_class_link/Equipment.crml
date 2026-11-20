@@ -1,0 +1,9 @@
+library Equipment is {
+	partial class Machine is {
+		String id;
+		Boolean inOperation is external;
+	};
+	class Pump is {
+		Boolean cav is external;
+	} extends Machine;
+};

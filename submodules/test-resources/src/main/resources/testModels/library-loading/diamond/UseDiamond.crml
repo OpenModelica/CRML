@@ -1,0 +1,9 @@
+// Logic is reached through both Left and Right. It is loaded once and its
+// 'or' is one operator, so the call is not ambiguous.
+model UseDiamond is Left union Right union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+	Boolean x_xor_y is x 'xor' y;
+	Boolean not_x is 'negation of' x;
+};

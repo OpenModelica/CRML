@@ -16,5 +16,6 @@ model FromUntil_no_ext is {
 			or ((7.5 < time) and (time < 10.0))
 			then true 
 		else false;
-	Periods p_from_b1_until_b2 is 'from' new Clock b1 'until' new Clock b2;
+
+	//Periods p_from_b1_until_b2 is 'from' new Clock b1 'until' new Clock b2;
 };

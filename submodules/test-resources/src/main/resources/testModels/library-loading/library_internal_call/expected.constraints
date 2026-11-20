@@ -1,0 +1,4 @@
+# Resolved in the library: 'implies' calls the library's own 'or'.
+[Template::keywords.keyword contains "'implies'"].definition.operator.@root.name == "Logic"
+[Variable::name == "x_implies_y"].definition.operator.@root.name == "Logic"
+count [Library::name == "Logic"] / [Sequence] == 0

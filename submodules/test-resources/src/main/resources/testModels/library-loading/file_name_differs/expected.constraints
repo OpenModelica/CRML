@@ -1,0 +1,2 @@
+# Found by its declared name, Logic, in the file operators.crml.
+[Variable::name == "x_or_y"].definition.operator.@file == "operators.crml"

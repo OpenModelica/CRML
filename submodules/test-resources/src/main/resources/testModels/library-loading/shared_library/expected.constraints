@@ -1,0 +1,3 @@
+# Both models call the one 'or' of the one Logic library.
+[Model::name == "Second"] / [Variable::name == "a_or_b"].definition.operator.@file == "Logic.crml"
+[Model::name == "First"] / [Variable::name == "x_or_y"].definition.operator == [Model::name == "Second"] / [Variable::name == "a_or_b"].definition.operator

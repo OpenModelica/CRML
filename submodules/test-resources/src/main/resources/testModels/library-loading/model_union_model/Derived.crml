@@ -1,0 +1,4 @@
+// A model may depend on another model: its variables and operators are in scope.
+model Derived is Base union {
+	Boolean x_or_y is x 'or' y;
+};

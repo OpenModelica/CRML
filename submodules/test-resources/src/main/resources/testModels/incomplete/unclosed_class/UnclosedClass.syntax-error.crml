@@ -1,0 +1,6 @@
+// The class is not closed yet: what follows it is read as part of it.
+model UnclosedClass is {
+	class C is {
+		Real v is external;
+	Boolean y is true;
+};

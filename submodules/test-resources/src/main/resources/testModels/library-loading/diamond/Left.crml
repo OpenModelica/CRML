@@ -1,0 +1,3 @@
+library Left is Logic union {
+	Operator [ Boolean ] 'negation of' Boolean b = not b;
+};

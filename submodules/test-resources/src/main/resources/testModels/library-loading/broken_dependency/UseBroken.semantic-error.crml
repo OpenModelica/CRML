@@ -1,0 +1,8 @@
+// Expected: validation error on the dependency, as Logic has a syntax error.
+// What of Logic could be built is still used: 'or' resolves. Must not crash
+// the run.
+model UseBroken is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};
