@@ -1,4 +1,4 @@
-model IntegerUnaryAddition is {
+model IntegerUnaryAddition_no_ext is {
 	Integer n1 is 25;
 	Integer n2 is -3;
 	Integer n_unary_addition_1 is +n1; //Value is 26

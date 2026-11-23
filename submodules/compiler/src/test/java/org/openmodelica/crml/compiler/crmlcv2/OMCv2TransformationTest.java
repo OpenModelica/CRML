@@ -173,4 +173,78 @@ public class OMCv2TransformationTest {
         assertFalse(text.contains("b_at_e ="), text);
         assertTrue(text.contains("// BinaryOperator.AT:"), text);
     }
+
+    private static BinaryOperator binary(BuiltinBinaryOperatorKind kind, Value lhs, Value rhs) {
+        BinaryOperator op = F.createBinaryOperator();
+        op.setOptype(kind);
+        op.setLhs(lhs);
+        op.setRhs(rhs);
+        return op;
+    }
+
+    /**
+     * A variable reference carries no return type, so the operand types of
+     * b1 + b2 are looked up through the references: two Boolean variables are
+     * added with add4, not with Modelica's + on Boolean4.
+     */
+    @Test
+    public void addsBooleanVariablesWithAdd4() {
+        Variable b1 = variable("b1", BuiltinType.BOOLEAN, null);
+        Variable b2 = variable("b2", BuiltinType.BOOLEAN, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", b1, b2,
+            variable("b", BuiltinType.BOOLEAN, binary(BuiltinBinaryOperatorKind.ADD, refTo(b1), refTo(b2)))));
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics().toString());
+        assertTrue(result.text().contains("b = CRMLtoModelica.Functions.add4(b1, b2);"), result.text());
+    }
+
+    /** Integer variables still add with Modelica's +. */
+    @Test
+    public void addsIntegerVariablesWithPlus() {
+        Variable n1 = variable("n1", BuiltinType.INTEGER, null);
+        Variable n2 = variable("n2", BuiltinType.INTEGER, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", n1, n2,
+            variable("n", BuiltinType.INTEGER, binary(BuiltinBinaryOperatorKind.ADD, refTo(n1), refTo(n2)))));
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics().toString());
+        assertTrue(result.text().contains("n = n1 + n2;"), result.text());
+    }
+
+    /**
+     * Boolean subtraction is defined by CRML but not implemented: with the
+     * types looked up through the references, it is diagnosed instead of
+     * becoming Modelica's - on Boolean4.
+     */
+    @Test
+    public void subtractingBooleanVariablesIsDiagnosed() {
+        Variable b1 = variable("b1", BuiltinType.BOOLEAN, null);
+        Variable b2 = variable("b2", BuiltinType.BOOLEAN, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", b1, b2,
+            variable("b", BuiltinType.BOOLEAN, binary(BuiltinBinaryOperatorKind.SUB, refTo(b1), refTo(b2)))));
+
+        assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
+        assertEquals("BinaryOperator.SUB", result.diagnostics().get(0).constructKind());
+        assertEquals(Diagnostic.Severity.WARNING, result.diagnostics().get(0).severity());
+        assertFalse(result.text().contains("b1 - b2"), result.text());
+    }
+
+    /** Event - Event and Event + Real are specified but not implemented: a WARNING, not a type error. */
+    @Test
+    public void eventArithmeticIsUnimplementedNotIllTyped() {
+        Variable e1 = variable("e1", BuiltinType.EVENT, null);
+        Variable e2 = variable("e2", BuiltinType.EVENT, null);
+        Variable d = variable("d", BuiltinType.REAL, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", e1, e2, d,
+            variable("elapsed", BuiltinType.REAL, binary(BuiltinBinaryOperatorKind.SUB, refTo(e2), refTo(e1))),
+            variable("delayed", BuiltinType.EVENT, binary(BuiltinBinaryOperatorKind.ADD, refTo(e1), refTo(d)))));
+
+        assertEquals(2, result.diagnostics().size(), result.diagnostics().toString());
+        for (Diagnostic diagnostic : result.diagnostics()) {
+            assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity(), diagnostic.toString());
+        }
+    }
 }

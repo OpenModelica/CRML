@@ -1,4 +1,4 @@
-model BooleanIntegration is {
+model BooleanIntegration_no_ext is {
 	Boolean a is if 2.0 < time and time < 3.5 then true else false;
 	Period P is [ new Event a, new Event not a ];
 	

@@ -20,6 +20,7 @@ import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.BuiltinBinaryOperatorKind;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
+import org.openmodelica.crml.model.metamodel.Value;
 import org.openmodelica.crml.modelica.metamodel.BinaryOperatorKind;
 import org.openmodelica.crml.modelica.metamodel.ClassDefinition;
 import org.openmodelica.crml.modelica.metamodel.ComponentDeclaration;
@@ -236,34 +237,63 @@ public final class BinaryOperatorTransformer implements Modelica {
 
     private Expression transformAdd(BinaryOperator op, BuiltinBinaryOperatorKind opType,
             Expression lhs, Expression rhs, BuiltinType lt, BuiltinType rt) {
-        if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
+        // Looked through, as for *: two Boolean variables carry no return type,
+        // and would otherwise become Modelica's + on Boolean4 instead of add4.
+        BuiltinType left = known(lt, op.getLhs());
+        BuiltinType right = known(rt, op.getRhs());
+        if (isNumericOrUnknown(left) && isNumericOrUnknown(right)) {
             return binary(BinaryOperatorKind.ADD, lhs, rhs);
-        } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
+        } else if ((left == BuiltinType.BOOLEAN || right == BuiltinType.BOOLEAN) && isBooleanOrUnknown(left) && isBooleanOrUnknown(right)) {
             return call(libraryRef("CRMLtoModelica.Functions.add4"), lhs, rhs);
-        } else if ((lt == BuiltinType.STRING || rt == BuiltinType.STRING) && isStringCompatible(lt) && isStringCompatible(rt)) {
+        } else if ((left == BuiltinType.STRING || right == BuiltinType.STRING) && isStringCompatible(left) && isStringCompatible(right)) {
             // Modelica's + concatenates String.
             return binary(BinaryOperatorKind.ADD, lhs, rhs);
-        } else if (involvesClockOrPeriod(lt) || involvesClockOrPeriod(rt)) {
+        } else if (involvesClockOrPeriod(left) || involvesClockOrPeriod(right)) {
             throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Clock/Period addition needs CRMLtoModelica.Blocks.ClockAdd, whose equation "
                 + "section is empty; a Period left operand and the Clock+Integer tick delay "
                 + "have no block at all", op));
+        } else if (left == BuiltinType.EVENT && isNumericOrUnknown(right)) {
+            // Defined by the specification (EventDelay: e + d is e delayed by d),
+            // though typeinference.csv has no row for it.
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
+                "delaying an Event (Event + Real) has no implementation in CRMLtoModelica.mo", op));
         } else {
-            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, left, right, op));
         }
     }
 
     private Expression transformSub(BinaryOperator op, BuiltinBinaryOperatorKind opType,
             Expression lhs, Expression rhs, BuiltinType lt, BuiltinType rt) {
-        if (isNumericOrUnknown(lt) && isNumericOrUnknown(rt)) {
+        // Looked through, as for *: two Boolean variables carry no return type,
+        // and would otherwise become Modelica's - on Boolean4 instead of being
+        // reported as unimplemented.
+        BuiltinType left = known(lt, op.getLhs());
+        BuiltinType right = known(rt, op.getRhs());
+        if (isNumericOrUnknown(left) && isNumericOrUnknown(right)) {
             return binary(BinaryOperatorKind.SUB, lhs, rhs);
-        } else if ((lt == BuiltinType.BOOLEAN || rt == BuiltinType.BOOLEAN) && isBooleanOrUnknown(lt) && isBooleanOrUnknown(rt)) {
+        } else if ((left == BuiltinType.BOOLEAN || right == BuiltinType.BOOLEAN) && isBooleanOrUnknown(left) && isBooleanOrUnknown(right)) {
             throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
                 "Boolean4 subtraction has no implementation in CRMLtoModelica.mo (there is no "
                 + "diff4 function, despite the legacy OperatorMapping table)", op));
+        } else if (left == BuiltinType.EVENT && right == BuiltinType.EVENT) {
+            // Defined by the specification (EventElapsed: e2 - e1 is the time
+            // elapsed between them), though typeinference.csv has no row for it.
+            throw CRMLCompilerException.unsupported(Diagnostics.unsupported(opType,
+                "the time elapsed between two Events (Event - Event) has no implementation "
+                + "in CRMLtoModelica.mo", op));
         } else {
-            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, lt, rt, op));
+            throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, left, right, op));
         }
+    }
+
+    /**
+     * The operand type the caller determined - from the return type, or the
+     * element type for a lifted operand - or, when that is unknown, the type
+     * {@link TypeResolver#inferBuiltin} finds by looking through the operand.
+     */
+    private static BuiltinType known(BuiltinType given, Value operand) {
+        return given != null ? given : TypeResolver.inferBuiltin(operand);
     }
 
     private Expression transformMul(BinaryOperator op, BuiltinBinaryOperatorKind opType,
