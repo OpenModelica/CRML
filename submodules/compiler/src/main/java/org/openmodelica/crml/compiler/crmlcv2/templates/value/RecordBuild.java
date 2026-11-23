@@ -2,7 +2,7 @@ package org.openmodelica.crml.compiler.crmlcv2.templates.value;
 
 import org.eclipse.emf.ecore.EObject;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.ModelicaTypes;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.modelica.metamodel.ComponentDeclaration;
 import org.openmodelica.crml.modelica.metamodel.ComponentReference;
@@ -23,14 +23,14 @@ public final class RecordBuild implements Modelica {
 
     /** {@code CRMLClock cN(b = condition); CRMLClock_build cN_init(clock = cN);} */
     public ComponentReference clock(TransformationContext ctx, Expression condition, EObject crmlSource) {
-        return build(ctx, "c", TypeResolver.resolve(BuiltinType.CLOCK),
+        return build(ctx, "c", ModelicaTypes.name(BuiltinType.CLOCK),
             "CRMLtoModelica.Types.CRMLClock_build", "clock",
             mod("b", condition), crmlSource);
     }
 
     /** {@code Event eN(b = condition); CRMLEvent_build eN_init(E = eN);} */
     public ComponentReference event(TransformationContext ctx, Expression condition, EObject crmlSource) {
-        return build(ctx, "e", TypeResolver.resolve(BuiltinType.EVENT),
+        return build(ctx, "e", ModelicaTypes.name(BuiltinType.EVENT),
             "CRMLtoModelica.Types.CRMLEvent_build", "E",
             mod("b", condition), crmlSource);
     }
@@ -45,7 +45,7 @@ public final class RecordBuild implements Modelica {
      */
     public ComponentReference period(TransformationContext ctx, boolean leftIncluded, boolean rightIncluded,
             Expression startEvent, Expression closeEvent, EObject crmlSource) {
-        return build(ctx, "p", TypeResolver.resolve(BuiltinType.PERIOD),
+        return build(ctx, "p", ModelicaTypes.name(BuiltinType.PERIOD),
             "CRMLtoModelica.Types.CRMLPeriod_build", "P",
             new org.openmodelica.crml.modelica.metamodel.ModificationElement[] {
                 mod("isLeftBoundaryIncluded", bool(leftIncluded)),
@@ -65,7 +65,7 @@ public final class RecordBuild implements Modelica {
      */
     public ComponentReference periods(TransformationContext ctx, boolean leftIncluded, boolean rightIncluded,
             Expression startClock, Expression closeClock, EObject crmlSource) {
-        return build(ctx, "ps", TypeResolver.resolve(BuiltinType.PERIODS),
+        return build(ctx, "ps", ModelicaTypes.name(BuiltinType.PERIODS),
             "CRMLtoModelica.Types.CRMLPeriods_build", "ps",
             new org.openmodelica.crml.modelica.metamodel.ModificationElement[] {
                 mod("isLeftBoundaryIncluded", bool(leftIncluded)),

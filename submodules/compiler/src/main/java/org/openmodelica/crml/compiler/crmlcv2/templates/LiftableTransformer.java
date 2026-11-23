@@ -9,7 +9,7 @@ import org.openmodelica.crml.compiler.crmlcv2.Lifter;
 import org.openmodelica.crml.compiler.crmlcv2.SetHandle;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.ModelicaTypes;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.Binding;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
@@ -117,7 +117,7 @@ public final class LiftableTransformer implements Modelica {
                     continue;
                 }
                 Variable formal = (Variable) binding.getElement();
-                BuiltinType expected = TypeResolver.resolveBuiltin(formal.getDomain());
+                BuiltinType expected = formal.declaredType().getBuiltinType();
                 BuiltinType actual = axes.get(j).elementBuiltin();
                 if (expected != null && actual != null && !assignable(actual, expected)) {
                     throw CRMLCompilerException.unsupported(Diagnostics.error("Lift.ElementType",
@@ -131,7 +131,7 @@ public final class LiftableTransformer implements Modelica {
 
     /** Same Modelica type (Boolean and Requirement are both Boolean4), or an Integer where a Real is expected. */
     private static boolean assignable(BuiltinType actual, BuiltinType expected) {
-        return TypeResolver.resolve(actual).equals(TypeResolver.resolve(expected))
+        return ModelicaTypes.name(actual).equals(ModelicaTypes.name(expected))
             || (actual == BuiltinType.INTEGER && expected == BuiltinType.REAL);
     }
 

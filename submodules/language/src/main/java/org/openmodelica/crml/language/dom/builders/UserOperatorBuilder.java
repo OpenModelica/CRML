@@ -47,6 +47,7 @@ public class UserOperatorBuilder {
 
                     TypeReference paramtyperef = (TypeReference) builder.build(param.domain, SingleBuildResult.class).<TypeReference>result();
                     v.setDomain(paramtyperef);
+                    v.setCollection(param.domain != null && param.domain.isset != null);
                     v.setName(Recovery.required(param.name, "parameter name"));
                     operator.getHeader().add(v);
                 } else if(p instanceof OperatorKeywordContext){
@@ -66,6 +67,7 @@ public class UserOperatorBuilder {
 
                 TypeReference paramtyperef = (TypeReference) builder.build(param.domain, SingleBuildResult.class).<TypeReference>result();
                 v.setDomain(paramtyperef);
+                v.setCollection(param.domain != null && param.domain.isset != null);
                 v.setName(Recovery.required(param.name, "parameter name"));
                 operator.getHeader().add(v);
             }

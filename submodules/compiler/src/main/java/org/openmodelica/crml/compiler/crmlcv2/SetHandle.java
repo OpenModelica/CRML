@@ -1,7 +1,7 @@
 package org.openmodelica.crml.compiler.crmlcv2;
 
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.ModelicaTypes;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.modelica.metamodel.BinaryOperatorKind;
 import org.openmodelica.crml.modelica.metamodel.ClassDefinition;
@@ -151,7 +151,7 @@ public final class SetHandle implements Modelica {
     /** The Modelica type of an element. */
     public Reference<ClassDefinition> elementType() {
         if (kind == Kind.PERIODS) {
-            return this.<ClassDefinition>libraryRef(TypeResolver.resolve(BuiltinType.PERIOD));
+            return this.<ClassDefinition>libraryRef(ModelicaTypes.name(BuiltinType.PERIOD));
         }
         return EcoreUtil.copy(elementType);
     }

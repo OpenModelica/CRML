@@ -6,7 +6,9 @@ import crml.language.grammar.crmlParser.Var_defContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
 import org.openmodelica.crml.language.dom.util.BuildResult.SingleBuildResult;
+import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
+import org.openmodelica.crml.model.metamodel.Set;
 import org.openmodelica.crml.model.metamodel.TypeReference;
 import org.openmodelica.crml.model.metamodel.Value;
 import org.openmodelica.crml.model.metamodel.Variable;
@@ -24,8 +26,6 @@ public class VariableBuilder {
         //TODO: what is fixed qualifier?
         Variable var = factory.createVariable();
 
-        var.setCollection(false);
-        
         var.setName(Recovery.required(context.id(), "variable name"));
 
         var.setConstant(context.cnst!=null);
@@ -40,8 +40,23 @@ public class VariableBuilder {
         if(definition != null){
             var.setDefinition(definition.<Value>result());
         }
+
+        var.setCollection(isCollection(context, var));
         
         return var;
 
+    }
+
+    /**
+     * A variable is a set of its domain when its type says so, "Real {} S", or
+     * when it is defined by a set literal, "Boolean S is { a, b }". Except
+     * "Periods P is { P1, P2 }", which builds one Periods from Period elements.
+     */
+    private static boolean isCollection(Var_defContext context, Variable var) {
+        if (context.type() != null && context.type().isset != null) {
+            return true;
+        }
+        boolean periods = var.getDomain() != null && var.getDomain().toType().isSingle(BuiltinType.PERIODS);
+        return var.getDefinition() instanceof Set<?> && !periods;
     }
 }

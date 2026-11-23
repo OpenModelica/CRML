@@ -8,7 +8,8 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.openmodelica.crml.compiler.crmlcv2.templates.LiftableTransformer;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
+import org.openmodelica.crml.model.base.typing.TypeInference;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.Liftable;
 import org.openmodelica.crml.model.metamodel.ScatteredValue;
@@ -155,7 +156,22 @@ public final class Lifter implements Modelica {
     /** The CRML type of {@link #operand}, or null if unknown. */
     public BuiltinType operandBuiltin(Value operand) {
         int axis = axisOf(operand);
-        return axis >= 0 ? axes.get(axis).elementBuiltin() : TypeResolver.inferBuiltin(operand);
+        return axis >= 0 ? axes.get(axis).elementBuiltin() : TypeInference.infer(operand).getBuiltinType();
+    }
+
+    /**
+     * The CRML type of one result of a lifted application, which declares the
+     * result array: the base type of {@code Value#inferType()}. Rejected with
+     * {@code Lift.UnknownResultType} when it is not known.
+     */
+    public BuiltinType resultBuiltin(Value application) {
+        BuiltinType result = application.inferType().getBuiltinType();
+        if (result == null) {
+            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Lift.UnknownResultType",
+                "the result type of this " + application.eClass().getName() + " is not known, so its "
+                + "lifted result cannot be declared", application));
+        }
+        return result;
     }
 
     /**

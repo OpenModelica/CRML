@@ -12,6 +12,15 @@ package org.openmodelica.crml.model.metamodel
 // classes in org.openmodelica.crml.model.base, which hold the logic.
 import org.openmodelica.crml.model.base.NamespaceSupport
 import org.openmodelica.crml.model.base.OperatorSupport
+import org.openmodelica.crml.model.base.typing.TypeInference
+import org.openmodelica.crml.model.base.typing.SizeInference
+
+/*
+ * Inferred type of a {@link Value}: a base type and whether it is a single
+ * value or a set. Defined in Java, not an EMF object; see
+ * {@code org.openmodelica.crml.model.base.typing.ValueType}.
+ */
+type ValueType wraps org.openmodelica.crml.model.base.typing.ValueType
 
 /*
  * CRML element that declares names: a {@link Class}, a {@link Library} (and
@@ -73,6 +82,13 @@ class Variable extends Element, OperatorHeaderElement {
 
     Boolean collection
 
+    /*
+     * Declared type of the variable: its {@link #getDomain() domain}, as a
+     * set if the variable is a {@link #getCollection() collection}.
+     */
+    op ValueType declaredType() {
+        TypeInference.declaredType(this)
+    }
 }
 
 /*
@@ -220,15 +236,6 @@ class UnaryOperator extends Operator, Value, Liftable {
      * Input of operation.
      */
     contains Value value
-
-    /*
-     * Denote that the operator is called on a set and behaves differently
-     * Unary operators behave as element-wise operators producing a set
-     * TODO: should be infered from the value
-     */
-    op Boolean isCollection() {
-        getValue().isCollection()
-    }
 }
 /*
  * Built-in binary operations.
@@ -328,8 +335,12 @@ class BinaryOperator extends Operator, Value, Liftable {
      */
     contains Value lhs
 
+    /*
+     * True if the operator has no left operand and folds a set
+     * ({@code and ({a, b})}).
+     */
     op Boolean isAggregator() {
-        getLhs()==null && getRhs().isCollection()
+        getLhs() === null && getRhs() !== null && getRhs().isCollection()
     }
 
 }
@@ -820,16 +831,28 @@ abstract class Liftable {
  */
 abstract class Value {
     /*
-     * Type of the value of the expression.
-     * Set by the parser for constants only, null otherwise.
+     * Type of the value, inferred from the constants, the declared domains of
+     * variables and the declared result types of operators it is built from.
+     * {@code ValueType.UNKNOWN} if it cannot be inferred. Computed on every call.
      */
-    contains TypeReference returnType
+    op ValueType inferType() {
+        TypeInference.infer(this)
+    }
 
-    /* 
-     * Denotes whether a value is a collection of values (set)
+    /*
+     * Maximum number of elements of the value, known before the model runs:
+     * 1 for a single value, 50 for a Periods, the number of elements for a set.
+     * Null if it cannot be computed.
+     */
+    op Integer inferSize() {
+        SizeInference.infer(this)
+    }
+
+    /*
+     * True if the value is a set of values.
      */
     op Boolean isCollection() {
-        false
+        inferType().isSet()
     }
 }
 
@@ -841,10 +864,6 @@ class VariableReference extends Value {
      * The referenced variable.
      */
     refers Variable variable
-
-    op Boolean isCollection() {
-        getVariable().getCollection()
-    }
 }
 
 /*
@@ -1130,7 +1149,13 @@ class SequenceKeyword extends Sequence {
  * Reference to a type.
  */
 abstract class TypeReference {
-
+    /*
+     * The type this reference names, as a single value.
+     * {@code ValueType.UNKNOWN} for a user-defined type, which is not supported yet.
+     */
+    op ValueType toType() {
+        TypeInference.toType(this)
+    }
 }
 
 /*

@@ -4,7 +4,6 @@ import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.PeriodsValue;
 import org.openmodelica.crml.modelica.metamodel.Expression;
@@ -68,8 +67,8 @@ public final class PeriodsTransformer implements Modelica {
         boolean leftIncluded = Boolean.TRUE.equals(periods.getIsStartInclusive());
         boolean rightIncluded = Boolean.TRUE.equals(periods.getIsEndInclusive());
 
-        BuiltinType startType = TypeResolver.inferBuiltin(periods.getStartValue());
-        BuiltinType endType = TypeResolver.inferBuiltin(periods.getEndValue());
+        BuiltinType startType = periods.getStartValue().inferType().getBuiltinType();
+        BuiltinType endType = periods.getEndValue().inferType().getBuiltinType();
 
         Expression start = transformer.values().transform(ctx, periods.getStartValue());
         Expression end = transformer.values().transform(ctx, periods.getEndValue());

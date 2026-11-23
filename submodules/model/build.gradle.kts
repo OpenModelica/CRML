@@ -95,7 +95,13 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Reported tests (ReportedTest) and the HTML of their report entries.
+    // util-test depends on :util only, so this adds no cycle.
+    testImplementation(project(":util-test"))
+    testImplementation("com.j2html:j2html:1.6.0")
 }
 
 tasks.test {

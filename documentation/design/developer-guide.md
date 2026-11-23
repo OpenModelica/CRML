@@ -136,7 +136,7 @@ There is **no** Xtext grammar (`.xtext`), no MWE2 workflow and no `.ecore` file 
 | Modelica object model | [submodules/modelica/src/main/model/modelica.xcore](../submodules/modelica/src/main/model/modelica.xcore) |
 | Trace model | [submodules/modelica/src/main/model/trace.xcore](../submodules/modelica/src/main/model/trace.xcore) |
 | CRML concrete syntax | [submodules/language/src/main/antlr/crml/language/grammar/crml.g4](../submodules/language/src/main/antlr/crml/language/grammar/crml.g4) |
-| Operator/type signatures | [submodules/language/src/main/resources/res/org/openmodelica/crml/language/typeinference.csv](../submodules/language/src/main/resources/res/org/openmodelica/crml/language/typeinference.csv) |
+| Typing rules of the built-in operators | [submodules/model/src/main/java/org/openmodelica/crml/model/base/typing/operators](../submodules/model/src/main/java/org/openmodelica/crml/model/base/typing/operators) (see §4). [typeinference.csv](../submodules/language/src/main/resources/res/org/openmodelica/crml/language/typeinference.csv) is the reference sheet they were written from. |
 | Modelica emission target | `CRMLtoModelica.mo` (see §9) |
 
 ---
@@ -211,7 +211,7 @@ This module defines the CRML object model (often called the *DOM* in the code) a
 - `:language` builds instances of this model from parsed source.
 - `:compiler` reads those instances.
 
-All Java is generated. The only hand-written logic is a few operation bodies written directly in Xcore, such as `CustomOperator.getArity()` and `Sequence.tail()`.
+The model classes are generated. Operations declared in Xcore are either one-liners written there, such as `CustomOperator.getArity()` and `Sequence.tail()`, or one-line calls to hand-written Java 8 classes in `org.openmodelica.crml.model.base`, such as `NamespaceSupport` and the type inference below.
 
 ### Important concepts in `crml.xcore`
 
@@ -252,6 +252,24 @@ The diagram is a simplified excerpt. The main groups of elements are:
 | Values | `VariableReference`, `ComputedValue`, `PeriodsValue`, `IntegrateValue`, `IfValue`, `ConstructorValue`, `ProjectionValue`, plus constants |
 | Unresolved calls | `Sequence`, `SequenceValue`, `SequenceKeyword`: raw word sequences of a mixfix operator call, before `MixfixParser` turns them into `ComputedValue` |
 | Types | `BuiltinTypeReference` (`BuiltinType` enum), `UserTypereference`, `IndirectTypeReference` |
+
+### Type inference
+
+Every value knows its type: `Value.inferType()` returns a `ValueType`, a base type (a `BuiltinType` today, a CRML class later) and a multiplicity (`SINGLE` or `SET`), or `ValueType.UNKNOWN`. `Value.inferSize()` returns the maximum number of elements, known before the model runs: 1 for a single value, 50 for a `Periods`, the element count for a set. `TypeReference.toType()` and `Variable.declaredType()` give the type as declared. `ValueType` is plain Java, not an EMF object.
+
+The implementation is in `org.openmodelica.crml.model.base.typing`:
+
+| Class or package | Responsibility |
+|---|---|
+| `TypeInference` | A `CRMLSwitch` over values. Grounded in constants, declared domains of variables, result types of user operators and templates, and constructor domains; it never looks into a variable's definition. |
+| `SizeInference` | The size rules, following variable definitions with a guard against cycles. |
+| `operators` | The rule interfaces `UnaryRule` and `BinaryRule`. |
+| `operators.unary`, `operators.binary` | One rule class per group of operators, with its signature table, and `Unary/BinaryOperatorTyping.rule(kind)`. |
+| `operators.util` | `SignatureTable` and the table-backed rule base classes. |
+
+Inference is pure: nothing is cached, because the linker changes the model while it runs, and nothing is reported. An incomplete, ill-typed or unsupported expression is `UNKNOWN`, and so is anything built on an unknown operand; telling these apart is the validator's job, which can reuse the operator tables. Numbers follow Modelica: `/` and `^` give a Real, and an Integer and a Real meet as a Real in `if` branches and set literals.
+
+Tests: `TypeInferenceTest` builds values with `CRMLFactory` and reports each case in `build/test_report.html`.
 
 ### Gradle tasks
 
@@ -542,8 +560,8 @@ This table shows what crmlcv2 builds for each CRML construct today. Use it as a 
 |---|---|---|---|
 | `Model` | Root `ClassDefinition` (`MODEL`), `partial` when a variable has no binding | `model` | `ModelTransformer` |
 | `Class` | Nested `ClassDefinition` (`MODEL`, never `RECORD`). A superclass becomes an `ExtendsClause` with a resolved `Reference`. Variable definitions become `Equation`s. | `model`, `extendsClause(resolvedRef(...))`, `eq` | `ClassTransformer` |
-| `Variable` | `ComponentDeclaration`. `declaredType` comes from `TypeResolver`. The definition becomes the `binding`. `constant` sets `Variability.CONSTANT`. A set-valued variable gets an `ArrayDimension`. | `component`, `dimension` | `VariableTransformer` |
-| CRML type | `Reference`: resolved for a CRML class, raw `MODELICA_BUILTIN` for `Real`/`Integer`/`String`, raw `EXTERNAL_LIBRARY` for `Boolean4`, `CRMLClock`, `Event`, `CRMLPeriod(s)` | `resolvedRef`, `builtinRef`, `libraryRef` | `TypeResolver` |
+| `Variable` | `ComponentDeclaration`. `declaredType` comes from `ModelicaTypes`. The definition becomes the `binding`. `constant` sets `Variability.CONSTANT`. A set-valued variable gets an `ArrayDimension`. | `component`, `dimension` | `VariableTransformer` |
+| CRML type | `Reference`: resolved for a CRML class, raw `MODELICA_BUILTIN` for `Real`/`Integer`/`String`, raw `EXTERNAL_LIBRARY` for `Boolean4`, `CRMLClock`, `Event`, `CRMLPeriod(s)` | `resolvedRef`, `builtinRef`, `libraryRef` | `ModelicaTypes` |
 | `Template` / `UserOperator` (pure body) | Nested `ClassDefinition` (`FUNCTION`) with `INPUT`/`OUTPUT` components and a `Statement` `out := expr`. A call becomes a `FunctionCall` with a resolved `Reference`. | `function`, `input`, `output`, `assign`, `call` | `OperatorTransformer` |
 | `Template` / `UserOperator` (body hoists components) | Nested `ClassDefinition` (`BLOCK`) with an `Equation` `out = expr`. A call becomes an instance `ComponentDeclaration`, input `Equation`s, and a `ComponentReference` to `.out`. | `block`, `eq`, `component`, `ref` | `OperatorTransformer` |
 | `VariableReference`, `time` | `ComponentReference` | `ref` | `ValueTransformer` |
@@ -663,7 +681,7 @@ graph TD
     INT["value/IntegrateTransformer"]
     RB["value/RecordBuild"]
     BI["templates/BlockInstantiation"]
-    TRs["util/TypeResolver"]
+    TRs["util/ModelicaTypes"]
     CTX["TransformationContext<br/>(+ shared Session)"]
 
     OMCv2 --> T --> MT
@@ -707,10 +725,10 @@ graph TD
 | `ValueTransformer` | Dispatches on every `Value` subtype and always returns an `Expression` or throws `UnsupportedConstruct`. |
 | `BlockInstantiation` | Hoists a stateful library block: declares `Block nameN;`, adds `nameN.r1 = …` equations, and returns `nameN.out`. |
 | `RecordBuild` | Declares a library record together with its `_build` companion block, e.g. `CRMLClock cN(...)` + `CRMLClock_build`, or `Event` + `CRMLEvent_build`. |
-| `TypeCategories` | "Is X or unknown" type predicates. They are needed because `Value.getReturnType()` is filled in only for constants. |
-| `util/TypeResolver` | The single place that decides how a CRML type becomes a Modelica type reference (table below). |
+| `TypeCategories` | "Is X or unknown" type predicates on the types from `Value.inferType()`, which is unknown for expressions the model cannot type. Boolean and Requirement are both Boolean4. |
+| `util/ModelicaTypes` | The single place that decides how a CRML type becomes a Modelica type reference (table below). Which type a value has comes from the model (§4). |
 
-`TypeResolver` maps types as follows:
+`ModelicaTypes` maps types as follows:
 
 | CRML type | Modelica reference |
 |---|---|
@@ -769,7 +787,7 @@ flowchart TD
     D -- yes --> D1["call(libraryRef(...))"]
     D -- "no, stateful" --> D2["BlockInstantiation.instantiate<br/>or RecordBuild"]
     D1 --> E
-    D2 --> E["Emit only through ctx.declare / equate / defineClass<br/>New types go through TypeResolver"]
+    D2 --> E["Emit only through ctx.declare / equate / defineClass<br/>New types go through ModelicaTypes"]
     E --> F["Gaps: throw UnsupportedConstruct(Diagnostics.libraryGap /<br/>notYetImplemented / incompatibleTypes). Never return null"]
     F --> G{"Modelica IR missing<br/>a node?"}
     G -- yes --> G1["Extend modelica.xcore, Modelica.java,<br/>ModelicaPrinter (+ tests) (§6)"]
@@ -938,7 +956,8 @@ flowchart LR
 | Fix name lookup in CRML | `ScopeResolver` / `ScopeResolutionOptions` | `make test-dom` |
 | Fix mixfix operator call resolution | `opcall/MixfixParser` | `DebugModelTest`, `make test-dom` |
 | Generate different Modelica for a construct | `crmlcv2/templates/**` | unit test + `make test-crmlcv2` |
-| Change how a CRML type maps to Modelica | `crmlcv2/util/TypeResolver` | `ReferenceResolutionTest` |
+| Change how a CRML type maps to Modelica | `crmlcv2/util/ModelicaTypes` | `ReferenceResolutionTest` |
+| Change the type of a CRML expression | `model/base/typing` (§4) | `TypeInferenceTest` |
 | Emit a new kind of Modelica node | `modelica.xcore`, `Modelica.java`, `ModelicaPrinter` | `:modelica:test` |
 | Add a runtime block or function | `CRMLtoModelica.mo` (all copies) | the transformer that emits it |
 | Add a test model | `test-resources/.../testModels/<cat>/` | picked up automatically by prefix or directory |
@@ -949,7 +968,7 @@ flowchart LR
 - Value transformers return an `Expression` or throw `UnsupportedConstruct`. They never return `null`.
 - Allocate names with `ctx.allocateName(prefix)`, never with static counters, so that output is deterministic.
 - Look up generated classes by CRML object identity through the context registries, not by searching names.
-- Decide raw vs resolved references in `TypeResolver` (for types) or at the point where the reference is built.
+- Decide raw vs resolved references in `ModelicaTypes` (for types) or at the point where the reference is built.
 - Keep the code compatible with Java 8.
 
 ---
@@ -988,5 +1007,4 @@ These issues were found while writing this guide. They are worth fixing or keepi
 - **Gaps in the front end** (listed in [design/modelica-metamodel-verification.md](design/modelica-metamodel-verification.md) §6):
   - `class` bodies and `X filter (...)` do not parse.
   - `MixfixParser` does no type checking.
-  - Type inference covers only constants.
-  - Set-typed declarations lose their set-ness.
+  - Type inference covers built-in types only; CRML classes infer as unknown.

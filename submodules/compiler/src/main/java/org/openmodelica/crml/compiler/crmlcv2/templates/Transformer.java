@@ -7,7 +7,7 @@ import org.openmodelica.crml.compiler.crmlcv2.templates.value.IntegrateTransform
 import org.openmodelica.crml.compiler.crmlcv2.templates.value.PeriodsTransformer;
 import org.openmodelica.crml.compiler.crmlcv2.templates.value.RecordBuild;
 import org.openmodelica.crml.compiler.crmlcv2.templates.value.UnaryOperatorTransformer;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.ModelicaTypes;
 import org.openmodelica.crml.model.metamodel.Model;
 
 /**
@@ -19,7 +19,7 @@ import org.openmodelica.crml.model.metamodel.Model;
  */
 public final class Transformer {
 
-    private final TypeResolver types = new TypeResolver();
+    private final ModelicaTypes types = new ModelicaTypes();
     private final BlockInstantiation blocks = new BlockInstantiation();
     private final RecordBuild records = new RecordBuild();
     private final ModelTransformer models = new ModelTransformer(this);
@@ -41,7 +41,7 @@ public final class Transformer {
         return models.transform(model);
     }
 
-    public TypeResolver types() {
+    public ModelicaTypes types() {
         return types;
     }
 

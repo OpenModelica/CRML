@@ -6,10 +6,9 @@ import org.openmodelica.crml.model.metamodel.BuiltinType;
  * Operand type predicates shared by the operator transformers, lifted out of
  * the string generator's {@code ValueGenUtil}.
  *
- * <p>The "OrUnknown" predicates let generation proceed when type inference has
- * not resolved an operand's type - {@code Value#getReturnType()} only yields a
- * type for constants today - while a definitively-known incompatible type still
- * fails.
+ * <p>The "OrUnknown" predicates let generation proceed when
+ * {@code Value#inferType()} cannot type an operand, while a definitively-known
+ * incompatible type still fails.
  */
 public final class TypeCategories {
 
@@ -20,8 +19,13 @@ public final class TypeCategories {
         return t == null || t == BuiltinType.INTEGER || t == BuiltinType.REAL;
     }
 
+    /** Boolean or Requirement: both are a Boolean4 in Modelica. */
+    public static boolean isBoolean(BuiltinType t) {
+        return t == BuiltinType.BOOLEAN || t == BuiltinType.REQUIREMENT;
+    }
+
     public static boolean isBooleanOrUnknown(BuiltinType t) {
-        return t == null || t == BuiltinType.BOOLEAN;
+        return t == null || isBoolean(t);
     }
 
     public static boolean isStringCompatible(BuiltinType t) {

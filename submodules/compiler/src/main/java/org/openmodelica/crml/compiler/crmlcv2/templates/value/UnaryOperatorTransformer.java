@@ -14,7 +14,6 @@ import org.openmodelica.crml.compiler.crmlcv2.SetHandle;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.BuiltinUnaryOperatorKind;
 import org.openmodelica.crml.model.metamodel.UnaryOperator;
@@ -36,7 +35,7 @@ public final class UnaryOperatorTransformer implements Modelica {
 
     public Expression transform(TransformationContext ctx, UnaryOperator op) {
         Expression operand = transformer.values().transform(ctx, op.getValue());
-        BuiltinType t = TypeResolver.resolveBuiltin(op.getValue().getReturnType());
+        BuiltinType t = op.getValue().inferType().getBuiltinType();
         return apply(ctx, op, operand, t);
     }
 
@@ -49,7 +48,7 @@ public final class UnaryOperatorTransformer implements Modelica {
         Expression operand = lifter.operand(op.getValue());
         BuiltinType t = lifter.operandBuiltin(op.getValue());
         Expression value = apply(lifter.body(), op, operand, t);
-        BuiltinType result = TypeResolver.resultBuiltin(op, t);
+        BuiltinType result = lifter.resultBuiltin(op);
         return lifter.close(value, transformer.types().builtinReference(result), result, op);
     }
 
@@ -99,7 +98,7 @@ public final class UnaryOperatorTransformer implements Modelica {
                 // variable reaches the generator carrying only its element type
                 // ("Real {} S" arrives as a Real), so the two cannot be told
                 // apart here beyond "this is not a clock".
-                if (!isClockOrUnknown(TypeResolver.inferBuiltin(op.getValue()))) {
+                if (!isClockOrUnknown(op.getValue().inferType().getBuiltinType())) {
                     throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("UnaryOperator.CARD",
                         "card over anything but a Clock - set cardinality - has no implementation "
                         + "in CRMLtoModelica.mo", op));
@@ -123,11 +122,9 @@ public final class UnaryOperatorTransformer implements Modelica {
      */
     private Expression transformClockBlock(TransformationContext ctx, UnaryOperator op,
             BuiltinUnaryOperatorKind opType, Expression operand, String blockType, String prefix) {
-        // The looked-through type, not the inferred return type: both blocks
-        // take a CRMLClock and nothing else, and typeinference.csv has no row
-        // for card or tick on anything but a Clock. "card S" over a set of Reals
-        // must be rejected, not quietly wired to CardClock.
-        BuiltinType t = TypeResolver.inferBuiltin(op.getValue());
+        // Both blocks take a CRMLClock and nothing else: "card S" over a set of
+        // Reals must be rejected, not quietly wired to CardClock.
+        BuiltinType t = op.getValue().inferType().getBuiltinType();
         if (!isClockOrUnknown(t)) {
             throw CRMLCompilerException.unsupported(Diagnostics.incompatibleTypes(opType, t, op));
         }

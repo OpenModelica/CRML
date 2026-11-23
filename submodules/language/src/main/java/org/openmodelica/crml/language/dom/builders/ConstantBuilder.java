@@ -10,12 +10,9 @@ import org.openmodelica.crml.model.metamodel.IntegerConstant;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.RealConstant;
 import org.openmodelica.crml.model.metamodel.StringConstant;
-import org.openmodelica.crml.model.metamodel.TimeValue;
 import org.openmodelica.crml.language.dom.BuildContext;
 import org.openmodelica.crml.model.metamodel.BooleanConstant;
 import org.openmodelica.crml.model.metamodel.BooleanLiteral;
-import org.openmodelica.crml.model.metamodel.BuiltinType;
-import org.openmodelica.crml.model.metamodel.BuiltinTypeReference;
 
 public class ConstantBuilder {
     private final BuildContext builder;
@@ -30,10 +27,6 @@ public class ConstantBuilder {
         if(context.boolean_value()!=null){
             Boolean_valueContext ctx = context.boolean_value();
             BooleanConstant constant = factory.createBooleanConstant();
-            
-            BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
-            typeref.setBuiltinType(BuiltinType.BOOLEAN);
-            constant.setReturnType(typeref);
 
             switch (ctx.getText()) {
                 case "true":
@@ -55,16 +48,9 @@ public class ConstantBuilder {
             String text = context.string().STRING().getText().replaceFirst("\"$", "").replaceFirst("^\"", "");
             StringConstant str = factory.createStringConstant();
             str.setRawString(text);
-            BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
-            typeref.setBuiltinType(BuiltinType.STRING);
-            str.setReturnType(typeref);
             return str;
         } else if (context.time() != null) {
-            TimeValue time = factory.createTimeValue();
-            BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
-            typeref.setBuiltinType(BuiltinType.REAL);
-            time.setReturnType(typeref);
-            return time;
+            return factory.createTimeValue();
         } else if (context.number() != null) {
             //TODO: decide if it is an integer.
             NumberContext numc = context.number();
@@ -74,16 +60,10 @@ public class ConstantBuilder {
                 RealConstant rv = factory.createRealConstant();
                 rv.setValue(value.doubleValue());
                 rv.setLiteral(numc.getText());
-                BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
-                typeref.setBuiltinType(BuiltinType.REAL);
-                rv.setReturnType(typeref);
                 return rv;
             } else if (value instanceof Integer) {
                 IntegerConstant iv = factory.createIntegerConstant();
                 iv.setValue(value.intValue());
-                BuiltinTypeReference typeref = factory.createBuiltinTypeReference();
-                typeref.setBuiltinType(BuiltinType.INTEGER);
-                iv.setReturnType(typeref);
                 return iv;
             } else {
                 throw new RuntimeException("Unimplemented number parse case: "+value.getClass().getSimpleName());

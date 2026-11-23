@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.model.base.typing.TypeInference;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.Domain;
 import org.openmodelica.crml.model.metamodel.IndirectTypeReference;
@@ -113,7 +113,7 @@ final class Outputs {
 
     private void type(String name, TypeReference type, boolean dropped,
             Deque<org.openmodelica.crml.model.metamodel.Class> enclosing) {
-        BuiltinType builtin = TypeResolver.resolveBuiltin(type);
+        BuiltinType builtin = TypeInference.toType(type).getBuiltinType();
         if (SCALAR.contains(builtin)) {
             outputs.add(new Output(name, Kind.SCALAR, dropped, null));
         } else if (builtin == BuiltinType.CLOCK) {

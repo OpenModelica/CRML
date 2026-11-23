@@ -13,8 +13,8 @@ import org.openmodelica.crml.compiler.crmlcv2.Lifter;
 import org.openmodelica.crml.compiler.crmlcv2.SetHandle;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException.UnsupportedConstruct;
+import org.openmodelica.crml.model.base.typing.TypeInference;
 import org.openmodelica.crml.model.metamodel.Binding;
 import org.openmodelica.crml.model.metamodel.ComputedValue;
 import org.openmodelica.crml.model.metamodel.CustomOperator;
@@ -273,7 +273,7 @@ public final class OperatorTransformer implements Modelica {
             value = call(resolvedRef(generated.definition()), arguments);
         }
         return lifter.close(value, generated.resultType(),
-            TypeResolver.resolveBuiltin(operator.getDomain()), call);
+            TypeInference.toType(operator.getDomain()).getBuiltinType(), call);
     }
 
     // --- naming -------------------------------------------------------------

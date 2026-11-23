@@ -15,7 +15,6 @@ import org.eclipse.emf.ecore.EObject;
 import org.junit.jupiter.api.Test;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.language.dom.builders.LiftBuilder;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.Binding;
@@ -97,13 +96,15 @@ public class LiftTransformationTest implements Modelica {
         return variable;
     }
 
-    /** {@code Type name is { elements };} */
+    /** {@code Type name is { elements };}, a collection, as the parser marks it. */
     private static Variable setVariable(String name, BuiltinType domain, Variable... elements) {
         org.openmodelica.crml.model.metamodel.Set<Value> set = F.createSet();
         for (Variable element : elements) {
             set.getElements().add(refTo(element));
         }
-        return variable(name, domain, set);
+        Variable variable = variable(name, domain, set);
+        variable.setCollection(true);
+        return variable;
     }
 
     /** {@code data.element}, not linked yet. */
@@ -144,7 +145,6 @@ public class LiftTransformationTest implements Modelica {
     private static IntegerConstant integerConstant(int value) {
         IntegerConstant constant = F.createIntegerConstant();
         constant.setValue(value);
-        constant.setReturnType(type(BuiltinType.INTEGER));
         return constant;
     }
 
@@ -835,13 +835,10 @@ public class LiftTransformationTest implements Modelica {
         Variable u = F.createVariable();
         u.setName("U");
         u.setDefinition(elements);
-        u.setDomain(type(BuiltinType.BOOLEAN));
-        // The declared domain of a set variable is only a fallback; take it away again.
-        u.setDomain(null);
+        u.setCollection(true);
         BinaryOperator sum = binary(BuiltinBinaryOperatorKind.ADD, element(u), refTo(u1));
 
-        assertEquals("Lift.UnknownResultType",
-            rejection(() -> TypeResolver.resultBuiltin(sum, null, null)).constructKind());
+        assertTrue(sum.inferType().isUnknown());
 
         Direct direct = new Direct();
         Diagnostic diagnostic = rejection(() -> direct.region(sum));
@@ -849,34 +846,6 @@ public class LiftTransformationTest implements Modelica {
         assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity());
         assertTrue(diagnostic.crmlSource() == sum);
         assertNoRegion(direct.target);
-    }
-
-    @Test
-    public void resultTypesFollowTheTypeInferenceTable() {
-        assertEquals(BuiltinType.BOOLEAN, TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.NOT, null), null));
-        assertEquals(BuiltinType.INTEGER, TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.CARD, null), null));
-        assertEquals(BuiltinType.EVENT, TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.TICK, null), null));
-        assertEquals(BuiltinType.EVENT, TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.START, null), null));
-        assertEquals(BuiltinType.REAL, TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.SIN, null), null));
-        assertEquals(BuiltinType.INTEGER,
-            TypeResolver.resultBuiltin(unary(BuiltinUnaryOperatorKind.SUB, null), BuiltinType.INTEGER));
-
-        BuiltinType b = BuiltinType.BOOLEAN;
-        BuiltinType i = BuiltinType.INTEGER;
-        BuiltinType r = BuiltinType.REAL;
-        assertEquals(b, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.LE, null, null), null, null));
-        assertEquals(b, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.OR, null, null), null, null));
-        assertEquals(BuiltinType.CLOCK,
-            TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.FILTER, null, null), null, null));
-        assertEquals(i, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.ADD, null, null), i, i));
-        assertEquals(r, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.ADD, null, null), i, r));
-        assertEquals(b, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.MUL, null, null), b, b));
-        assertEquals(BuiltinType.STRING,
-            TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.ADD, null, null), BuiltinType.STRING, i));
-        assertEquals(i, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.MOD, null, null), i, i));
-        // Modelica's / and ^ yield Real whatever the operands.
-        assertEquals(r, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.DIV, null, null), i, i));
-        assertEquals(r, TypeResolver.resultBuiltin(binary(BuiltinBinaryOperatorKind.POW, null, null), i, i));
     }
 
     // --- T14 -----------------------------------------------------------------------

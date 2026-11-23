@@ -183,9 +183,8 @@ public class OMCv2TransformationTest {
     }
 
     /**
-     * A variable reference carries no return type, so the operand types of
-     * b1 + b2 are looked up through the references: two Boolean variables are
-     * added with add4, not with Modelica's + on Boolean4.
+     * The operand types of b1 + b2 are inferred from the declared domains: two
+     * Boolean variables are added with add4, not with Modelica's + on Boolean4.
      */
     @Test
     public void addsBooleanVariablesWithAdd4() {
@@ -214,7 +213,7 @@ public class OMCv2TransformationTest {
 
     /**
      * Boolean subtraction is defined by CRML but not implemented: with the
-     * types looked up through the references, it is diagnosed instead of
+     * types inferred from the declared domains, it is diagnosed instead of
      * becoming Modelica's - on Boolean4.
      */
     @Test
@@ -229,6 +228,41 @@ public class OMCv2TransformationTest {
         assertEquals("BinaryOperator.SUB", result.diagnostics().get(0).constructKind());
         assertEquals(Diagnostic.Severity.WARNING, result.diagnostics().get(0).severity());
         assertFalse(result.text().contains("b1 - b2"), result.text());
+    }
+
+    /**
+     * Boolean4 is an enumeration, so two values are compared with Modelica's
+     * == and <> directly: equal exactly when they are the same literal. The
+     * Boolean result is converted back to a Boolean4.
+     */
+    @Test
+    public void comparesBooleanVariablesForEquality() {
+        Variable b1 = variable("b1", BuiltinType.BOOLEAN, null);
+        Variable b2 = variable("b2", BuiltinType.BOOLEAN, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", b1, b2,
+            variable("same", BuiltinType.BOOLEAN, binary(BuiltinBinaryOperatorKind.EQ, refTo(b1), refTo(b2))),
+            variable("different", BuiltinType.BOOLEAN, binary(BuiltinBinaryOperatorKind.NEQ, refTo(b1), refTo(b2)))));
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics().toString());
+        assertTrue(result.text().contains("same = CRMLtoModelica.Functions.cvBooleanToBoolean4(b1 == b2);"),
+            result.text());
+        assertTrue(result.text().contains("different = CRMLtoModelica.Functions.cvBooleanToBoolean4(b1 <> b2);"),
+            result.text());
+    }
+
+    /** Ordering two Boolean4 values has no meaning in Modelica's enumeration order: a WARNING. */
+    @Test
+    public void orderingBooleanVariablesIsDiagnosed() {
+        Variable b1 = variable("b1", BuiltinType.BOOLEAN, null);
+        Variable b2 = variable("b2", BuiltinType.BOOLEAN, null);
+
+        TranslationResult result = new OMCv2().translateModel(model("M", b1, b2,
+            variable("b", BuiltinType.BOOLEAN, binary(BuiltinBinaryOperatorKind.LT, refTo(b1), refTo(b2)))));
+
+        assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
+        assertEquals("BinaryOperator.LT", result.diagnostics().get(0).constructKind());
+        assertEquals(Diagnostic.Severity.WARNING, result.diagnostics().get(0).severity());
     }
 
     /** Event - Event and Event + Real are specified but not implemented: a WARNING, not a type error. */

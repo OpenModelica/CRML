@@ -7,7 +7,6 @@ import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.Set;
 import org.openmodelica.crml.model.metamodel.Value;
@@ -64,13 +63,9 @@ public final class SetTransformer implements Modelica {
     public Reference<ClassDefinition> elementType(Set<?> set) {
         for (Object element : set.getElements()) {
             if (element instanceof Value) {
-                BuiltinType elementType = TypeResolver.inferBuiltin((Value) element);
+                BuiltinType elementType = ((Value) element).inferType().getBuiltinType();
                 if (elementType != null) {
-                    String name = TypeResolver.resolve(elementType);
-                    return elementType == BuiltinType.REAL || elementType == BuiltinType.INTEGER
-                        || elementType == BuiltinType.STRING
-                        ? this.<ClassDefinition>builtinRef(name)
-                        : this.<ClassDefinition>libraryRef(name);
+                    return transformer.types().builtinReference(elementType);
                 }
             }
         }

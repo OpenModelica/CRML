@@ -5,7 +5,7 @@ import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.templates.Transformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.model.base.typing.TypeInference;
 import org.openmodelica.crml.model.metamodel.Binding;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.ConstructorValue;
@@ -47,7 +47,7 @@ public final class ConstructorTransformer implements Modelica {
                 + "declared with it is emitted as a plain declaration instead", constructor));
         }
 
-        BuiltinType domain = TypeResolver.resolveBuiltin(constructor.getDomain());
+        BuiltinType domain = TypeInference.toType(constructor.getDomain()).getBuiltinType();
         Expression operand = transformer.values().transform(ctx, constructor.getValue());
 
         if (domain == BuiltinType.CLOCK) {
@@ -103,15 +103,15 @@ public final class ConstructorTransformer implements Modelica {
     }
 
     private Expression stringCast(ConstructorValue constructor, Expression operand) {
-        BuiltinType sourceType = TypeResolver.resolveBuiltin(constructor.getValue().getReturnType());
-        if (sourceType == BuiltinType.BOOLEAN) {
+        BuiltinType sourceType = constructor.getValue().inferType().getBuiltinType();
+        if (TypeCategories.isBoolean(sourceType)) {
             return call(libraryRef("CRMLtoModelica.Functions.Bool4toString"), operand);
         }
         return call(builtinRef("String"), operand);
     }
 
     private Expression integerCast(ConstructorValue constructor, Expression operand) {
-        BuiltinType sourceType = TypeResolver.resolveBuiltin(constructor.getValue().getReturnType());
+        BuiltinType sourceType = constructor.getValue().inferType().getBuiltinType();
         if (sourceType == BuiltinType.REAL) {
             return call(builtinRef("integer"), operand);
         }
@@ -126,7 +126,7 @@ public final class ConstructorTransformer implements Modelica {
     }
 
     private Expression realCast(ConstructorValue constructor, Expression operand) {
-        BuiltinType sourceType = TypeResolver.resolveBuiltin(constructor.getValue().getReturnType());
+        BuiltinType sourceType = constructor.getValue().inferType().getBuiltinType();
         // The string generator emitted real(x)/Real(x); neither exists as a
         // conversion function. Real -> Real is a no-op, and Integer -> Real is
         // Modelica's own implicit conversion, so the operand stands on its own.
@@ -138,13 +138,15 @@ public final class ConstructorTransformer implements Modelica {
     }
 
     private Expression booleanCast(ConstructorValue constructor, Expression operand) {
-        // Return-type inference only populates constants today, so a computed
-        // operand such as "Boolean((P end))" arrives with a null type. The only
-        // defined Boolean constructor is from an Event, so proceed optimistically
-        // rather than rejecting every non-constant operand.
-        BuiltinType sourceType = TypeResolver.resolveBuiltin(constructor.getValue().getReturnType());
+        // The only defined Boolean constructor is from an Event; an operand of
+        // unknown type is passed on optimistically.
+        BuiltinType sourceType = constructor.getValue().inferType().getBuiltinType();
         if (sourceType == null || sourceType == BuiltinType.EVENT) {
             return call(libraryRef("CRMLtoModelica.Functions.Event2Boolean"), operand);
+        }
+        if (sourceType == BuiltinType.CLOCK) {
+            throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("ConstructorValue.BOOLEAN",
+                "the Boolean of a Clock has no implementation in CRMLtoModelica.mo", constructor));
         }
         throw CRMLCompilerException.unsupported(Diagnostics.error("ConstructorValue.BOOLEAN",
             "the Boolean constructor is only defined for an Event operand (got " + sourceType + ")", constructor));

@@ -5,7 +5,8 @@ import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.SetHandle;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
-import org.openmodelica.crml.compiler.crmlcv2.util.TypeResolver;
+import org.openmodelica.crml.compiler.crmlcv2.util.ModelicaTypes;
+import org.openmodelica.crml.model.base.typing.TypeInference;
 import org.openmodelica.crml.model.metamodel.BuiltinType;
 import org.openmodelica.crml.model.metamodel.Liftable;
 import org.openmodelica.crml.model.metamodel.ScatteredValue;
@@ -83,19 +84,19 @@ public final class ScatteredValueTransformer implements Modelica {
                 if (elementType == null) {
                     elementType = transformer.types().resolve(ctx, variable.getDomain());
                 }
-                return SetHandle.array(ref(variable.getName()), elementType, TypeResolver.elementBuiltin(v));
+                return SetHandle.array(ref(variable.getName()), elementType, elementBuiltin(v));
             }
         }
-        if (TypeResolver.inferBuiltin(v) == BuiltinType.PERIODS) {
+        if (v.inferType().isSingle(BuiltinType.PERIODS)) {
             Expression periods = transformer.values().transform(ctx, v);
             if (!(periods instanceof ComponentReference)) {
                 String name = ctx.allocateName("periods");
                 periods = ctx.declare(component(
-                    this.<ClassDefinition>libraryRef(TypeResolver.resolve(BuiltinType.PERIODS)), name, periods), v);
+                    this.<ClassDefinition>libraryRef(ModelicaTypes.name(BuiltinType.PERIODS)), name, periods), v);
             }
             return SetHandle.periods((ComponentReference) periods);
         }
-        BuiltinType type = TypeResolver.inferBuiltin(v);
+        BuiltinType type = v.inferType().getBuiltinType();
         throw CRMLCompilerException.unsupported(Diagnostics.error("Lift.NotACollection",
             "a " + v.eClass().getName() + " of type " + (type == null ? "unknown" : type.toString())
             + " is not a collection: expected a set, a Periods or a lifted application", v));
@@ -113,7 +114,12 @@ public final class ScatteredValueTransformer implements Modelica {
         ComponentDeclaration component = component(elementType, ctx.allocateName("set"), elements);
         component.getArrayDimensions().add(dimension(integer(elements.getElements().size())));
         ComponentReference reference = ctx.declare(component, set);
-        return SetHandle.array(reference, transformer.sets().elementType(set), TypeResolver.elementBuiltin(set));
+        return SetHandle.array(reference, transformer.sets().elementType(set), elementBuiltin(set));
+    }
+
+    /** The CRML type of an element of a collection, or null if unknown. */
+    private static BuiltinType elementBuiltin(Value collection) {
+        return TypeInference.elementType(collection.inferType()).getBuiltinType();
     }
 
     /**
