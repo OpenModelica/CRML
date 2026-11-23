@@ -105,13 +105,7 @@ public final class ConstructorTransformer implements Modelica {
     private Expression stringCast(ConstructorValue constructor, Expression operand) {
         BuiltinType sourceType = TypeResolver.resolveBuiltin(constructor.getValue().getReturnType());
         if (sourceType == BuiltinType.BOOLEAN) {
-            // The string generator emitted CRMLtoModelica.Functions.Bool4toString
-            // here, which does not exist: the library's complete function set is
-            // cvBooleanToBoolean4, add4, mul4, or4, not4, and4, PStart, PEnd, gEV,
-            // lEV, Event2Boolean.
-            throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("ConstructorValue.STRING",
-                "String(Boolean4) needs CRMLtoModelica.Functions.Bool4toString, which does not exist "
-                + "in CRMLtoModelica.mo", constructor));
+            return call(libraryRef("CRMLtoModelica.Functions.Bool4toString"), operand);
         }
         return call(builtinRef("String"), operand);
     }
