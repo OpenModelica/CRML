@@ -73,7 +73,11 @@ public abstract class StageResult {
         /** Each Sequence that was replaced by the call it spells out. */
         public List<DomModification> replaced() { return replaced; }
 
-        /** The Sequences left in the DOM (first element of each); they name no operator in scope. */
+        /**
+         * The Sequences left in the DOM (first element of each): ambiguous
+         * calls, and those that name no operator in scope. Each is an
+         * {@link CrmlDiagnostic.Kind#OPERATOR_CALL} error.
+         */
         public List<Sequence> unresolved() { return unresolved; }
     }
 

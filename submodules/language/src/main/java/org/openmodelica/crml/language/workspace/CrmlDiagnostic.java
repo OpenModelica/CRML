@@ -30,7 +30,7 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
          */
         INACCESSIBLE_REFERENCE,
         DUPLICATE_DECLARATION,
-        /** Operator-call resolution failed, e.g. an ambiguous call. */
+        /** Operator-call resolution failed: an ambiguous call, or one that no operator in scope matches. */
         OPERATOR_CALL,
         /** Linking the lifted values failed. */
         LIFTING,

@@ -5,6 +5,7 @@ import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.templates.value.ConstructorTransformer;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
+import org.openmodelica.crml.language.opcall.MixfixParser;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.BooleanConstant;
 import org.openmodelica.crml.model.metamodel.ComputedValue;
@@ -124,15 +125,17 @@ public final class ValueTransformer implements Modelica {
             return transformer.sets().literal(ctx, (Set<?>) value);
         }
         if (value instanceof Sequence) {
-            // An unresolved mixfix operator call. crml.xcore states that an object
-            // model reaching a generator contains no Sequence, but
-            // org.openmodelica.crml.language.opcall.MixfixParser - the resolver that would replace
-            // these with ComputedValue - is not called from anywhere, so calls like
-            // "b1 'or' b2" arrive here verbatim. Resolving them is a prerequisite
-            // for operator support (M3).
-            throw CRMLCompilerException.unsupported(Diagnostics.notYetImplemented("Sequence",
-                "an unresolved mixfix operator call reached the generator: MixfixParser is "
-                + "never invoked, so this Sequence was not replaced with a ComputedValue (M3)", value));
+            // An unresolved mixfix operator call. The workspace's operator-call
+            // stage (org.openmodelica.crml.language.opcall.MixfixParser) replaces
+            // every call to an operator in scope with a ComputedValue, and reports
+            // each Sequence it leaves as an OPERATOR_CALL error at its first
+            // element; a model with language errors is not translated. So a
+            // Sequence only gets here when the object model is translated
+            // regardless, and it is an error in the model, not a gap here.
+            // value is the Sequence's first element.
+            throw CRMLCompilerException.unsupported(Diagnostics.error("Sequence",
+                "unresolved operator call " + MixfixParser.describe((Sequence) value)
+                + ": no operator in scope matches it", value));
         }
         if (value instanceof DurationValue) {
             throw CRMLCompilerException.unsupported(Diagnostics.libraryGap("DurationValue",

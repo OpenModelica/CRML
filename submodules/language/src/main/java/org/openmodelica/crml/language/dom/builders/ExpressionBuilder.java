@@ -35,7 +35,8 @@ public class ExpressionBuilder {
     private final BinaryExpressionBuilder binary;
     private final UnaryExpressionBuilder unary;
     private final LiftBuilder lifter;
-    
+    private final ConstructorBuilder constructors;
+
     
     public ExpressionBuilder(BuildContext builder) { 
         this.builder = builder; 
@@ -44,6 +45,7 @@ public class ExpressionBuilder {
         this.binary = new BinaryExpressionBuilder(builder);
         this.unary = new UnaryExpressionBuilder(builder);
         this.lifter = new LiftBuilder(builder);
+        this.constructors = new ConstructorBuilder(builder);
     }
 
     public Value value(ExpContext context){
@@ -58,8 +60,12 @@ public class ExpressionBuilder {
             SingleBuildResult<?> buildres = builder.build(context.constant(), SingleBuildResult.class);
             return buildres.<Value>result();
         } else if(context.constructor() != null) {
-            return (Value) builder.build(context.constructor(), SingleBuildResult.class).<Value>result();
-        }else if(context.p1!= null && context.p2!= null) {
+            // new T, or new T (x = e, ...)
+            return constructors.get(context.constructor());
+        } else if(context.head != null) {
+            // new T e: a prefix operator, so e is a single operand
+            return constructors.get(context.head, context.rhs);
+        } else if(context.p1!= null && context.p2!= null) {
             ProjectionValue proj = factory.createProjectionValue();
 
             SingleBuildResult<?> p1 = builder.build(context.p1, SingleBuildResult.class);

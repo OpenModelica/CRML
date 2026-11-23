@@ -478,6 +478,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		if (ctx.constructor() != null)
 			return visit(ctx.constructor());
 
+		// if the expression is a constructor with a value: new T e
+		if (ctx.head != null)
+			return constructor(ctx.head.type(), ctx.rhs, null);
+
 		// if the expression is a constant
 		if (ctx.constant() != null)
 			return visit(ctx.constant());
@@ -694,13 +698,21 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	@Override
 	public Value visitConstructor(crmlParser.ConstructorContext ctx) {
+		return constructor(ctx.type(), null, ctx.arg_list());
+	}
 
-		if (ctx.type().getText().equals("Clock")) { // Clock constructor
+	/**
+	 * A constructor: {@code new T}, {@code new T (x = e, ...)} ({@code args}),
+	 * or {@code new T e} ({@code exp}). At most one of exp and args is set.
+	 */
+	private Value constructor(crmlParser.TypeContext type, crmlParser.ExpContext exp, crmlParser.Arg_listContext args) {
+
+		if (type.getText().equals("Clock")) { // Clock constructor
 			String varName = "c" + counter++;
 			String clockType = types_mapping.get("Clock");
 
 			// TODO add return type checking
-			Value v = visit(ctx.exp());
+			Value v = visit(exp);
 
 			localFunctionCalls.append(clockType + " " + varName + "(b=" + v.toModelica() + ");\n");
 			localFunctionCalls
@@ -709,10 +721,10 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		}
 
 		// if the constructor is for Periods
-		if (ctx.type().getText().equals("Periods")) {
+		if (type.getText().equals("Periods")) {
 			String periodsType = types_mapping.get("Periods");
 			String varName = "P" + counter++;
-			crmlParser.Period_opContext period = ctx.exp().period_op();
+			crmlParser.Period_opContext period = exp.period_op();
 			Value left = visit(period.exp(0));
 			Value right = visit(period.exp(1));
 
@@ -733,11 +745,11 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 		}
 
 		// Constructor for events
-		if (ctx.type().getText().equals("Event")) {
+		if (type.getText().equals("Event")) {
 
 			String eventType = types_mapping.get("Event");
 			String e = "e" + counter++;
-			Value v = visit(ctx.exp());
+			Value v = visit(exp);
 
 			localFunctionCalls.append(eventType + " " + e + "(b=" + v.toModelica() + ");\n");
 			localFunctionCalls.append("CRMLtoModelica.Types.CRMLEvent_build " + e + "_init(E =" + e + ");\n");
@@ -747,16 +759,16 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 		// Constructor with no expression - translates to nothing in Modelica
 
-		if (ctx.exp() == null && ctx.arg_list()==null)
+		if (exp == null && args==null)
 			return new Value("", "new");
 
-		if(ctx.arg_list()!=null)
+		if(args!=null)
 			throw new CRMLTranslationException("Translation of constructor with argument list is not implemented.");
 		
-		if(ctx.exp() != null){
+		if(exp != null){
 			// Constructor with expression - call corresponding function
-			Value exp_val = visit(ctx.exp());
-			Value result = apply_lunary_op(ctx.type().getText(), exp_val);
+			Value exp_val = visit(exp);
+			Value result = apply_lunary_op(type.getText(), exp_val);
 			return result;
 		}
 		throw new IllegalStateException("Unreachable state. Function must return with with empty, exp, or arg_list.");

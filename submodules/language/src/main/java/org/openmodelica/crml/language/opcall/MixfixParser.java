@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EObject;
@@ -59,6 +60,10 @@ public class MixfixParser {
     // A null position is the end of the sequence.
     private final List<Map<Sequence, List<Parse>>> memo = new ArrayList<>();
 
+    // The sequences reported as ambiguous, so the workspace does not report
+    // them again as matching no operator.
+    private final Set<Sequence> ambiguous = Collections.newSetFromMap(new IdentityHashMap<>());
+
 
     /**
      * A parser for calls to {@code operators}. Each operator is a precedence
@@ -103,11 +108,13 @@ public class MixfixParser {
 
         if (complete.isEmpty()) {
             // The sequence is not a call to any operator in scope. Leaving it in
-            // place is deliberate: a consumer then sees an unresolved Sequence
-            // and can say so, rather than a silently wrong tree.
+            // place is deliberate: the workspace reports each Sequence left in
+            // the DOM (CrmlWorkspace.resolveOperatorCalls), rather than a
+            // consumer silently receiving a wrong tree.
             return null;
         }
         if (complete.size() > 1) {
+            ambiguous.add(sequence);
             builder.reportError(sequence, CrmlDiagnostic.Kind.OPERATOR_CALL, "Ambiguous operator call " + describe(sequence) + ", it can be read as: "
                     + complete.stream().map(Node::describe).collect(Collectors.joining(" or ")));
             return null;
@@ -321,8 +328,13 @@ public class MixfixParser {
         return true; // accept composite nodes unconditionally for now
     }
 
-    /** The sequence as written, values shown as {@code _}. */
-    private static String describe(Sequence sequence) {
+    /** Whether {@code sequence} was reported as an ambiguous call. */
+    public boolean isAmbiguous(Sequence sequence) {
+        return ambiguous.contains(sequence);
+    }
+
+    /** The sequence as written, values shown as {@code _}, e.g. {@code 'from' _ 'until' _}. */
+    public static String describe(Sequence sequence) {
         List<String> parts = new ArrayList<>();
         for (Sequence s = sequence; s != null; s = s.getNext()) {
             parts.add(s instanceof SequenceKeyword ? ((SequenceKeyword) s).getKeyword() : "_");

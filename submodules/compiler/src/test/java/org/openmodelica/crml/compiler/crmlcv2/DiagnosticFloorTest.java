@@ -2,6 +2,7 @@ package org.openmodelica.crml.compiler.crmlcv2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import org.openmodelica.crml.model.metamodel.DurationValue;
 import org.openmodelica.crml.model.metamodel.CRMLFactory;
 import org.openmodelica.crml.model.metamodel.Model;
 import org.openmodelica.crml.model.metamodel.ProjectionValue;
+import org.openmodelica.crml.model.metamodel.SequenceKeyword;
 import org.openmodelica.crml.model.metamodel.SequenceValue;
 import org.openmodelica.crml.model.metamodel.UnaryOperator;
 import org.openmodelica.crml.model.metamodel.Value;
@@ -89,11 +91,47 @@ public class DiagnosticFloorTest {
         projection.setP2(refTo(operand));
         values.add(projection);
 
-        SequenceValue sequence = F.createSequenceValue();
-        sequence.setValue(refTo(operand));
-        values.add(sequence);
-
         return values;
+    }
+
+    /**
+     * An operator call the language left unresolved is an error in the model,
+     * not a gap in the compiler: an ERROR on the sequence's first element. The
+     * declaration is still dropped and marked, like an unmapped value.
+     */
+    @Test
+    public void unresolvedOperatorCallIsAnErrorOnItsFirstElement() {
+        Variable b = variable("b", BuiltinType.BOOLEAN, null);
+
+        // b 'nope' b
+        SequenceValue first = F.createSequenceValue();
+        first.setValue(refTo(b));
+        SequenceKeyword keyword = F.createSequenceKeyword();
+        keyword.setKeyword("'nope'");
+        first.setNext(keyword);
+        SequenceValue last = F.createSequenceValue();
+        last.setValue(refTo(b));
+        keyword.setNext(last);
+
+        Model model = F.createModel();
+        model.setName("M");
+        model.getVariables().add(b);
+        model.getVariables().add(variable("v", BuiltinType.BOOLEAN, first));
+
+        TranslationResult result = new OMCv2().translateModel(model);
+
+        assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
+        Diagnostic diagnostic = result.diagnostics().get(0);
+        assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity(), diagnostic.toString());
+        assertEquals("Sequence", diagnostic.constructKind());
+        assertSame(first, diagnostic.crmlSource(), "on the first element");
+        assertEquals("variable 'v' was dropped: unresolved operator call _ 'nope' _: no operator in scope matches it",
+            diagnostic.message());
+        assertTrue(result.hasErrors());
+
+        String text = result.text();
+        assertFalse(text.contains("v ="), text);
+        assertTrue(text.contains("// Sequence: variable 'v' was dropped"), text);
     }
 
     @Test

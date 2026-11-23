@@ -128,7 +128,6 @@ duration : 'duration' exp 'on' exp;
 exp 
  	: sub_exp //# SubExpression
 	| constant //# ConstantExpression
-	| constructor //# ConstructorExpression
 	| sum //# SumExpression
 	| trim //# TrimExpression
 	| p1=exp 'proj' ('(' opt=exp ')')?  p2=exp 
@@ -138,6 +137,18 @@ exp
 //TODO: with master on pre
 // Unary operations
 	| lhs=exp uop0=('start' | 'end')
+// Constructor with a value: a prefix operator binding like the unary ones, so
+// its value is one operand (b1, not b, -25.8, P end, x.element, [a, b], (e)),
+// and binary and user-keyword operators apply to the constructed value:
+// 'from' new Clock b1 'until' new Clock b2 is 'from' (new Clock b1) 'until' (new Clock b2).
+// Must stay after the postfix alternatives above, or new Boolean P end would
+// read as (new Boolean P) end.
+	| head=constructor_head rhs=exp
+// The constructor without a value. Must come after the one with a value: ANTLR
+// resolves an ambiguity in favour of the earlier alternative, and
+// new Integer -25.8 also reads as (new Integer) - 25.8. Being a primary
+// alternative, its position has no effect on precedence.
+	| constructor //# ConstructorExpression
 	| uop1=('-' | '+' | 'par' ) rhs=exp //TODO do we need '+'?
 	| uop2=('cos' | 'acos' | 'sin' | 'asin' ) rhs=exp
 	| uop3=('exp' | 'log' | 'log10' | 'card') rhs=exp
@@ -176,7 +187,11 @@ iterator : name= ITERATOR;
 
 if_exp : 'if' if_e=exp 'then' then_e=exp ('else' else_e=exp);
 
-constructor : 'new' type (arg_list | exp)?;
+// The constructor without a value: 'new' T, or 'new' T (x = e, ...). The one
+// with a value is the prefix alternative head=constructor_head rhs=exp of exp.
+constructor : 'new' type arg_list?;
+
+constructor_head : 'new' type;
 	
 period_op : lb=('['| ']') exp ',' exp rb=('['| ']') ; 
 

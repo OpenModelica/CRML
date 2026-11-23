@@ -15,7 +15,6 @@ import org.eclipse.xtext.xbase.lib.Functions.Function0;
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser.Class_defContext;
 import crml.language.grammar.crmlParser.ConstantContext;
-import crml.language.grammar.crmlParser.ConstructorContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.OperatorContext;
@@ -25,7 +24,6 @@ import crml.language.grammar.crmlParser.Var_defContext;
 
 import org.openmodelica.crml.language.dom.builders.ClassBuilder;
 import org.openmodelica.crml.language.dom.builders.ConstantBuilder;
-import org.openmodelica.crml.language.dom.builders.ConstructorBuilder;
 import org.openmodelica.crml.language.dom.builders.ExpressionBuilder;
 import org.openmodelica.crml.language.dom.builders.LiftBuilder;
 import org.openmodelica.crml.language.dom.builders.RootBuilder;
@@ -60,7 +58,6 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     private final TypeReferenceBuilder typeref = new TypeReferenceBuilder(this);
     private final ExpressionBuilder exp = new ExpressionBuilder(this);
     private final ConstantBuilder cnst = new ConstantBuilder(this);
-    private final ConstructorBuilder consr = new ConstructorBuilder(this);
     private final UserOperatorBuilder userop =  new UserOperatorBuilder(this);
     private final TemplateBuilder templates =  new TemplateBuilder(this);
 
@@ -247,7 +244,6 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitClass_def(Class_defContext c) { return BuildResult.wrap(cls.buildClass(c)); }
     @Override public BuildResult visitExp(ExpContext c) { return BuildResult.wrap(exp.value(c)); }
     @Override public BuildResult visitConstant(ConstantContext c) { return BuildResult.wrap(cnst.constant(c)); }
-    @Override public BuildResult visitConstructor(ConstructorContext c) { return BuildResult.wrap(consr.get(c)); }
     @Override public BuildResult visitOperator(OperatorContext c) { return BuildResult.wrap(userop.get(c)); }
     @Override public BuildResult visitTemplate(TemplateContext c) { return BuildResult.wrap(templates.get(c)); }
     

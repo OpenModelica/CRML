@@ -442,10 +442,11 @@ public class CrmlWorkspace {
 
     /**
      * Stage 2: replaces each Sequence that spells out a call to an operator
-     * in scope with that call. Sequences that name no operator stay in the
-     * DOM; they are listed in the result but not reported, as before. A call
-     * that can be read in several ways is an {@link Kind#OPERATOR_CALL} error
-     * at its position, and stays a Sequence.
+     * in scope with that call. A call that can be read in several ways is an
+     * {@link Kind#OPERATOR_CALL} error at its position, and stays a Sequence.
+     * A Sequence that names no operator in scope also stays in the DOM, and
+     * is an {@link Kind#OPERATOR_CALL} error at its first element. If the
+     * stage itself fails, only that failure is reported.
      *
      * @param parser the parser from {@link #operatorParser}; null resolves nothing
      * @return what the stage did; null stops the resolution of {@code resource}
@@ -453,15 +454,27 @@ public class CrmlWorkspace {
     CallResult resolveOperatorCalls(CrmlResource resource, MixfixParser parser) {
         List<CrmlDiagnostic> diagnostics = new ArrayList<>();
         List<DomModification> replaced = new ArrayList<>();
+        boolean completed = false;
         try {
             replaced = resource.getVisitor().resolveOperatorCalls(parser);
+            completed = true;
         } catch (RuntimeException | StackOverflowError e) {
             report(resource, CrmlDiagnostic.of(Kind.OPERATOR_CALL, e, resource.location()), diagnostics);
         }
         for (CrmlDiagnostic error : resource.getVisitor().takeErrors()) {
             report(resource, error, diagnostics);
         }
-        return new CallResult(replaced, sequences(resource.getRoot()), diagnostics);
+        List<Sequence> unresolved = sequences(resource.getRoot());
+        if (completed && parser != null) {
+            for (Sequence call : unresolved) {
+                if (!parser.isAmbiguous(call)) {
+                    report(resource, resource.getVisitor().diagnosticAt(call, Kind.OPERATOR_CALL,
+                        "Unresolved operator call " + MixfixParser.describe(call)
+                        + ": no operator in scope matches it", null), diagnostics);
+                }
+            }
+        }
+        return new CallResult(replaced, unresolved, diagnostics);
     }
 
     /**

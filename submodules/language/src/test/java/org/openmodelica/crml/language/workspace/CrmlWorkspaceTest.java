@@ -142,6 +142,40 @@ public class CrmlWorkspaceTest {
     }
 
     @Test
+    void unresolvedCallIsReportedAtItsFirstElement() {
+        // No operator in scope has these keywords. The first sequence starts
+        // with a value, the second with a keyword, the third with a constructor.
+        InspectingWorkspace ws = new InspectingWorkspace();
+        CrmlResource r = ws.load("model M is {\n"
+            + "Boolean x is external;\n"
+            + "Boolean y is x 'nope' x;\n"
+            + "Boolean z is   'nope' x;\n"
+            + "Boolean w is new Boolean x 'nope' x;\n"
+            + "};");
+
+        ws.resolve();
+
+        assertEquals("[OPERATOR_CALL, OPERATOR_CALL, OPERATOR_CALL]", kinds(r));
+        assertEquals(ws.trace(r).calls.diagnostics(), r.getErrors());
+        int[][] positions = { { 3, 13 }, { 4, 15 }, { 5, 13 } };
+        for (int i = 0; i < positions.length; i++) {
+            CrmlDiagnostic diagnostic = (CrmlDiagnostic) r.getErrors().get(i);
+            assertTrue(diagnostic.getMessage().startsWith("Unresolved operator call"), diagnostic.getMessage());
+            assertEquals(positions[i][0], diagnostic.getLine(), () -> "at the first element: " + diagnostic);
+            assertEquals(positions[i][1], diagnostic.getColumn(), () -> "at the first element: " + diagnostic);
+            assertNull(diagnostic.getCause(), "an error in the model, not an exception");
+        }
+        assertEquals("Unresolved operator call _ 'nope' _: no operator in scope matches it",
+            r.getErrors().get(0).getMessage());
+        assertEquals("Unresolved operator call 'nope' _: no operator in scope matches it",
+            r.getErrors().get(1).getMessage());
+        // The calls stay Sequences, and the later stages still ran.
+        assertEquals(3, ws.trace(r).calls.unresolved().size());
+        assertNotNull(ws.trace(r).lift);
+        assertEquals(Diagnostic.ERROR, ws.validate(r).getSeverity());
+    }
+
+    @Test
     void stageExceptionKeepsItsCause() {
         IllegalStateException thrown = new IllegalStateException("thrown by the stage");
         InspectingWorkspace ws = new InspectingWorkspace() {

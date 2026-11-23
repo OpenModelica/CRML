@@ -5,8 +5,10 @@ import java.util.List;
 import org.eclipse.emf.ecore.EClass;
 
 import crml.language.grammar.crmlParser.ConstructorContext;
+import crml.language.grammar.crmlParser.Constructor_headContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.IdContext;
+import crml.language.grammar.crmlParser.TypeContext;
 
 import org.openmodelica.crml.language.dom.BuildContext;
 import org.openmodelica.crml.language.dom.util.ScopeResolutionOptions;
@@ -29,13 +31,14 @@ public class ConstructorBuilder {
         this.bc = builder.metamodel().getBinding();
     }
 
+    /**
+     * A constructor without a value: {@code new T}, the default constructor, or
+     * {@code new T (x = e, ...)}, which binds the given elements.
+     */
     public ConstructorValue get(ConstructorContext context){
-        ConstructorValue constval = factory.createConstructorValue();
+        ConstructorValue constval = create(context.type());
 
-        TypeReference typeref = (TypeReference) builder.build(context.type(), SingleBuildResult.class).<TypeReference>result();
-        constval.setDomain(typeref);
-
-        if(context.arg_list() != null && context.exp() == null){
+        if(context.arg_list() != null){
             List<IdContext> ids = context.arg_list().id();
             List<ExpContext> exps = context.arg_list().exp();
 
@@ -53,14 +56,30 @@ public class ConstructorBuilder {
 
                 constval.getBindings().add(binding);
             }
-        } else if (context.exp() != null && context.arg_list() == null){
-            Value value = (Value) builder.build(context.exp(), SingleBuildResult.class).<Value>result();
-            constval.setValue(value);
-        } else if (context.exp() == null && context.arg_list() == null){
-            // No action. This is default constructor.
-        } else {
-            throw new IllegalStateException("Unreachable: constructor may only have either a parameter list or a single value.");
         }
+        // Without an argument list this is the default constructor: nothing to bind.
+        return constval;
+    }
+
+    /**
+     * A constructor with a value, {@code new T e}: the prefix alternative
+     * {@code head=constructor_head rhs=exp} of {@code exp}.
+     *
+     * @param head  {@code new T}
+     * @param value {@code e}; null if the parser recovered from a missing value
+     */
+    public ConstructorValue get(Constructor_headContext head, ExpContext value){
+        ConstructorValue constval = create(head.type());
+        if (value != null) {
+            constval.setValue((Value) builder.build(value, SingleBuildResult.class).<Value>result());
+        }
+        return constval;
+    }
+
+    private ConstructorValue create(TypeContext type){
+        ConstructorValue constval = factory.createConstructorValue();
+        TypeReference typeref = (TypeReference) builder.build(type, SingleBuildResult.class).<TypeReference>result();
+        constval.setDomain(typeref);
         return constval;
     }
 }
