@@ -47,7 +47,14 @@ public class CrmlDiagnostic implements Resource.Diagnostic {
         /** A root depends on itself, directly or through others. Reported by validation. */
         DEPENDENCY_CYCLE,
         /** A library depends on a model. Reported by validation. */
-        LIBRARY_DEPENDS_ON_MODEL
+        LIBRARY_DEPENDS_ON_MODEL,
+        /**
+         * Translating a model to Modelica dropped an element. Reported by the
+         * compiler at the object that triggered it, which may be in another
+         * file than the translated model, e.g. an operator of a library. It
+         * does not change the state of the resource: the DOM is still complete.
+         */
+        TRANSLATION
     }
 
     /** How much of the location {@link #format} shows. */

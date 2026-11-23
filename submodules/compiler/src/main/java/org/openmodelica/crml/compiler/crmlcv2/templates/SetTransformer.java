@@ -84,9 +84,8 @@ public final class SetTransformer implements Modelica {
             elements = literal(ctx, set);
         } catch (CRMLCompilerException.UnsupportedConstruct e) {
             Diagnostic cause = e.diagnostic();
-            ctx.reportWithPlaceholder(new Diagnostic(cause.severity(), cause.constructKind(),
-                "set '" + set.getName() + "' was dropped: " + cause.message(),
-                cause.crmlSource() == null ? set : cause.crmlSource()));
+            ctx.reportWithPlaceholder(cause.withMessage("set '" + set.getName() + "' was dropped: " + cause.message(),
+                    cause.crmlSource() == null ? set : cause.crmlSource()));
             return;
         }
 

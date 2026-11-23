@@ -82,8 +82,7 @@ public final class ClassTransformer implements Modelica {
                 definition = transformer.values().transform(ctx, variable.getDefinition());
             } catch (CRMLCompilerException.UnsupportedConstruct e) {
                 Diagnostic cause = e.diagnostic();
-                ctx.reportWithPlaceholder(new Diagnostic(cause.severity(), cause.constructKind(),
-                    "member '" + variable.getName() + "' was dropped: " + cause.message(),
+                ctx.reportWithPlaceholder(cause.withMessage("member '" + variable.getName() + "' was dropped: " + cause.message(),
                     cause.crmlSource() == null ? variable : cause.crmlSource()));
                 return;
             }

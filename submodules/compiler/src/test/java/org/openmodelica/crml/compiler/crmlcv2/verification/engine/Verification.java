@@ -26,7 +26,10 @@ import org.openmodelica.crml.compiler.util.CrmlFrontEnd;
 /**
  * One case taken as far as it goes.
  *
- * <p>Every case is translated, packaged, loaded, checked and simulated. A case
+ * <p>Every case is translated, packaged, loaded, checked and simulated. A
+ * translation that dropped elements is simulated too, for what it shows
+ * further, but the case fails whatever the outcome: see
+ * {@link #translationErrors()}. A case
  * {@link VerificationCase.Mode#WITHOUT_REFERENCE without a reference} ends
  * there: it passes if it simulates, whatever the values. A case
  * {@link VerificationCase.Mode#WITH_REFERENCE with a reference} then compares
@@ -133,6 +136,8 @@ public final class Verification {
     private OmcRunner.Output comparison;
     private Outcome outcome;
     private String reason = "";
+    /** The ERROR diagnostics of an incomplete translation; empty if it is complete. */
+    private String translationErrors = "";
     private final List<Outputs.Output> outputs = new ArrayList<>();
     private final List<OutputResult> results = new ArrayList<>();
 
@@ -160,9 +165,14 @@ public final class Verification {
             return;
         }
         TranslationResult translation = frontEnd.translation();
-        if (translation == null || !frontEnd.errors().isEmpty()) {
+        if (translation == null) {
             finish(Outcome.TRANSLATION_FAILED, translationFailure());
             return;
+        }
+        if (!frontEnd.errors().isEmpty()) {
+            // Incomplete: what was translated is still simulated, for the
+            // indicators it gives, but the case fails (see passed()).
+            translationErrors = String.valueOf(frontEnd.errors());
         }
 
         if (withReference()) {
@@ -494,7 +504,7 @@ public final class Verification {
         }
         StringBuilder summary = new StringBuilder()
             .append(verificationCase).append("\n")
-            .append(outcome).append(": ").append(reason).append("\n\n");
+            .append(describe()).append("\n\n");
         for (OutputResult result : results) {
             summary.append(String.format("%-17s %-8s %s%s%s%n", result.status, result.kind, result.name,
                 result.comparedAs.isEmpty() || result.comparedAs.equals(result.name) ? "" : "  [" + result.comparedAs + "]",
@@ -550,18 +560,39 @@ public final class Verification {
         return reason;
     }
 
-    /** True if the case meets what its mode asks: it simulates, or every output matches. */
+    /**
+     * True if the translation is complete and the case meets what its mode
+     * asks: it simulates, or every output matches.
+     */
     public boolean passed() {
-        return outcome == (withReference() ? Outcome.MATCH : Outcome.SIMULATED);
+        return translationErrors.isEmpty() && outcome == (withReference() ? Outcome.MATCH : Outcome.SIMULATED);
     }
 
     /**
      * True if the case neither passed nor showed a defect: the fixtures are
-     * incomplete, or the reference could not observe some or all outputs.
+     * incomplete, or the reference could not observe some or all outputs. An
+     * incomplete translation is a defect, so such a case is never inconclusive.
      */
     public boolean inconclusive() {
+        if (!translationErrors.isEmpty()) {
+            return false;
+        }
         return outcome == Outcome.FIXTURE_INCOMPLETE || outcome == Outcome.NOTHING_COMPARED
             || outcome == Outcome.PARTIAL_MATCH;
+    }
+
+    /**
+     * The ERROR diagnostics of the translation if it dropped elements, else
+     * empty. The rest of the pipeline still ran on what was translated.
+     */
+    public String translationErrors() {
+        return translationErrors;
+    }
+
+    /** The outcome and its reason, and the translation errors if there are any. */
+    public String describe() {
+        String text = outcome + ": " + reason;
+        return translationErrors.isEmpty() ? text : text + "; translation incomplete: " + translationErrors;
     }
 
     /**

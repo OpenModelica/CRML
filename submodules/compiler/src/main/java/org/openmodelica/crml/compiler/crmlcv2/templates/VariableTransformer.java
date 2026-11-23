@@ -37,8 +37,7 @@ public final class VariableTransformer implements Modelica {
                 binding = transformer.values().transform(ctx, variable.getDefinition());
             } catch (CRMLCompilerException.UnsupportedConstruct e) {
                 Diagnostic cause = e.diagnostic();
-                ctx.reportWithPlaceholder(new Diagnostic(cause.severity(), cause.constructKind(),
-                    "variable '" + variable.getName() + "' was dropped: " + cause.message(),
+                ctx.reportWithPlaceholder(cause.withMessage("variable '" + variable.getName() + "' was dropped: " + cause.message(),
                     cause.crmlSource() == null ? variable : cause.crmlSource()));
                 return;
             }

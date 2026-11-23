@@ -194,10 +194,12 @@ String mo = r.text();                                      // ModelicaPrinter
 
 `OMCv2.translate(model)` is a shortcut that returns only the text.
 
-The pipeline is **diagnose-not-throw**:
-- A construct that cannot be translated produces a `Diagnostic`.
-- It also leaves a `Placeholder` comment in the `.mo` output.
+The pipeline is **diagnose-not-throw**, and an incomplete model is still translated:
+- A construct that cannot be translated produces a `Diagnostic`, with a category saying why: incompatible types, unsupported, library gap, not yet implemented, or invalid.
 - Only the declaration or equation that contains it is dropped. The rest of the model is still generated.
+- A dropped element is an **ERROR**, whatever the category, so the translation fails (`hasErrors()`); the CLI still writes the `.mo`.
+- It leaves a `Placeholder` comment in the `.mo` output, for debugging, and an `UNSUPPORTED` trace link from the CRML object that triggered it.
+- That object is also marked in the CRML model: its resource records a `TRANSLATION` error at its position, and the diagnostic carries the position (`file:line:column`).
 
 ---
 
@@ -715,8 +717,8 @@ graph TD
 |---|---|
 | `OMCv2` | Facade. Returns a `TranslationResult` with `modelica()`, `trace()`, `diagnostics()`, `text()` and `hasErrors()`. |
 | `TransformationContext` | Context for the class currently being generated, plus a `Session` shared across classes. **All IR is emitted through it**: `declare(component, src)`, `equate(equation, src)` and `defineClass(...)`. Each call adds a trace link automatically. It also provides deterministic name allocation (`allocateName(prefix)`, `allocateClassName`), diagnostics (`report`, `reportOnce`, `reportWithPlaceholder`), the registries of generated classes and operators, cycle detection, and `nested(target)` for nested classes. |
-| `Diagnostic`, `Diagnostics` | Severity is ERROR, WARNING or INFO. Factories: `incompatibleTypes` (ERROR), and `unsupported`, `libraryGap`, `notYetImplemented` (all WARNING). |
-| `UnsupportedConstruct` | Runtime exception that carries a `Diagnostic`. Value transformers throw it. The declaration or equation boundary catches it, drops only that element, and leaves a `Placeholder`. |
+| `Diagnostic`, `Diagnostics` | Severity is ERROR, WARNING or INFO, and says what it means for the translation; the `Category` says why. Factories: `incompatibleTypes`, `unsupported`, `libraryGap`, `notYetImplemented`, `error`, `info`, one per category. Whatever its factory gave it, a diagnostic that drops an element is recorded as an ERROR. |
+| `UnsupportedConstruct` | Runtime exception that carries a `Diagnostic`. Value transformers throw it. The declaration or equation boundary catches it, drops only that element, records the diagnostic as an ERROR and leaves a `Placeholder`. |
 | `ModelTransformer` | CRML `Model` → Modelica `model`, marked `partial` when some variable has no binding. Order of work: (1) reserve names; (2) classes in two passes, shell first and body second, so forward references work without a link phase; (3) custom operators; (4) variables; (5) sets; (6) library and object features become library-gap placeholders. |
 | `ClassTransformer` | CRML class → nested Modelica `model` (never a `record`). Superclasses become `extends`, partial classes become `partial`, and variable definitions become equations. |
 | `VariableTransformer` | Variable → component with a binding. `constant` maps to CONSTANT. A set-valued variable becomes an array. |
@@ -898,7 +900,7 @@ The compiler has two kinds of tests in `org.openmodelica.crml.compiler.crmlcv2`.
 - `LibraryETL` and `LibraryFORML` use `libraries/ETL_test` and `libraries/FORML_test`.
 - `UseCases` uses `use-cases`.
 
-Models that fail to parse are skipped. WARNING diagnostics are allowed.
+Models that fail to parse are skipped. A model with building errors, or whose translation has an ERROR (any dropped element included), fails. WARNING diagnostics are allowed. The verification tests simulate an incomplete translation for what it shows, and fail it.
 
 **Unit tests** use hand-built object models:
 

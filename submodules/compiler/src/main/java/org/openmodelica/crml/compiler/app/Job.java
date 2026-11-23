@@ -144,7 +144,7 @@ final class Job {
             TranslationResult translation = new OMCv2().translateModel((Model) root);
             for (Diagnostic diagnostic : translation.diagnostics()) {
                 if (config.verbose() || diagnostic.severity() == Diagnostic.Severity.ERROR) {
-                    report(err, diagnostic.toString());
+                    reportTranslation(err, diagnostic);
                 }
             }
 
@@ -203,6 +203,21 @@ final class Job {
 
     private void report(PrintStream err, String message) {
         err.println(source + ": " + message);
+    }
+
+    /**
+     * Prints a translation diagnostic as {@code file:line:column: SEVERITY kind
+     * (CATEGORY): message}, at the CRML object that triggered it, which may be
+     * in a library; at {@link #source} if its position is not known.
+     */
+    private void reportTranslation(PrintStream err, Diagnostic diagnostic) {
+        String text = diagnostic.severity() + " " + diagnostic.constructKind() + " (" + diagnostic.category() + "): "
+            + diagnostic.message();
+        if (diagnostic.hasPosition()) {
+            err.println(diagnostic.location() + ":" + diagnostic.line() + ":" + diagnostic.column() + ": " + text);
+        } else {
+            report(err, text);
+        }
     }
 
     /**

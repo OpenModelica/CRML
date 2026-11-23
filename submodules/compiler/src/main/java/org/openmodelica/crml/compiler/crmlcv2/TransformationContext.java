@@ -263,11 +263,13 @@ public final class TransformationContext implements Modelica {
     }
 
     /**
-     * Records a diagnostic and leaves a matching comment in the generated .mo,
-     * so a gap is visible both in the diagnostics list and in the output.
+     * Records that an element was dropped: the diagnostic, as an ERROR whatever
+     * its cause, since the translation is then incomplete; a matching comment
+     * in the generated .mo, for debugging; and an UNSUPPORTED trace link from
+     * the CRML object that triggered it to that comment.
      */
     public void reportWithPlaceholder(Diagnostic diagnostic) {
-        report(diagnostic);
+        report(diagnostic.withSeverity(Diagnostic.Severity.ERROR));
         Placeholder placeholder = placeholder(
             diagnostic.constructKind() + ": " + diagnostic.message());
         target.getPlaceholders().add(placeholder);

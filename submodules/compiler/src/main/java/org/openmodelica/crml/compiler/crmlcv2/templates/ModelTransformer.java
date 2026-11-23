@@ -1,5 +1,6 @@
 package org.openmodelica.crml.compiler.crmlcv2.templates;
 
+import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.Diagnostics;
 import org.openmodelica.crml.compiler.crmlcv2.TransformationContext;
 import org.openmodelica.crml.compiler.crmlcv2.util.CRMLCompilerException;
@@ -65,7 +66,10 @@ public final class ModelTransformer implements Modelica {
                 try {
                     transformer.operators().declare(ctx, (CustomOperator) operator);
                 } catch (CRMLCompilerException.UnsupportedConstruct e) {
-                    ctx.reportWithPlaceholder(e.diagnostic());
+                    Diagnostic cause = e.diagnostic();
+                    ctx.reportWithPlaceholder(cause.withMessage("operator '"
+                        + OperatorTransformer.describe((CustomOperator) operator) + "' was dropped: " + cause.message(),
+                        cause.crmlSource() == null ? operator : cause.crmlSource()));
                 }
             } else {
                 ctx.reportWithPlaceholder(Diagnostics.libraryGap("Operator." + operator.eClass().getName(),

@@ -39,11 +39,12 @@ public class DiagnosticsWrapper implements CustomHtmlReporter {
         for (Diagnostic diagnostic : diagnostics) {
             rows.add(tr(
                 td(String.valueOf(diagnostic.severity())),
+                td(String.valueOf(diagnostic.category())),
                 td(diagnostic.constructKind()),
                 td(diagnostic.message())));
         }
         return table(
-            thead(tr(th("Severity"), th("Construct"), th("Message"))),
+            thead(tr(th("Severity"), th("Category"), th("Construct"), th("Message"))),
             tbody(rows.toArray(new DomContent[0])));
     }
 }

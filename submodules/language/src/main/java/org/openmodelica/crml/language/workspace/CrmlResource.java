@@ -6,11 +6,14 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.Token;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
 import org.openmodelica.crml.language.dom.DOMVisitor;
 import org.openmodelica.crml.language.util.Parser;
@@ -164,6 +167,35 @@ public class CrmlResource extends ResourceImpl {
 
     /** What the file declares, or null if not even the header could be read. */
     public RootHeader getHeader() { return header; }
+
+    /**
+     * Records an error found by a stage after loading, such as the
+     * translation to Modelica, at the position {@code at} was built from, or
+     * that of its closest container that has one. The state of the resource
+     * does not change. An equal error recorded before is not added again, so
+     * running the stage twice reports it once.
+     *
+     * @return the recorded error
+     */
+    public CrmlDiagnostic reportError(EObject at, CrmlDiagnostic.Kind kind, String message) {
+        Token start = sourceMap == null ? null : sourceMap.position(at);
+        CrmlDiagnostic diagnostic = start == null
+            ? new CrmlDiagnostic(kind, message, location(), 0, 0)
+            : new CrmlDiagnostic(kind, message, location(), start.getLine(), start.getCharPositionInLine());
+        for (Resource.Diagnostic existing : getErrors()) {
+            if (existing instanceof CrmlDiagnostic && sameAs((CrmlDiagnostic) existing, diagnostic)) {
+                return (CrmlDiagnostic) existing;
+            }
+        }
+        getErrors().add(diagnostic);
+        return diagnostic;
+    }
+
+    private static boolean sameAs(CrmlDiagnostic a, CrmlDiagnostic b) {
+        return a.getKind() == b.getKind() && a.getLine() == b.getLine() && a.getColumn() == b.getColumn()
+            && Objects.equals(a.getMessage(), b.getMessage())
+            && Objects.equals(a.getLocation(), b.getLocation());
+    }
 
     /**
      * The visitor holding the pending link tasks. Only for the workspace;

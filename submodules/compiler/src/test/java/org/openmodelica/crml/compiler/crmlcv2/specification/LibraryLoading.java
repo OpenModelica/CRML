@@ -34,6 +34,7 @@ import org.openmodelica.crml.compiler.util.ObjectModelWrapper;
 import org.openmodelica.crml.compiler.util.ResourceDiagnosticsWrapper;
 import org.openmodelica.crml.compiler.util.ThrowableWrapper;
 import org.openmodelica.crml.compiler.util.TraceWrapper;
+import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
 import org.openmodelica.crml.language.workspace.RootHeader;
@@ -209,7 +210,21 @@ public class LibraryLoading extends ReportedTest {
             if (library == null || !visited.add(dependency.name())) {
                 continue;
             }
-            if (!library.getErrors().isEmpty() || reachesFaultyLibrary(library.getHeader(), byName, visited)) {
+            if (hasLoadingErrors(library) || reachesFaultyLibrary(library.getHeader(), byName, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if loading {@code library} reported errors. A translation error
+     * recorded on it, by translating a model that uses it, does not count: the
+     * library itself is still complete.
+     */
+    private static boolean hasLoadingErrors(CrmlResource library) {
+        for (Resource.Diagnostic error : library.getErrors()) {
+            if (!(error instanceof CrmlDiagnostic) || ((CrmlDiagnostic) error).getKind() != CrmlDiagnostic.Kind.TRANSLATION) {
                 return true;
             }
         }

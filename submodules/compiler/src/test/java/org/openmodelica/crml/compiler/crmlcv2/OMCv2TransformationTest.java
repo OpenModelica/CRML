@@ -164,7 +164,8 @@ public class OMCv2TransformationTest {
         assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
         Diagnostic diagnostic = result.diagnostics().get(0);
         assertEquals("BinaryOperator.AT", diagnostic.constructKind());
-        assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity());
+        assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity());
+        assertEquals(Diagnostic.Category.UNSUPPORTED, diagnostic.category());
 
         String text = result.text();
         // The other two variables survive; only the one with the hole is dropped.
@@ -226,7 +227,8 @@ public class OMCv2TransformationTest {
 
         assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
         assertEquals("BinaryOperator.SUB", result.diagnostics().get(0).constructKind());
-        assertEquals(Diagnostic.Severity.WARNING, result.diagnostics().get(0).severity());
+        assertEquals(Diagnostic.Severity.ERROR, result.diagnostics().get(0).severity());
+        assertEquals(Diagnostic.Category.UNSUPPORTED, result.diagnostics().get(0).category());
         assertFalse(result.text().contains("b1 - b2"), result.text());
     }
 
@@ -262,10 +264,11 @@ public class OMCv2TransformationTest {
 
         assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
         assertEquals("BinaryOperator.LT", result.diagnostics().get(0).constructKind());
-        assertEquals(Diagnostic.Severity.WARNING, result.diagnostics().get(0).severity());
+        assertEquals(Diagnostic.Severity.ERROR, result.diagnostics().get(0).severity());
+        assertEquals(Diagnostic.Category.UNSUPPORTED, result.diagnostics().get(0).category());
     }
 
-    /** Event - Event and Event + Real are specified but not implemented: a WARNING, not a type error. */
+    /** Event - Event and Event + Real are specified but not implemented: dropped, but not a type error. */
     @Test
     public void eventArithmeticIsUnimplementedNotIllTyped() {
         Variable e1 = variable("e1", BuiltinType.EVENT, null);
@@ -278,7 +281,8 @@ public class OMCv2TransformationTest {
 
         assertEquals(2, result.diagnostics().size(), result.diagnostics().toString());
         for (Diagnostic diagnostic : result.diagnostics()) {
-            assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity(), diagnostic.toString());
+            assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity(), diagnostic.toString());
+            assertEquals(Diagnostic.Category.UNSUPPORTED, diagnostic.category(), diagnostic.toString());
         }
     }
 }

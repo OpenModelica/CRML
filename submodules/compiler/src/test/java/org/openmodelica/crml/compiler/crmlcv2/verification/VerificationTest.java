@@ -29,9 +29,10 @@ import org.openmodelica.crml.testutil.ReportedTest;
  * <p>A case {@link VerificationCase.Mode#WITH_REFERENCE with a reference}
  * passes when every output matches the reference; one
  * {@link VerificationCase.Mode#WITHOUT_REFERENCE without} passes when it
- * simulates. A case that could not be verified - incomplete fixtures, or outputs
- * the reference does not record - is reported as aborted, neither passed nor
- * failed. Cases come grouped by mode, and each one's report entry states its mode.
+ * simulates. A case whose translation dropped elements fails, after being
+ * simulated as far as it goes. A case that could not be verified - incomplete
+ * fixtures, or outputs the reference does not record - is reported as aborted,
+ * neither passed nor failed. Cases come grouped by mode, and each one's report entry states its mode.
  *
  * <p>Needs omc, so it is tagged and runs from {@code verificationTest}, not
  * {@code test}; without omc every case is skipped.
@@ -79,9 +80,12 @@ public abstract class VerificationTest extends ReportedTest {
             emit(CodeWrapper.of(verification.comparison().log()), "omc output (comparison)");
         }
         emit(verification.outcome() + ": " + verification.reason(), "Outcome");
+        if (!verification.translationErrors().isEmpty()) {
+            emit(verification.translationErrors(), "Translation incomplete");
+        }
 
-        Assumptions.assumeFalse(verification.inconclusive(), verification.outcome() + ": " + verification.reason());
-        assertTrue(verification.passed(), verification.outcome() + ": " + verification.reason());
+        Assumptions.assumeFalse(verification.inconclusive(), verification.describe());
+        assertTrue(verification.passed(), verification.describe());
     }
 
     private void emitScript(Path script, String key) throws IOException {

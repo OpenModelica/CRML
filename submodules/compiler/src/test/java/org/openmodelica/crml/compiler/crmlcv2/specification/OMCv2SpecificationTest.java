@@ -34,10 +34,9 @@ import org.openmodelica.crml.testutil.ReportedTest;
  * <p>The translation no longer throws when it meets a construct it cannot map,
  * so "did not throw" would be a vacuous assertion. What is asserted instead is
  * that no ERROR diagnostic was recorded: by the severity convention on
- * {@link Diagnostic.Severity}, an ERROR means a construct that does have a
- * Modelica mapping and is implemented here still failed to translate - a defect
- * - while a construct CRML allows but CRMLtoModelica.mo (or this milestone) does
- * not implement is a WARNING, and shows up in the diagnostics table.
+ * {@link Diagnostic.Severity}, an ERROR means the translation is incomplete or
+ * wrong - in particular, every dropped element is one, whatever its
+ * {@link Diagnostic.Category category}. An incomplete translation fails.
  */
 public abstract class OMCv2SpecificationTest extends ReportedTest {
     protected static final Path TEST_MODELS = CompilerRoot.RESOURCES.resolve("testModels");

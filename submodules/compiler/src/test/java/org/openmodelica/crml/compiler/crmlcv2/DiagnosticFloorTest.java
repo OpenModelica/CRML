@@ -148,10 +148,17 @@ public class DiagnosticFloorTest {
 
         TranslationResult result = new OMCv2().translateModel(model);
 
-        // One diagnostic per unmapped value, and none of them is an ERROR: each
-        // is legal CRML that CRMLtoModelica.mo has no implementation for.
+        // One diagnostic per unmapped value. Each drops its variable, so each is
+        // an ERROR; the reason is legal CRML with no implementation, not a
+        // type error or a defect.
         assertEquals(values.size(), result.diagnostics().size(), result.diagnostics().toString());
-        assertFalse(result.hasErrors(), result.diagnostics().toString());
+        assertTrue(result.hasErrors(), result.diagnostics().toString());
+        for (Diagnostic diagnostic : result.diagnostics()) {
+            assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity(), diagnostic.toString());
+            assertTrue(diagnostic.category() == Diagnostic.Category.UNSUPPORTED
+                || diagnostic.category() == Diagnostic.Category.LIBRARY_GAP
+                || diagnostic.category() == Diagnostic.Category.NOT_YET_IMPLEMENTED, diagnostic.toString());
+        }
 
         String text = result.text();
         for (int i = 0; i < values.size(); i++) {

@@ -1,9 +1,11 @@
 package org.openmodelica.crml.compiler.crmlcv2;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.openmodelica.crml.compiler.crmlcv2.Diagnostic;
 import org.openmodelica.crml.compiler.crmlcv2.OMCv2;
 import org.openmodelica.crml.compiler.crmlcv2.TranslationResult;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
@@ -99,7 +101,9 @@ public class BlockBackedConstructsTest {
         TranslationResult result = new OMCv2().translateModel(
             model("M", s, variable("n", BuiltinType.INTEGER, unary(BuiltinUnaryOperatorKind.CARD, refTo(s)))));
 
-        assertFalse(result.hasErrors(), result.diagnostics().toString());
+        assertEquals(1, result.diagnostics().size(), result.diagnostics().toString());
+        assertEquals(Diagnostic.Severity.ERROR, result.diagnostics().get(0).severity());
+        assertEquals(Diagnostic.Category.LIBRARY_GAP, result.diagnostics().get(0).category());
         assertTrue(result.diagnostics().toString().contains("set cardinality"), result.diagnostics().toString());
         assertFalse(result.text().contains("CardClock"), result.text());
     }

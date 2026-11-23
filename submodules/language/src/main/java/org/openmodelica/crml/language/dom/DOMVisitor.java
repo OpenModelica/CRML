@@ -13,13 +13,16 @@ import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.xtext.xbase.lib.Functions.Function0;
 
 import crml.language.grammar.crmlBaseVisitor;
+import crml.language.grammar.crmlParser.CategoryElementContext;
 import crml.language.grammar.crmlParser.Class_defContext;
+import crml.language.grammar.crmlParser.Class_var_defContext;
 import crml.language.grammar.crmlParser.ConstantContext;
 import crml.language.grammar.crmlParser.DefinitionContext;
 import crml.language.grammar.crmlParser.ExpContext;
 import crml.language.grammar.crmlParser.OperatorContext;
 import crml.language.grammar.crmlParser.TemplateContext;
 import crml.language.grammar.crmlParser.TypeContext;
+import crml.language.grammar.crmlParser.UninstantiatedElementContext;
 import crml.language.grammar.crmlParser.Var_defContext;
 
 import org.openmodelica.crml.language.dom.builders.ClassBuilder;
@@ -246,6 +249,37 @@ public class DOMVisitor extends crmlBaseVisitor<BuildResult> implements BuildCon
     @Override public BuildResult visitConstant(ConstantContext c) { return BuildResult.wrap(cnst.constant(c)); }
     @Override public BuildResult visitOperator(OperatorContext c) { return BuildResult.wrap(userop.get(c)); }
     @Override public BuildResult visitTemplate(TemplateContext c) { return BuildResult.wrap(templates.get(c)); }
+
+    // Valid CRML that cannot be built yet. Each is reported, so that no part of
+    // a model is left out silently; null tells the builder it was given up.
+
+    @Override public BuildResult visitUninstantiatedElement(UninstantiatedElementContext c) {
+        return unsupported(c, "a 'parameter' declaration");
+    }
+
+    @Override public BuildResult visitCategoryElement(CategoryElementContext c) {
+        return unsupported(c, "a Category");
+    }
+
+    /** A member of a class: a variable, or a comment, which is no member; anything else is not supported yet. */
+    @Override public BuildResult visitClass_var_def(Class_var_defContext c) {
+        if (c.var_def() != null) {
+            return visit(c.var_def());
+        }
+        if (c.comment() != null) {
+            return null;
+        }
+        return unsupported(c, c.uninstantiated_def() != null ? "a 'parameter' declaration"
+            : "'" + c.getStart().getText() + "' in a class");
+    }
+
+    /** Reports {@code what} as not supported yet, unless its syntax error already is. */
+    private BuildResult unsupported(ParserRuleContext c, String what) {
+        if (!Recovery.hasSyntaxError(c)) {
+            reportImplementationError(c, what);
+        }
+        return null;
+    }
     
     @Override
     public void link(EObject host, EStructuralFeature reference, String id, ScopeResolutionOptions options) {

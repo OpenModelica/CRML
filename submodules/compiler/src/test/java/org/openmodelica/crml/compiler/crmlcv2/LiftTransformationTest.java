@@ -596,7 +596,8 @@ public class LiftTransformationTest implements Modelica {
             and(call(f, parens(call(g, element(fx.a))), element(fx.b))));
 
         Diagnostic diagnostic = diagnostic(result, "Lift.SetWhereValueExpected");
-        assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity());
+        assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity());
+        assertEquals(Diagnostic.Category.NOT_YET_IMPLEMENTED, diagnostic.category());
         assertTrue(diagnostic.crmlSource() instanceof ComputedValue);
         assertNull(component(result.modelica(), "r"), "the variable is dropped");
         assertNoRegion(result.modelica());
@@ -816,10 +817,11 @@ public class LiftTransformationTest implements Modelica {
         TranslationResult result = fx.translate("r", conditional);
 
         Diagnostic diagnostic = diagnostic(result, "Lift.NoApplication");
-        assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity());
+        assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity());
+        assertEquals(Diagnostic.Category.NOT_YET_IMPLEMENTED, diagnostic.category());
         assertTrue(diagnostic.crmlSource() instanceof ScatteredValue);
         assertTrue(diagnostic.message().contains("IfValue"), diagnostic.message());
-        assertFalse(result.hasErrors(), result.diagnostics().toString());
+        assertTrue(result.hasErrors(), result.diagnostics().toString());
         assertNull(component(result.modelica(), "r"));
         assertNoRegion(result.modelica());
     }
@@ -979,8 +981,9 @@ public class LiftTransformationTest implements Modelica {
         TranslationResult result = fx.translate("r", binary(BuiltinBinaryOperatorKind.ADD, null, refTo(fx.a)));
 
         Diagnostic diagnostic = diagnostic(result, "BinaryOperator.ADD.aggregate");
-        assertEquals(Diagnostic.Severity.WARNING, diagnostic.severity());
-        assertFalse(result.hasErrors(), result.diagnostics().toString());
+        assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity());
+        assertEquals(Diagnostic.Category.NOT_YET_IMPLEMENTED, diagnostic.category());
+        assertTrue(result.hasErrors(), result.diagnostics().toString());
     }
 
     // --- T16 -----------------------------------------------------------------------

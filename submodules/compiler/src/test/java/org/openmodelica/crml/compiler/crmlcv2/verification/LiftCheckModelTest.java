@@ -69,7 +69,7 @@ public class LiftCheckModelTest extends VerificationTest {
         }
         assertTrue(checkOver != null, "CheckOver_no_ext.crml not found");
         Verification verification = Verification.run(checkOver, TIMEOUT_SECONDS);
-        assertTrue(verification.passed(), verification.outcome() + ": " + verification.reason());
+        assertTrue(verification.passed(), verification.describe());
     }
 
     /** True if the record CRMLPeriods of the bundled library declares period[] and counter. */
