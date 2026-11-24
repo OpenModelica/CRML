@@ -67,7 +67,10 @@ public class MixfixParser {
 
     /**
      * A parser for calls to {@code operators}. Each operator is a precedence
-     * level of its own, in list order: an earlier operator binds tighter.
+     * level of its own, in list order: an earlier operator binds more loosely.
+     * The first operator is level 0, the outermost level of a parse, and the
+     * last one binds tightest. With {@code a 'p' b} declared before
+     * {@code a 'q' b}, {@code x 'p' y 'q' z} reads {@code x 'p' (y 'q' z)}.
      */
     public MixfixParser(List<CustomOperator> operators, BuildContext builder, TypeCheck typeCheck) {
         this.levels    = operators.stream()
@@ -312,12 +315,11 @@ public class MixfixParser {
     }
 
     /**
-     * Type-checks one argument against the operator's declared parameter types.
+     * Whether {@code node} may be argument {@code valueIndex} of {@code op}.
+     * A rejected argument rules that reading out.
      *
-     * <p>When {@link OperatorWrapper#getDomain()} is {@code null} or no parameter type
-     * list exists, the check is skipped and {@code true} is returned.  This
-     * preserves the "accept-any" behaviour of the default {@link TypeCheck}
-     * implementation.</p>
+     * <p>Not implemented yet: every argument is accepted, and {@link #typeCheck}
+     * is not consulted. So operand types never disambiguate a call.</p>
      *
      * @param node      The argument parse tree to check.
      * @param op        The operator the argument belongs to.
