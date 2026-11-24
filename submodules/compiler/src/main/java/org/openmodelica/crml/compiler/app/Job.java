@@ -22,6 +22,7 @@ import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
+import org.openmodelica.crml.language.workspace.SourcePosition;
 import org.openmodelica.crml.model.metamodel.Model;
 
 /** A file to compile, the file its Modelica is written to, and the compilation itself. */
@@ -211,12 +212,11 @@ final class Job {
      * in a library; at {@link #source} if its position is not known.
      */
     private void reportTranslation(PrintStream err, Diagnostic diagnostic) {
-        String text = diagnostic.severity() + " " + diagnostic.constructKind() + " (" + diagnostic.category() + "): "
-            + diagnostic.message();
-        if (diagnostic.hasPosition()) {
-            err.println(diagnostic.location() + ":" + diagnostic.line() + ":" + diagnostic.column() + ": " + text);
+        SourcePosition position = SourcePosition.of(diagnostic.crmlSource());
+        if (position != null) {
+            err.println(position + ": " + diagnostic);
         } else {
-            report(err, text);
+            report(err, diagnostic.toString());
         }
     }
 

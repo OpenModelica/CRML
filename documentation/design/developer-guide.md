@@ -199,7 +199,7 @@ The pipeline is **diagnose-not-throw**, and an incomplete model is still transla
 - Only the declaration or equation that contains it is dropped. The rest of the model is still generated.
 - A dropped element is an **ERROR**, whatever the category, so the translation fails (`hasErrors()`); the CLI still writes the `.mo`.
 - It leaves a `Placeholder` comment in the `.mo` output, for debugging, and an `UNSUPPORTED` trace link from the CRML object that triggered it.
-- That object is also marked in the CRML model: its resource records a `TRANSLATION` error at its position, and the diagnostic carries the position (`file:line:column`).
+- That object is also marked in the CRML model: its resource records a `TRANSLATION` error at its position. The diagnostic itself stores no position: `SourcePosition.of(diagnostic.crmlSource())` finds it through the resource's `SourceMap` when needed, as the CLI does to print `file:line:column`.
 
 ---
 

@@ -1,6 +1,7 @@
 package org.openmodelica.crml.compiler.crmlcv2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.openmodelica.crml.language.workspace.CrmlDiagnostic;
 import org.openmodelica.crml.language.workspace.CrmlResource;
 import org.openmodelica.crml.language.workspace.CrmlWorkspace;
+import org.openmodelica.crml.language.workspace.SourcePosition;
 import org.openmodelica.crml.model.metamodel.BinaryOperator;
 import org.openmodelica.crml.model.metamodel.Model;
 
@@ -59,14 +61,18 @@ public class TranslationErrorMarkingTest {
         assertEquals(Diagnostic.Severity.ERROR, diagnostic.severity());
         assertEquals(Diagnostic.Category.UNSUPPORTED, diagnostic.category());
         assertTrue(diagnostic.crmlSource() instanceof BinaryOperator, String.valueOf(diagnostic.crmlSource()));
-        assertTrue(diagnostic.hasPosition(), diagnostic.toString());
-        assertEquals(5, diagnostic.line(), diagnostic.toString());
+
+        // Its trigger is found in the text through the source map: 'b at e' on line 5.
+        SourcePosition position = SourcePosition.of(diagnostic.crmlSource());
+        assertNotNull(position, "the trigger was loaded from the text");
+        assertEquals(5, position.getLine());
+        assertEquals(20, position.getColumn());
 
         // The trigger is marked in the CRML model, at the same position.
         List<CrmlDiagnostic> marks = translationErrors(resource);
         assertEquals(1, marks.size(), resource.getErrors().toString());
-        assertEquals(5, marks.get(0).getLine());
-        assertEquals(diagnostic.column(), marks.get(0).getColumn());
+        assertEquals(position.getLine(), marks.get(0).getLine());
+        assertEquals(position.getColumn(), marks.get(0).getColumn());
         assertTrue(marks.get(0).getMessage().contains("BinaryOperator.AT"), marks.get(0).getMessage());
         assertTrue(resource.isComplete(), "a translation error leaves the DOM complete");
 

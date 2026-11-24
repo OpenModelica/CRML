@@ -10,7 +10,6 @@ import java.util.Objects;
 
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.Token;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -178,10 +177,10 @@ public class CrmlResource extends ResourceImpl {
      * @return the recorded error
      */
     public CrmlDiagnostic reportError(EObject at, CrmlDiagnostic.Kind kind, String message) {
-        Token start = sourceMap == null ? null : sourceMap.position(at);
-        CrmlDiagnostic diagnostic = start == null
+        SourcePosition position = at != null && at.eResource() == this ? SourcePosition.of(at) : null;
+        CrmlDiagnostic diagnostic = position == null
             ? new CrmlDiagnostic(kind, message, location(), 0, 0)
-            : new CrmlDiagnostic(kind, message, location(), start.getLine(), start.getCharPositionInLine());
+            : new CrmlDiagnostic(kind, message, location(), position.getLine(), position.getColumn());
         for (Resource.Diagnostic existing : getErrors()) {
             if (existing instanceof CrmlDiagnostic && sameAs((CrmlDiagnostic) existing, diagnostic)) {
                 return (CrmlDiagnostic) existing;
