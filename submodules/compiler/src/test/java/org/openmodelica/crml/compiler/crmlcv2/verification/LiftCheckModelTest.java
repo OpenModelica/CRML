@@ -9,9 +9,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.openmodelica.crml.compiler.crmlcv2.verification.engine.OmcRunner;
-import org.openmodelica.crml.compiler.crmlcv2.verification.engine.Verification;
-import org.openmodelica.crml.compiler.crmlcv2.verification.engine.VerificationCase;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.discovery.CaseDiscovery;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.discovery.Level;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.discovery.TestCase;
 import org.openmodelica.crml.compiler.omc.OMCUtil;
 
 /**
@@ -38,38 +38,38 @@ import org.openmodelica.crml.compiler.omc.OMCUtil;
  * run it. Run it with
  * {@code ./gradlew :compiler:verificationTest --tests "*LiftCheckModelTest"}.
  */
-public class LiftCheckModelTest extends VerificationTest {
+public class LiftCheckModelTest extends MonitorTest {
 
-    private static final long TIMEOUT_SECONDS = 300;
+    /** There are no references for these models. */
+    @Override
+    protected Level level() {
+        return Level.SIMULATE;
+    }
 
-    static List<VerificationCase> cases() {
-        return VerificationCase.discover("lifting");
+    static List<TestCase> cases() {
+        return CaseDiscovery.discover("lifting");
     }
 
     /**
      * {@code ETL_test/CheckOver_no_ext.crml}, the model lifting was specified
-     * for. Skipped until the library provides the {@code Periods} contract.
-     *
-     * <p>Once it runs, it checks that the model simulates. Comparing it with
-     * {@code CheckOver_no_ext_ref.mat} is not done here: the verification
-     * engine only simulates a {@code *_no_ext} model, it does not compare it.
+     * for, at this suite's level: it must simulate. Skipped until the library
+     * provides the {@code Periods} contract. {@code VerificationETL} also
+     * verifies it against {@code CheckOver_no_ext_ref.mat}.
      */
     @Test
     public void checkOverNoExt() throws IOException, InterruptedException {
-        Assumptions.assumeTrue(OmcRunner.available(), "omc not found");
         Assumptions.assumeTrue(libraryHasPeriodsBuffer(),
             "CRMLtoModelica.mo: CRMLPeriods has no period[] and counter, so code lifted over Periods "
             + "cannot pass checkModel");
 
-        VerificationCase checkOver = null;
-        for (VerificationCase candidate : VerificationCase.discover("libraries/ETL_test")) {
+        TestCase checkOver = null;
+        for (TestCase candidate : CaseDiscovery.discover("libraries/ETL_test")) {
             if (candidate.name().equals("CheckOver_no_ext")) {
                 checkOver = candidate;
             }
         }
         assertTrue(checkOver != null, "CheckOver_no_ext.crml not found");
-        Verification verification = Verification.run(checkOver, TIMEOUT_SECONDS);
-        assertTrue(verification.passed(), verification.describe());
+        verify(checkOver);
     }
 
     /** True if the record CRMLPeriods of the bundled library declares period[] and counter. */

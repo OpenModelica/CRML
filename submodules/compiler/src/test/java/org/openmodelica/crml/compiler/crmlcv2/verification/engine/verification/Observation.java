@@ -1,4 +1,4 @@
-package org.openmodelica.crml.compiler.crmlcv2.verification.engine;
+package org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * the signals are matched by meaning, not by name:
  * <table>
  * <tr><th>Type</th><th>Compiled model</th><th>Reference</th><th>Compared as</th></tr>
- * <tr><td>scalar</td><td>{@code x}</td><td>{@code x}</td><td>trajectory</td></tr>
+ * <tr><td>scalar</td><td>{@code x}</td><td>{@code x}</td><td>Real: trajectory; Boolean, Integer, ...: steps</td></tr>
  * <tr><td>Period</td><td>{@code P.is_open}, {@code P.isLeft/RightBoundaryIncluded}</td>
  *     <td>{@code P.timePeriod} (a time locator record), or {@code P.is_open} where the
  *     reference uses the same record; same boundary flags</td>
@@ -35,12 +35,12 @@ final class Observation {
 
     /** How two signals are compared. */
     enum Method {
-        /** {@code diffSimulationResults}: same name on both sides, trajectory within tolerance. */
+        /** A continuous signal: the same values at the reference's time points, interpolated, within tolerance. */
         TRAJECTORY,
         /** Same sequence of value changes, at the same instants within tolerance. */
         STEPS,
         /**
-         * Same instants, within tolerance, at which the signal becomes {@link #TRUE4}.
+         * Same instants, within tolerance, at which the signal becomes {@link Series#TRUE4}.
          * For zero-width pulses, which {@link #STEPS} would normalise away.
          */
         PULSES,
@@ -50,9 +50,6 @@ final class Observation {
          */
         PULSES_TO_COUNT
     }
-
-    /** {@code true4} as a number in a result: {@code Boolean4 = enumeration(undefined, undecided, false4, true4)}. */
-    static final double TRUE4 = 4;
 
     /** One pair of signals to compare. */
     static final class Check {
@@ -90,7 +87,7 @@ final class Observation {
         String name = output.name;
         switch (output.kind) {
             case SCALAR:
-                return single(name, name, Method.TRAJECTORY, actual, expected);
+                return single(name, name, output.real ? Method.TRAJECTORY : Method.STEPS, actual, expected);
             case EVENT:
                 return single(name + ".t", name + ".t", Method.STEPS, actual, expected);
             case CLOCK: {

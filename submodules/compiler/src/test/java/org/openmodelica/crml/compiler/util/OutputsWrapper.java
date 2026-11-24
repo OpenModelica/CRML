@@ -10,7 +10,7 @@ import static j2html.TagCreator.tr;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmodelica.crml.compiler.crmlcv2.verification.engine.Verification;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.OutputResult;
 import org.openmodelica.crml.testutil.CustomHtmlReporter;
 
 import j2html.tags.DomContent;
@@ -22,20 +22,20 @@ import j2html.tags.DomContent;
  */
 public final class OutputsWrapper implements CustomHtmlReporter {
 
-    private final List<Verification.OutputResult> outputs;
+    private final List<OutputResult> outputs;
 
-    private OutputsWrapper(List<Verification.OutputResult> outputs) {
+    private OutputsWrapper(List<OutputResult> outputs) {
         this.outputs = outputs;
     }
 
-    public static OutputsWrapper of(List<Verification.OutputResult> outputs) {
+    public static OutputsWrapper of(List<OutputResult> outputs) {
         return new OutputsWrapper(outputs);
     }
 
     @Override
     public Object report() {
         List<DomContent> rows = new ArrayList<>();
-        for (Verification.OutputResult output : outputs) {
+        for (OutputResult output : outputs) {
             rows.add(tr(
                 td(output.name()),
                 td(output.kind()),

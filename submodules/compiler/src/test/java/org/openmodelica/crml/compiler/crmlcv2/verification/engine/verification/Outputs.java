@@ -1,4 +1,4 @@
-package org.openmodelica.crml.compiler.crmlcv2.verification.engine;
+package org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -63,12 +63,19 @@ final class Outputs {
         final boolean dropped;
         /** The CRML type, for an output of kind {@link Kind#NO_RULE}. */
         final String type;
+        /** A scalar of type Real: continuous, so compared as a trajectory rather than as steps. */
+        final boolean real;
 
         Output(String name, Kind kind, boolean dropped, String type) {
+            this(name, kind, dropped, type, false);
+        }
+
+        Output(String name, Kind kind, boolean dropped, String type, boolean real) {
             this.name = name;
             this.kind = kind;
             this.dropped = dropped;
             this.type = type;
+            this.real = real;
         }
     }
 
@@ -115,7 +122,7 @@ final class Outputs {
             Deque<org.openmodelica.crml.model.metamodel.Class> enclosing) {
         BuiltinType builtin = TypeInference.toType(type).getBuiltinType();
         if (SCALAR.contains(builtin)) {
-            outputs.add(new Output(name, Kind.SCALAR, dropped, null));
+            outputs.add(new Output(name, Kind.SCALAR, dropped, null, builtin == BuiltinType.REAL));
         } else if (builtin == BuiltinType.CLOCK) {
             outputs.add(new Output(name, Kind.CLOCK, dropped, null));
         } else if (builtin == BuiltinType.PERIOD) {
