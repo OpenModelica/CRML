@@ -1,26 +1,12 @@
 model LiftClockBlock_no_ext is {
 	// A lifted operator whose body builds a clock.
 	//
-	// Known failure with OpenModelica 1.26.7: the model translates and passes checkModel,
-	// but does not simulate ("Too few equations, under-determined system").
 	// The operator becomes a block that holds a clock, and lifting it declares an array of
-	// instances of that block. OpenModelica then counts one equation for the clock's
-	// ticks[] array where the same block as a scalar instance gets one per entry.
-	// The same operator applied to a single Boolean ('has become true' b1) simulates.
-	//
-	// Hint for a fix, in CRMLtoModelica.mo (not applied): the statement that OpenModelica
-	// miscounts is, in Types.CRMLClock_build,
-	//     clock.ticks[clock.counter] := time;
-	// Written so that it visibly covers every entry of ticks[], the model simulates and
-	// all_became_true has the values given below:
-	//     for i in 1:size(clock.ticks, 1) loop
-	//       if i == clock.counter then
-	//         clock.ticks[i] := time;
-	//       end if;
-	//     end for;
-	// This was tried on a copy of the library only. CountInside_no_ext gave the same results
-	// with it; the rest of the verification suite was not rerun.
-	// OpenModelica flags (old frontend, new backend, scalarization) do not help.
+	// instances of that block. For 'clock.ticks[clock.counter] := time' in an array of
+	// instances, OpenModelica (1.26.7, 1.27.2) counts one equation for the whole ticks[] where
+	// a scalar instance gets one per entry, so the model passed checkModel but did not
+	// simulate. Types.CRMLClock_build in CRMLtoModelica.mo therefore assigns ticks[] entry by
+	// entry, and the model simulates.
 	Operator [ Boolean ] 'has become true' Boolean b = (card (new Clock b)) > 0;
 
 	Boolean b1 is if (2.0 < time) then true else false;

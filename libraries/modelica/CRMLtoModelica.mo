@@ -159,7 +159,15 @@ end CRMLPeriods_build;
       //e := (clock.b == CRMLtoModelica.Types.Boolean4.true4);
       when (clock.b == CRMLtoModelica.Types.Boolean4.true4 and change(clock.b)) then
         clock.counter := pre(clock.counter)+1;
-        clock.ticks[clock.counter] := time;
+        // Not clock.ticks[clock.counter] := time: in an array of block instances
+        // (a lifted operator that builds a clock), OpenModelica counts that
+        // assignment as one equation for the whole of ticks[]. Written so that it
+        // visibly covers every entry, the model is balanced.
+        for i in 1:size(clock.ticks, 1) loop
+          if i == clock.counter then
+            clock.ticks[i] := time;
+          end if;
+        end for;
          end when;
       
       equation

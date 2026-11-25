@@ -24,10 +24,10 @@ import org.openmodelica.crml.compiler.omc.OMCUtil;
  * operator over one set, each aggregated) and {@code LiftTwoAxes_no_ext} (two
  * axes, and chaining).
  *
- * <p>{@code LiftClockBlock_no_ext} is a known failure: it lifts a user block
- * that builds a clock, and OpenModelica 1.26.7 does not simulate an array of
- * instances of such a block (the system comes out under-determined, although
- * {@code checkModel} passes). The model's own comment has the details.
+ * <p>{@code LiftClockBlock_no_ext} lifts a user block that builds a clock, so
+ * it declares an array of instances of a block that holds a clock. It simulates
+ * since {@code CRMLClock_build} assigns {@code ticks[]} entry by entry (see the
+ * comment there).
  *
  * <p>Lifting over {@code Periods} needs a library in which {@code CRMLPeriods}
  * has the buffer {@code period[]} and its fill level {@code counter}
