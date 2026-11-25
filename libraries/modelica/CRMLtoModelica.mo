@@ -330,24 +330,29 @@ end cvBooleanToBoolean4;
 
     end PEnd;
 
-    function gEV
-    input CRMLtoModelica.Types.Event r1;
-    input CRMLtoModelica.Types.Event r2;
-    
-    output Types.Boolean4 out = Functions.cvBooleanToBoolean4(r1.t>r2.t);
-    algorithm
-       
+    function occurred "True if the event has happened"
+      input CRMLtoModelica.Types.Event e;
+      // An event that has not happened yet has the time -1 (CRMLEvent_build,
+      // CRMLClock.ticks, CRMLPeriods_build).
+      output Boolean y = e.t <> -1;
+    end occurred;
 
+    function gEV "r1 >= r2 for events; an event that has not happened yet is later than any that has"
+      input CRMLtoModelica.Types.Event r1;
+      input CRMLtoModelica.Types.Event r2;
+      output Types.Boolean4 out = Functions.cvBooleanToBoolean4(
+        if not occurred(r2) then not occurred(r1)
+        elseif not occurred(r1) then true
+        else r1.t >= r2.t);
     end gEV;
-    
-    function lEV
-    input CRMLtoModelica.Types.Event r1;
-    input CRMLtoModelica.Types.Event r2;
-    
-    output Types.Boolean4 out = Functions.cvBooleanToBoolean4(r1.t>r2.t);
-    algorithm
-      
-    
+
+    function lEV "r1 <= r2 for events; an event that has not happened yet is later than any that has"
+      input CRMLtoModelica.Types.Event r1;
+      input CRMLtoModelica.Types.Event r2;
+      output Types.Boolean4 out = Functions.cvBooleanToBoolean4(
+        if not occurred(r1) then not occurred(r2)
+        elseif not occurred(r2) then true
+        else r1.t <= r2.t);
     end lEV;
 
     function Event2Boolean
