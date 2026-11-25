@@ -3,9 +3,21 @@ model CheckOver_verif
   extends CheckOver;
   CheckOver_externals externals
     annotation (Placement(transformation(extent={{-200,0},{-140,60}})));
+  // P1 is a set of periods (CRMLPeriods), each from b1 becoming true to b1 becoming
+  // false, built as the compiler builds 'new Periods [new Clock b1, new Clock not b1]'.
+  // externals.P1 is a single period, of another library, so it cannot be bound directly.
+  CRMLtoModelica.Types.CRMLClock P1_start(b = CRMLtoModelica.Functions.cvBooleanToBoolean4(externals.b1.y));
+  CRMLtoModelica.Types.CRMLClock_build P1_start_init(clock = P1_start);
+  CRMLtoModelica.Types.CRMLClock P1_close(b = CRMLtoModelica.Functions.cvBooleanToBoolean4(not externals.b1.y));
+  CRMLtoModelica.Types.CRMLClock_build P1_close_init(clock = P1_close);
+  CRMLtoModelica.Types.CRMLPeriods_build P1_init(P = P1);
 equation
-  // Bindings
-  P1[:] = externals.P1[:];
+  // Bindings. P1 field by field: OpenModelica fails to build a model with a record
+  // equation over CRMLPeriods, which holds an array of records.
+  P1.isLeftBoundaryIncluded = externals.P1.isLeftBoundaryIncluded;
+  P1.isRightBoundaryIncluded = externals.P1.isRightBoundaryIncluded;
+  P1.start_event = P1_start;
+  P1.close_event = P1_close;
   phi1 = externals.phi1;
     annotation (Placement(transformation(extent={{0,-20},{60,40}})),
               Icon(coordinateSystem(preserveAspectRatio=false,
