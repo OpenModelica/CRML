@@ -1,0 +1,20 @@
+# Aliases of Inside_verif_ref.mat: where it records a generated signal that no name
+# ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.Inside, keeps the output as a synchronous
+# Modelica clock:
+#   C1 -> clockToBoolean -> eventFilter.u,  P1 -> periodTimePeriod -> eventFilter.cond,
+#   eventFilter.y -> eventClock -> c_filtered_ticks_of_c1_inside_p1
+# Each ClockEvent makes a base clock, and there are four: eventClock (the output),
+# externals.clockEvent (C1), and those of externals.showEvent_b1 and showEvent_b2.
+# The result file names them only _Clocks.BaseClock_<n>:
+#   BaseClock_0 holds clockToBoolean.* and externals.cRMLClockClock.*: C1
+#   BaseClock_2 holds externals.showEvent_b2.y
+#   BaseClock_3 holds externals.showEvent_b1.y
+#   BaseClock_1 holds nothing named: a clock only passed on, the output
+# so the output is BaseClock_1. (It ticks once, at 3.5 s: the one tick of C1, at 2,
+# 3.5 and 6 s, inside P1, open from 2.5 s to 5 s.)
+#
+# generated signal                       reference signal                                  encoding
+c_filtered_ticks_of_c1_inside_p1.out     _Clocks.BaseClock_1.SubClock_1.activationCount    COUNTER

@@ -1,0 +1,18 @@
+# Aliases of BecomesFalseInside_verif_ref.mat: where it records a generated signal
+# that no name ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.BecomesFalseInside, keeps the output as a
+# synchronous Modelica clock:
+#   b1 -> becomesFalse -> inside.u,  P1 -> inside.tl,  inside.y -> c_b1_becomes_false_inside_p1
+# Each ClockEvent makes a base clock, and there are three: that of becomesFalse (the
+# input of Inside), inside.eventClock (the output), and that of externals.showEvent_b1.
+# The result file names them only _Clocks.BaseClock_<n>:
+#   BaseClock_0 holds inside.clockToBoolean.*: the input clock of Inside (b1 becomes false)
+#   BaseClock_2 holds externals.showEvent_b1.y
+#   BaseClock_1 holds nothing named: a clock only passed on, the output
+# so the output is BaseClock_1. (It ticks once, at 4.5 s, where b1 becomes false
+# inside P1, open from 2.5 s to 5 s.)
+#
+# generated signal                   reference signal                                  encoding
+c_b1_becomes_false_inside_p1.out     _Clocks.BaseClock_1.SubClock_1.activationCount    COUNTER

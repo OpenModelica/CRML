@@ -10,3 +10,13 @@
 #
 # generated signal   reference signal   encoding
 phi1                 and4_1.y           BOOLEAN4
+
+# P1 is '[ new Event b1, new Event not b1 ]', open while b1 is true. The reference
+# model builds it as a time locator:
+#   b1.y -> booleanToBoolean4_2 -> during.u,  during.y[1] -> evaluateOver.tl
+# so P1 is during.y[1] (b1.y is the same table, open from 2.5 s to 5 s).
+#
+# generated signal           reference signal                      encoding
+P1.is_open                   during.y[1].timePeriod                VALUE
+P1.isLeftBoundaryIncluded    during.y[1].isLeftBoundaryIncluded    VALUE
+P1.isRightBoundaryIncluded   during.y[1].isRightBoundaryIncluded   VALUE

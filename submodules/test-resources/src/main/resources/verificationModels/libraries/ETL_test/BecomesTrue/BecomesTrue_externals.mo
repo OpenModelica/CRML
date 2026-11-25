@@ -1,6 +1,26 @@
 within BecomesTrue;
 model BecomesTrue_externals
-  CRML.Blocks.Events.EventPeriodic eventPeriodic1(period=3, startTime=2)
+  block PeriodicEvents
+    "Events every period from startTime, as CRML.Blocks.Events.EventPeriodic, but portable"
+    // EventPeriodic pulses with y = edge(time > tick) after setting tick = time, which
+    // needs time > tick to be false at the instant time - tick = 0. Dymola evaluates it
+    // so; OpenModelica keeps the relation true, and pulses only once. This block pulses
+    // on change(count) instead, true exactly at each event instant in either tool.
+    parameter Real period = 1 "Time between events (s)";
+    parameter Real startTime "Time of the first event (s); must be after the start of the simulation";
+    CRML.ETL.Connectors.BooleanOutput y;
+  protected
+    discrete Real tick(start = startTime - period, fixed = true) "Time of the last event";
+    Integer count(start = 0, fixed = true) "Number of events so far";
+  equation
+    when time >= pre(tick) + period then
+      tick = time;
+      count = pre(count) + 1;
+    end when;
+    y = change(count);
+  end PeriodicEvents;
+
+  PeriodicEvents eventPeriodic1(period=3, startTime=2)
     annotation (Placement(transformation(extent={{-60,-10},{-40,10}})));
   CRML.ETL.Connectors.Boolean4Output b1
     annotation (Placement(transformation(extent={{100,-10},{120,10}})));
