@@ -22,12 +22,12 @@ public
 public
   CRML.ETL.Connectors.Boolean4Input a
     annotation (Placement(transformation(extent={{-120,70},{-100,90}})));
-                                      // Not taken into account in this version (set to undefined by default)
+                                      // The decision a(u, tl): the output of DecideOver
 equation
 
-  /* Compute the decision event d */
-  d = CRML.Blocks.Logical4.or4(Boolean4.true4, CRML.ETL.Types.cvBooleanToBoolean4(edge(
-    not_timePeriod)));
+  /* The decision d = a: the value of 'decide u over tl' (CRML specification, eq. 80),
+     so that y integrates d * u over tl (eq. 76) */
+  d = a;
 
   /* Determine whether the change of the condition u happens at the same instant as the start of the time period tl */
   sync1 = u <> pre(u) and edge(timePeriod);

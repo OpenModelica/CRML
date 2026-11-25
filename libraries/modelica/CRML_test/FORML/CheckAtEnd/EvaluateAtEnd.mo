@@ -14,16 +14,6 @@ public
     annotation (Placement(transformation(extent={{40,-10},{60,10}})));
   CRML.ETL.Requirements.DecideOver decideOver
     annotation (Placement(transformation(extent={{-80,-10},{-60,10}})));
-  CRML.Blocks.Logical4.Boolean4Constant boolean4Constant(K=CRML.ETL.Types.Boolean4.false4)
-    annotation (Placement(transformation(extent={{-20,40},{0,60}})));
-  CRML.Blocks.Events.EventFilter eventFilter
-    annotation (Placement(transformation(extent={{-20,-10},{0,10}})));
-  CRML.Blocks.Logical4.BooleanToBoolean4 booleanToBoolean4
-    annotation (Placement(transformation(extent={{6,-4},{14,4}})));
-  CRML.Blocks.Events.Event4ToEvent event4ToEvent
-    annotation (Placement(transformation(extent={{-44,4},{-36,12}})));
-  CRML.Blocks.Events.Event4ToEvent event4ToEvent1
-    annotation (Placement(transformation(extent={{-44,-24},{-36,-16}})));
   CRML.Blocks.Logical4.Boolean4Constant boolean4Constant1
     annotation (Placement(transformation(extent={{-100,40},{-80,60}})));
 equation
@@ -33,24 +23,14 @@ equation
 //           fillColor={28,108,200},
 //           fillPattern=FillPattern.Solid,
 //           textString=boxName),
-  connect(eventFilter.y, booleanToBoolean4.u)
-    annotation (Line(points={{1,0},{5.6,0}},  color={217,67,180}));
-  connect(decideOver.y, event4ToEvent.u) annotation (Line(points={{-59,0},{-50,0},
-          {-50,8},{-44.4,8}}, color={162,29,33}));
-  connect(event4ToEvent1.u, u) annotation (Line(points={{-44.4,-20},{-90,-20},{-90,
-          0},{-110,0}}, color={162,29,33}));
-  connect(event4ToEvent1.y, eventFilter.u) annotation (Line(points={{-35.6,-20},
-          {-26,-20},{-26,0},{-21,0}}, color={217,67,180}));
-  connect(event4ToEvent.y, eventFilter.cond)
-    annotation (Line(points={{-35.6,8},{-21,8}}, color={217,67,180}));
   connect(decideOver.tl,tl)  annotation (Line(points={{-70,10},{-70,80},{0,80},
           {0,100}}, color={0,0,255}));
   connect(integrateUndefined.tl,tl)  annotation (Line(points={{50,10},{50,80},{
           0,80},{0,100}}, color={0,0,255}));
-  connect(boolean4Constant.y, integrateUndefined.a) annotation (Line(points={{1,
-          50},{20,50},{20,8},{39,8}}, color={162,29,33}));
-  connect(booleanToBoolean4.y, integrateUndefined.u)
-    annotation (Line(points={{14.4,0},{39,0}}, color={162,29,33}));
+  connect(decideOver.y, integrateUndefined.a) annotation(
+    Line(points={{-59,0},{-50,0},{-50,8},{39,8}}, color={162,29,33}));
+  connect(u, integrateUndefined.u) annotation(
+    Line(points={{-110,0},{-90,0},{-90,-20},{30,-20},{30,0},{39,0}}, color={162,29,33}));
   connect(integrateUndefined.y, y)
     annotation (Line(points={{61,0},{110,0}}, color={162,29,33}));
   connect(boolean4Constant1.y, decideOver.u) annotation (Line(points={{-79,50},
