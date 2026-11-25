@@ -56,5 +56,6 @@ equation
         initialScale=0.1)),                                     Diagram(
        coordinateSystem(preserveAspectRatio=false,
         extent={{-160,-100},{160,100}},
-        initialScale=0.1)));
+        initialScale=0.1)),
+    experiment(StopTime=14));
 end CountInside_no_ext;

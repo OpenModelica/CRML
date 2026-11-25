@@ -55,5 +55,6 @@ equation
   connect(not4_1.y, event4ToEvent.u)
     annotation (Line(points={{-9,50},{-4.4,50}}, color={162,29,33}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
-        coordinateSystem(preserveAspectRatio=false)));
+        coordinateSystem(preserveAspectRatio=false)),
+    experiment(StopTime=15));
 end BecomesFalse_no_ext;

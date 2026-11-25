@@ -78,5 +78,6 @@ equation
   annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-250,
             -100},{250,100}})),                                  Diagram(
         coordinateSystem(preserveAspectRatio=false, extent={{-250,-100},{250,
-            100}})));
+            100}})),
+    experiment(StopTime=15));
 end BecomesFalseInside_no_ext;

@@ -43,5 +43,6 @@ equation
   b_undefined_or_undefined = CRML.Blocks.Logical4.or4(b_undefined, b_undefined);
 
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
-        coordinateSystem(preserveAspectRatio=false)));
+        coordinateSystem(preserveAspectRatio=false)),
+    experiment(StopTime=14));
 end TemplateOr_no_ext;

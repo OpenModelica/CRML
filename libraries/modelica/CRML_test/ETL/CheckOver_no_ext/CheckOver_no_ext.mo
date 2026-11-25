@@ -52,5 +52,6 @@ equation
         initialScale=0.1)),                                      Diagram(
         coordinateSystem(preserveAspectRatio=false,
         extent={{-100,-100},{320,100}},
-        initialScale=0.1)));
+        initialScale=0.1)),
+    experiment(StopTime=14));
 end CheckOver_no_ext;

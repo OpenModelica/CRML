@@ -82,5 +82,6 @@ equation
       pattern=LinePattern.Dot,
       thickness=0.5));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
-        coordinateSystem(preserveAspectRatio=false)));
+        coordinateSystem(preserveAspectRatio=false)),
+    experiment(StopTime=15));
 end BecomesTrue_no_ext;
