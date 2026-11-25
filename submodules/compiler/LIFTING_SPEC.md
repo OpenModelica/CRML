@@ -429,23 +429,28 @@ assert on `constructKind`.
 
 ## 7. Known limitations and open questions
 
-### 7.1 `Periods` library contract (open)
+### 7.1 `Periods` library contract
 
 `SetHandle.periods` assumes this contract:
 - `CRMLPeriods` has `CRMLPeriod period[<library constant>]` and `Integer counter`;
-- `counter` is the number of periods opened so far, and entries `1..counter` are valid;
+- `counter` is the number of periods opened so far, and entries `1..counter` are valid
+  (so the period that is open now is included);
 - the generator never writes the buffer size. It only uses `size(P.period, 1)`.
 
-The bundled `submodules/compiler/src/main/resources/modelica_libraries/CRMLtoModelica.mo` has
-**neither** field. `libraries/modelica/CRMLtoModelica.mo` declares `period[50]` and `counter`,
-but never fills them. So code that lifts over `Periods` translates, but does not pass
-`checkModel` with the bundled library.
+`CRMLPeriods_build` in the runtime library (`libraries/modelica/CRMLtoModelica.mo`, packaged
+with the compiler) implements it: period `i` opens with the `i`-th tick of the start clock and
+closes with the next tick of the close clock (the periods do not overlap). Every field of every
+entry is set, unused entries included, so the model is balanced. Opening more than
+`size(P.period, 1)` periods stops the simulation with an assertion error, rather than dropping
+periods silently.
 
-`ETL_test/CheckOver_no_ext.crml`, the model that lifting was specified for, translates without
-errors (specification test `LibraryETL`). Its OMC test `LiftCheckModelTest.checkOverNoExt` is
-skipped automatically while the library lacks the fields.
+A Periods input of a generated block is bound field by field (`BlockInstantiation`), not by one
+record equation: OpenModelica 1.27.2 fails to build a model with a record equation over a record
+that contains an array of records, mostly without any message.
 
-Open: does `counter` count opened periods or closed periods? Who fixes the library, and when?
+`ETL_test/CheckOver_no_ext.crml`, the model that lifting was specified for, simulates. Over one
+period, `'check' phi1 'over' P1` gives the same signal as `'evaluate' phi1 'over'` that period.
+Its reference (`CheckOver_no_ext_ref.mat`) only covers 0-1 s, before the period opens.
 
 ### 7.2 Other open items
 
@@ -484,7 +489,7 @@ Open: does `counter` count opened periods or closed periods? Who fixes the libra
 | Aggregators | `BinaryOperatorTransformer.aggregate` |
 | Block instances | `crmlcv2/templates/BlockInstantiation.java` |
 | Modelica meta-model and printer | `submodules/modelica/src/main/model/modelica.xcore` (`Equation`, `SimpleEquation`, `ForEquation`, `Variability.PARAMETER`), `…/modelica/build/Modelica.java` (`parameter`, `forEq`, `subscripted`, `member`), `…/modelica/print/ModelicaPrinter.java` (`printForEquation`, `rangeBound`) |
-| Runtime library | `submodules/compiler/src/main/resources/modelica_libraries/CRMLtoModelica.mo` (`and4`, `or4`, `Boolean4.undefined`, `CRMLPeriods`) |
+| Runtime library | `libraries/modelica/CRMLtoModelica.mo` (`and4`, `or4`, `Boolean4.undefined`, `CRMLPeriods`) |
 
 ### 8.2 Tests
 

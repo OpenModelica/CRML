@@ -104,31 +104,46 @@ end CRMLClock;
     end when;
     
     end CRMLEvent_build;
-model CRMLPeriods_build
-
-CRMLPeriods P;
-  
+model CRMLPeriods_build "Fills the period buffer of a CRMLPeriods from its start and close clocks"
+  CRMLPeriods P;
+protected
+  final parameter Integer N = size(P.period, 1) "Capacity of the period buffer";
+  Boolean startTick = P.start_event.b == Boolean4.true4;
+  Boolean closeTick = P.close_event.b == Boolean4.true4;
+  discrete Boolean opened[N](each start = false, each fixed = true);
+  discrete Boolean closed[N](each start = false, each fixed = true);
+  discrete Real tOpen[N](each start = -1, each fixed = true);
+  discrete Real tClose[N](each start = -1, each fixed = true);
+initial equation
+  pre(P.counter) = 0;
 equation
-P.is_open = if( (P.start_event.b == Boolean4.true4) and not (P.close_event.b == Boolean4.true4))then true else false;
-for i in 1: size(P.period, 1) loop
-   // P.period[i].start_event.b = P.start_event.ticks[i];
-    //P.period[i].close_event.b = P.close_event.ticks[i];
-   end for;
-
-algorithm
-  
-  //e := (clock.b == CRMLtoModelica.Types.Boolean4.true4);
-  when (P.start_event.b  == CRMLtoModelica.Types.Boolean4.true4 and change(P.start_event.b)) then
-   
-    P.period[P.counter].is_open := true;
-     end when;
-   when (P.close_event.b  == CRMLtoModelica.Types.Boolean4.true4 and change(P.close_event.b)) then
-    
-    P.period[P.counter].is_open :=  false;
-    P.counter := pre(P.counter)+1;
+  P.is_open = if (P.start_event.b == Boolean4.true4) and not (P.close_event.b == Boolean4.true4) then true else false;
+  // counter: the number of periods opened so far; period[1..counter] are valid.
+  when edge(startTick) then
+    P.counter = pre(P.counter) + 1;
+  end when;
+  // An error, not a warning: past N the periods would be dropped silently, and
+  // whatever is computed over the set of periods would be wrong without notice.
+  assert(P.counter <= N, "CRMLPeriods: more periods opened than the buffer holds (period[" + String(N) + "])");
+  for i in 1:N loop
+    // Period i opens with the i-th tick of the start clock ...
+    when P.counter >= i then
+      opened[i] = true;
+      tOpen[i] = time;
     end when;
-
-
+    // ... and closes with the first tick of the close clock after that.
+    when edge(closeTick) and pre(opened[i]) and not pre(closed[i]) then
+      closed[i] = true;
+      tClose[i] = time;
+    end when;
+    P.period[i].isLeftBoundaryIncluded = P.isLeftBoundaryIncluded;
+    P.period[i].isRightBoundaryIncluded = P.isRightBoundaryIncluded;
+    P.period[i].start_event.b = if opened[i] then Boolean4.true4 else Boolean4.false4;
+    P.period[i].start_event.t = tOpen[i];
+    P.period[i].close_event.b = if closed[i] then Boolean4.true4 else Boolean4.false4;
+    P.period[i].close_event.t = tClose[i];
+    P.period[i].is_open = opened[i] and not closed[i];
+  end for;
 end CRMLPeriods_build;
   
     model CRMLClock_build
