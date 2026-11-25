@@ -15,20 +15,23 @@ import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.s
  * library, so its names vary. In order, the first that answers wins:
  * <ol>
  * <li>the reference's alias file ({@link Aliases}): for a signal that no name
- *     ties to the generated one, such as a synchronous clock's activation count;</li>
+ *     ties to the generated one, such as the activation count of a synchronous
+ *     clock, which the reference records only as {@code _Clocks.BaseClock_<n>};</li>
  * <li>the same name: the reference records the signal as the compiler does;</li>
- * <li>the conventions of the CRML library ({@link Conventions}): a name derived
- *     from the output's, such as a time locator's {@code P.timePeriod}.</li>
+ * <li>the conventions of the CRML library ({@link Conventions}): a member of the
+ *     output's own component, such as a time locator's {@code P.timePeriod}.</li>
  * </ol>
  */
 public final class ReferenceResolver {
 
     private final Set<String> names;
     private final Aliases aliases;
+    private final Path aliasFile;
 
-    private ReferenceResolver(Set<String> names, Aliases aliases) {
+    private ReferenceResolver(Set<String> names, Path aliasFile) {
         this.names = names;
-        this.aliases = aliases;
+        this.aliases = Aliases.load(aliasFile);
+        this.aliasFile = aliasFile;
     }
 
     /**
@@ -36,7 +39,7 @@ public final class ReferenceResolver {
      * Its alias file is next to it, with the extension {@code .aliases} instead of {@code .mat}.
      */
     public static ReferenceResolver of(Path reference, Set<String> names) {
-        return new ReferenceResolver(names, Aliases.load(aliasFile(reference)));
+        return new ReferenceResolver(names, aliasFile(reference));
     }
 
     /** Where the alias file of {@code reference} is: {@code X_ref.mat} has {@code X_ref.aliases}. */
@@ -66,9 +69,10 @@ public final class ReferenceResolver {
         List<String> candidates = new ArrayList<>();
         candidates.add(generated.signal());
         candidates.addAll(Conventions.lookingFor(output, generated));
-        return candidates.size() == 1
+        return (candidates.size() == 1
             ? "the reference does not record " + candidates.get(0)
-            : "the reference records neither " + String.join(" nor ", candidates);
+            : "the reference records neither " + String.join(" nor ", candidates))
+            + "; if it records it under another name, give an alias in " + aliasFile.getFileName();
     }
 
     /**

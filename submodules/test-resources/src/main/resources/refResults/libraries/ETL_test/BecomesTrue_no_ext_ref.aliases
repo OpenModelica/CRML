@@ -1,0 +1,24 @@
+# Aliases of BecomesTrue_no_ext_ref.mat: where it records a generated signal that no
+# name ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.BecomesTrue_no_ext, keeps c1, c2 and c3 as
+# synchronous Modelica clocks:
+#   c1 = clockEvent1.y, from b1.y -> booleanToBoolean4_1 -> event4ToEvent
+#   c2 = clockEvent2.y, from b2.y (constant true)  -> booleanToBoolean4_2 -> event4ToEvent1
+#   c3 = clockEvent3.y, from b3.y (constant false) -> booleanToBoolean4_3 -> event4ToEvent2
+# Each ClockEvent makes a base clock; show_c1..3 hold a second clock each, on the same
+# event as c1..3. The result file names the six only _Clocks.BaseClock_<n>:
+#   BaseClock_1, _3, _5 hold show_c1.y, show_c2.y, show_c3.y
+#   BaseClock_0, _2, _4 hold nothing named: the clocks only passed on, c1, c2 and c3
+# BaseClock_0 ticks at 2.5 s and 7.5 s, where b1 becomes true (as the .crml specifies
+# for c1); BaseClock_2 and BaseClock_4 never tick, which is right for both c2 and c3,
+# so the data cannot tell them apart. Taken by order: the base clocks are numbered as
+# the components are declared (clockEvent1, show_c1, clockEvent2, show_c2, clockEvent3,
+# show_c3), which every point checked above agrees with, so BaseClock_2 is c2 and
+# BaseClock_4 is c3. Swapping them would not change the comparison.
+#
+# generated signal   reference signal                                  encoding
+c1.out               _Clocks.BaseClock_0.SubClock_1.activationCount    COUNTER
+c2.out               _Clocks.BaseClock_2.SubClock_1.activationCount    COUNTER
+c3.out               _Clocks.BaseClock_4.SubClock_1.activationCount    COUNTER
