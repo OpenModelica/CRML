@@ -40,6 +40,6 @@ public final class Evaluator {
             return;
         }
 
-        monitor.verified(Verifier.verify(translation, simulation));
+        monitor.verified(Verifier.verify(testCase, translation, simulation));
     }
 }

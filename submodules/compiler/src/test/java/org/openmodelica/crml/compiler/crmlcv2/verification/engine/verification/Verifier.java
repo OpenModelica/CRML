@@ -13,24 +13,30 @@ import java.util.Set;
 import org.openmodelica.crml.compiler.crmlcv2.verification.engine.evaluation.OmcRun;
 import org.openmodelica.crml.compiler.crmlcv2.verification.engine.evaluation.Simulation;
 import org.openmodelica.crml.compiler.crmlcv2.verification.engine.evaluation.Translation;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.discovery.TestCase;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.reference.ReferenceResolver;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.signal.Encoding;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.signal.Series;
 
 /**
  * Stage III: the model's outputs against the reference.
  * <ol>
  * <li>What is compared: the model's CRML variables ({@link Outputs}).</li>
- * <li>How each is seen in the two results: by meaning, not by name ({@link Observation}).</li>
- * <li>Whether they agree: the signals are read into Java ({@link Signals}) and
- * compared there ({@link Series}).</li>
+ * <li>How each is seen in the two results ({@link Observation}): the signals the
+ * compiler generates ({@link Contract}), and their counterparts in the reference
+ * ({@link ReferenceResolver}).</li>
+ * <li>Whether they agree: the signals are read into Java ({@link Signals}),
+ * decoded into a canonical form ({@link Encoding}) and compared there ({@link Series}).</li>
  * </ol>
  * An output the reference records but the simulation does not produce is
- * {@code MISSING}, not skipped.
+ * {@code MISSING}, not skipped. A wrong alias file of the reference throws.
  */
 public final class Verifier {
 
     private Verifier() {
     }
 
-    public static VerificationResult verify(Translation translation, Simulation simulation)
+    public static VerificationResult verify(TestCase testCase, Translation translation, Simulation simulation)
             throws IOException, InterruptedException {
         Path directory = simulation.workspace().directory();
         List<OmcRun> runs = new ArrayList<>();
@@ -45,19 +51,22 @@ public final class Verifier {
             }
         }
 
+        ReferenceResolver reference = ReferenceResolver.of(testCase.reference(), Signals.names(expectedNames));
+        Set<String> actualNamesSet = Signals.names(actualNames);
         List<Entry> entries = new ArrayList<>();
         Set<String> actualSignals = new LinkedHashSet<>();
         Set<String> expectedSignals = new LinkedHashSet<>();
         for (Outputs.Output output : Outputs.of(translation.model(), translation.trace())) {
-            Entry entry = classify(output, Signals.names(actualNames), Signals.names(expectedNames));
+            Entry entry = classify(output, actualNamesSet, reference);
             entries.add(entry);
             if (entry.observation != null) {
                 for (Observation.Check check : entry.observation.checks) {
-                    actualSignals.add(check.actual);
-                    expectedSignals.add(check.expected);
+                    actualSignals.add(check.actual.signal());
+                    expectedSignals.add(check.expected.signal());
                 }
             }
         }
+        reference.checkAllAliasesUsed();
 
         Map<String, List<double[]>> actual = Collections.emptyMap();
         Map<String, List<double[]>> expected = Collections.emptyMap();
@@ -107,8 +116,10 @@ public final class Verifier {
             StringBuilder differences = new StringBuilder();
             for (Observation.Check check : observation.checks) {
                 comparedAs.append(comparedAs.length() == 0 ? "" : ", ").append(check.describe());
-                String difference = Series.difference(check.method, points(actual, check.actual),
-                    points(expected, check.expected), tolerance);
+                Series actualSeries = check.actual.encoding().decode(points(actual, check.actual.signal()), tolerance);
+                Series expectedSeries = check.expected.encoding().decode(points(expected, check.expected.signal()),
+                    tolerance);
+                String difference = actualSeries.difference(expectedSeries, tolerance);
                 if (difference != null) {
                     differences.append(differences.length() == 0 ? "" : "; ")
                         .append(check.describe()).append(": ").append(difference);
@@ -120,7 +131,7 @@ public final class Verifier {
         }
     }
 
-    private static Entry classify(Outputs.Output output, Collection<String> actual, Collection<String> expected) {
+    private static Entry classify(Outputs.Output output, Collection<String> actual, ReferenceResolver reference) {
         switch (output.kind) {
             case INPUT:
                 return new Entry(output, OutputResult.Status.INPUT, "", null);
@@ -129,7 +140,7 @@ public final class Verifier {
             default:
                 break;
         }
-        Observation observation = Observation.of(output, actual, expected);
+        Observation observation = Observation.of(output, actual, reference);
         if (observation.unobservable != null) {
             return new Entry(output, OutputResult.Status.NOT_IN_REFERENCE, observation.unobservable, null);
         }

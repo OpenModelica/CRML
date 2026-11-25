@@ -1,11 +1,11 @@
-package org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification;
+package org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.signal;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Comparing a signal of the simulation result with one of the reference, both
- * given as (time, value) points in time order, by {@link Observation.Method}.
+ * A signal in canonical form ({@link Encoding.Form}), made by {@link Encoding#decode}
+ * from (time, value) points in time order, and compared with another of the same form.
  *
  * <p>A discrete signal is compared as the sequence of values it takes and the
  * instants it takes them - the form in which a Boolean, a period's open flag, an
@@ -22,42 +22,49 @@ import java.util.List;
  * a tolerance relative to the reference's range. Points within the time
  * tolerance of a discontinuity in either signal are skipped.
  */
-final class Series {
+public final class Series {
 
-    /** {@code true4} as a number: {@code Boolean4 = enumeration(undefined, undecided, false4, true4)}. */
+    /** {@code false4} as a number: {@code Boolean4 = enumeration(undefined, undecided, false4, true4)}. */
+    static final double FALSE4 = 3;
+    /** {@code true4} as a number. */
     static final double TRUE4 = 4;
     /** Relative tolerance of a trajectory's values. */
     private static final double VALUE_TOLERANCE = 1e-3;
 
     private final List<double[]> steps = new ArrayList<>();
+    /** The points of a continuous signal, or null for a discrete one (steps). */
+    private final List<double[]> trajectory;
 
-    private Series() {
+    private Series(List<double[]> trajectory) {
+        this.trajectory = trajectory;
     }
 
     /**
-     * Null if {@code actual} agrees with {@code expected} compared by {@code method}, otherwise
-     * how they differ. {@code timeTolerance} is how far apart two instants may be and still
-     * count as the same.
+     * Null if this signal, from the simulation result, agrees with {@code expected},
+     * from the reference, otherwise how they differ. {@code timeTolerance} is how far
+     * apart two instants may be and still count as the same. Both must come from
+     * encodings of the same {@link Encoding.Form}.
      */
-    static String difference(Observation.Method method, List<double[]> actual, List<double[]> expected,
-            double timeTolerance) {
-        switch (method) {
-            case TRAJECTORY:
-                return trajectoryDifference(actual, expected, timeTolerance);
-            case PULSES:
-                return rises(actual, timeTolerance).difference(rises(expected, timeTolerance), timeTolerance);
-            case PULSES_TO_COUNT:
-                return rises(actual, timeTolerance).difference(steps(expected, timeTolerance), timeTolerance);
-            default:
-                return steps(actual, timeTolerance).difference(steps(expected, timeTolerance), timeTolerance);
+    public String difference(Series expected, double timeTolerance) {
+        if ((trajectory == null) != (expected.trajectory == null)) {
+            throw new IllegalArgumentException("a trajectory cannot be compared with steps");
         }
+        if (trajectory != null) {
+            return trajectoryDifference(trajectory, expected.trajectory, timeTolerance);
+        }
+        return stepsDifference(expected, timeTolerance);
+    }
+
+    /** A continuous signal, compared as a trajectory. */
+    static Series trajectory(List<double[]> points) {
+        return new Series(points);
     }
 
     // --- steps -------------------------------------------------------------
 
     /** The normalised steps of a discrete signal. */
     static Series steps(List<double[]> points, double tolerance) {
-        Series result = new Series();
+        Series result = new Series(null);
         for (double[] point : changes(points)) {
             if (!result.steps.isEmpty() && point[0] - result.last()[0] <= tolerance) {
                 result.steps.remove(result.steps.size() - 1);
@@ -77,7 +84,7 @@ final class Series {
      * at the start replaces the initial step.
      */
     static Series rises(List<double[]> points, double tolerance) {
-        Series result = new Series();
+        Series result = new Series(null);
         double[] previous = null;
         int count = 0;
         for (double[] point : changes(points)) {
@@ -108,7 +115,7 @@ final class Series {
     }
 
     /** Null if equal within {@code tolerance}, otherwise what differs. */
-    String difference(Series expected, double tolerance) {
+    private String stepsDifference(Series expected, double tolerance) {
         int n = Math.min(steps.size(), expected.steps.size());
         for (int i = 0; i < n; i++) {
             double[] a = steps.get(i);
@@ -127,6 +134,9 @@ final class Series {
 
     @Override
     public String toString() {
+        if (trajectory != null) {
+            return trajectory.size() + " point(s)";
+        }
         StringBuilder text = new StringBuilder("[");
         for (int i = 0; i < steps.size() && i < 12; i++) {
             text.append(i == 0 ? "" : ", ").append(format(steps.get(i)));
@@ -136,7 +146,7 @@ final class Series {
 
     // --- trajectories ------------------------------------------------------
 
-    static String trajectoryDifference(List<double[]> actual, List<double[]> expected, double timeTolerance) {
+    private static String trajectoryDifference(List<double[]> actual, List<double[]> expected, double timeTolerance) {
         if (actual.isEmpty() || expected.isEmpty()) {
             return actual.isEmpty() == expected.isEmpty() ? null
                 : "expected " + expected.size() + " point(s), got " + actual.size();

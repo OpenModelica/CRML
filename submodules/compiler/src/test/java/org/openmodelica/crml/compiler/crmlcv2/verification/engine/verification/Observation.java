@@ -3,68 +3,40 @@ package org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.reference.ReferenceResolver;
+import org.openmodelica.crml.compiler.crmlcv2.verification.engine.verification.signal.Binding;
 
 /**
- * Which signals carry an output's meaning in each result, and how to compare them.
+ * Which signals carry an output's meaning in each result: the generated ones
+ * ({@link Contract}), each paired with its counterpart in the reference
+ * ({@link ReferenceResolver}). The two may encode the value differently - a
+ * clock's ticks as pulses in one, as a counter in the other - so each pair is
+ * compared after decoding both into the same canonical form.
  *
- * <p>The compiler's library (CRMLtoModelica.mo) and the reference models
- * (the CRML library, simulated in Dymola) implement the same CRML types differently, so
- * the signals are matched by meaning, not by name:
- * <table>
- * <tr><th>Type</th><th>Compiled model</th><th>Reference</th><th>Compared as</th></tr>
- * <tr><td>scalar</td><td>{@code x}</td><td>{@code x}</td><td>Real: trajectory; Boolean, Integer, ...: steps</td></tr>
- * <tr><td>Period</td><td>{@code P.is_open}, {@code P.isLeft/RightBoundaryIncluded}</td>
- *     <td>{@code P.timePeriod} (a time locator record), or {@code P.is_open} where the
- *     reference uses the same record; same boundary flags</td>
- *     <td>open/closed changes, boundary flags</td></tr>
- * <tr><td>Clock</td><td>{@code c.out}</td>
- *     <td>{@code c.out} where the reference uses the same record, otherwise the
- *     activation count of the synchronous clock that drives the harness's
- *     {@code show_c} or {@code showEvent_c} block</td>
- *     <td>instants at which {@code out} becomes {@code true4} (the ticks), as a tick
- *     count over time against the activation count</td></tr>
- * <tr><td>Event</td><td>{@code e.t}</td><td>{@code e.t}</td><td>event time over time</td></tr>
- * </table>
- * Everything else in those records - a clock's counter and tick buffer, the start and close
- * events of a period, a time locator's slots and index - is implementation, and
- * is not compared.
+ * <p>Everything else in the records that implement a type - a clock's counter
+ * and tick buffer, the start and close events of a period - is implementation,
+ * and is not compared.
  */
 final class Observation {
 
-    /** How two signals are compared. */
-    enum Method {
-        /** A continuous signal: the same values at the reference's time points, interpolated, within tolerance. */
-        TRAJECTORY,
-        /** Same sequence of value changes, at the same instants within tolerance. */
-        STEPS,
-        /**
-         * Same instants, within tolerance, at which the signal becomes {@link Series#TRUE4}.
-         * For zero-width pulses, which {@link #STEPS} would normalise away.
-         */
-        PULSES,
-        /**
-         * The actual signal's {@link #PULSES} counted over time, against an expected
-         * signal that already is a tick count, compared as {@link #STEPS}.
-         */
-        PULSES_TO_COUNT
-    }
-
-    /** One pair of signals to compare. */
+    /** One generated signal and its counterpart in the reference. */
     static final class Check {
-        final String actual;
-        final String expected;
-        final Method method;
+        final Binding actual;
+        final Binding expected;
 
-        Check(String actual, String expected, Method method) {
+        Check(Binding actual, Binding expected) {
             this.actual = actual;
             this.expected = expected;
-            this.method = method;
         }
 
+        /** The signals compared, compiled model first, and how the reference's was found if not by name. */
         String describe() {
-            return actual.equals(expected) ? actual : actual + " ~ " + expected;
+            if (actual.signal().equals(expected.signal()) && actual.encoding() == expected.encoding()) {
+                return actual.signal();
+            }
+            return actual.signal() + " ~ " + expected.signal() + " (" + expected.encoding() + ", "
+                + expected.origin() + ")";
         }
     }
 
@@ -80,75 +52,24 @@ final class Observation {
     }
 
     /**
-     * How {@code output} is observed, given the variables each result holds.
-     * Only called for outputs of kind SCALAR, CLOCK, PERIOD and EVENT.
+     * How {@code output} is observed, given the signals the simulation result
+     * records. Only called for outputs of kind SCALAR, CLOCK, PERIOD and EVENT.
      */
-    static Observation of(Outputs.Output output, Collection<String> actual, Collection<String> expected) {
-        String name = output.name;
-        switch (output.kind) {
-            case SCALAR:
-                return single(name, name, output.real ? Method.TRAJECTORY : Method.STEPS, actual, expected);
-            case EVENT:
-                return single(name + ".t", name + ".t", Method.STEPS, actual, expected);
-            case CLOCK: {
-                // CRMLClock.out is true4 exactly at the clock's ticks, in both libraries.
-                if (expected.contains(name + ".out")) {
-                    return single(name + ".out", name + ".out", Method.PULSES, actual, expected);
-                }
-                String ticks = activationCount(name, expected);
-                if (ticks == null) {
-                    return new Observation("the reference has no ticks for it: neither " + name
-                        + ".out nor a show_" + name + " or showEvent_" + name + " block", null);
-                }
-                return single(name + ".out", ticks, Method.PULSES_TO_COUNT, actual, expected);
-            }
-            case PERIOD: {
-                String open = expected.contains(name + ".timePeriod") ? name + ".timePeriod" : name + ".is_open";
-                Observation observation = single(name + ".is_open", open, Method.STEPS, actual, expected);
-                if (observation.unobservable == null && observation.missing == null) {
-                    for (String flag : new String[] {".isLeftBoundaryIncluded", ".isRightBoundaryIncluded"}) {
-                        if (expected.contains(name + flag) && actual.contains(name + flag)) {
-                            observation.checks.add(new Check(name + flag, name + flag, Method.STEPS));
-                        }
-                    }
-                }
-                return observation;
-            }
-            default:
-                throw new IllegalArgumentException("not an observable output: " + output.kind);
-        }
-    }
-
-    private static Observation single(String actualSignal, String expectedSignal, Method method,
-            Collection<String> actual, Collection<String> expected) {
-        if (expectedSignal == null || !expected.contains(expectedSignal)) {
-            return new Observation("the reference does not record "
-                + (expectedSignal == null ? "it" : expectedSignal), null);
-        }
-        if (!actual.contains(actualSignal)) {
-            return new Observation(null, actualSignal);
-        }
+    static Observation of(Outputs.Output output, Collection<String> actual, ReferenceResolver reference) {
         Observation observation = new Observation(null, null);
-        observation.checks.add(new Check(actualSignal, expectedSignal, method));
-        return observation;
-    }
-
-    /**
-     * The activation count of the synchronous clock whose partition holds the
-     * reference harness's {@code show_<name>} or {@code showEvent_<name>} block,
-     * for a reference that keeps clock {@code name} as a Modelica {@code Clock}
-     * rather than a CRMLClock record. Null if there is no such block: nothing
-     * then ties the clock to the CRML variable's name.
-     */
-    private static String activationCount(String name, Collection<String> expected) {
-        Pattern show = Pattern.compile("^(_Clocks\\.BaseClock_\\d+\\.SubClock_\\d+)\\.(?:show|showEvent)_"
-            + Pattern.quote(name) + "\\.y$");
-        for (String variable : expected) {
-            Matcher matcher = show.matcher(variable);
-            if (matcher.matches() && expected.contains(matcher.group(1) + ".activationCount")) {
-                return matcher.group(1) + ".activationCount";
+        for (Binding generated : Contract.of(output)) {
+            Binding expected = reference.locate(output.name, generated);
+            if (expected == null) {
+                if (generated.isOptional()) {
+                    continue;
+                }
+                return new Observation(reference.notFound(output.name, generated), null);
             }
+            if (!actual.contains(generated.signal())) {
+                return new Observation(null, generated.signal());
+            }
+            observation.checks.add(new Check(generated, expected));
         }
-        return null;
+        return observation;
     }
 }

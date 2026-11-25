@@ -1,0 +1,12 @@
+# Aliases of DecideOver_no_ext_ref.mat: where it records a generated signal that no name ties
+# to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# phi1 is 'if (2.0 < time) and (time < 3.5) then undecided else false'. The
+# reference model, CRML_test.ETL.DecideOver_no_ext, builds it as
+#   phi1.y -> booleanToBoolean4_1 -> and4_1.u1,  boolean4Constant3 (undecided) -> and4_1.u2
+# so its value is and4_1.y. The block it starts from is also named phi1, but phi1.y
+# is only the Boolean that is true between 2 s and 3.5 s, not the value.
+#
+# generated signal   reference signal   encoding
+phi1                 and4_1.y           BOOLEAN4

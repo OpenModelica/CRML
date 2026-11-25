@@ -65,17 +65,20 @@ final class Outputs {
         final String type;
         /** A scalar of type Real: continuous, so compared as a trajectory rather than as steps. */
         final boolean real;
+        /** A scalar of type Boolean or Requirement: a Boolean4 in the compiled model. */
+        final boolean boolean4;
 
         Output(String name, Kind kind, boolean dropped, String type) {
-            this(name, kind, dropped, type, false);
+            this(name, kind, dropped, type, false, false);
         }
 
-        Output(String name, Kind kind, boolean dropped, String type, boolean real) {
+        Output(String name, Kind kind, boolean dropped, String type, boolean real, boolean boolean4) {
             this.name = name;
             this.kind = kind;
             this.dropped = dropped;
             this.type = type;
             this.real = real;
+            this.boolean4 = boolean4;
         }
     }
 
@@ -122,7 +125,8 @@ final class Outputs {
             Deque<org.openmodelica.crml.model.metamodel.Class> enclosing) {
         BuiltinType builtin = TypeInference.toType(type).getBuiltinType();
         if (SCALAR.contains(builtin)) {
-            outputs.add(new Output(name, Kind.SCALAR, dropped, null, builtin == BuiltinType.REAL));
+            outputs.add(new Output(name, Kind.SCALAR, dropped, null, builtin == BuiltinType.REAL,
+                builtin == BuiltinType.BOOLEAN || builtin == BuiltinType.REQUIREMENT));
         } else if (builtin == BuiltinType.CLOCK) {
             outputs.add(new Output(name, Kind.CLOCK, dropped, null));
         } else if (builtin == BuiltinType.PERIOD) {

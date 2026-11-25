@@ -1,0 +1,16 @@
+# Aliases of BecomesFalse_no_ext_ref.mat: where it records a generated signal that
+# no name ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.BecomesFalse_no_ext, keeps c1 and c2 as
+# synchronous Modelica clocks:
+#   c1 = clockEvent1.y, from b1.y -> booleanToBoolean4_1 -> not4_1 -> event4ToEvent
+#   c2 = clockEvent2.y, from b2.y -> booleanToBoolean4_2 -> not4_2 -> event4ToEvent1
+# The result file names their partitions only _Clocks.BaseClock_<n>. BaseClock_0
+# ticks at 5 s and 9 s, where b1 becomes false, and BaseClock_1 never ticks, as b2
+# is constantly true (the behaviour BecomesFalse_no_ext.crml specifies), so
+# BaseClock_0 is c1 and BaseClock_1 is c2.
+#
+# generated signal   reference signal                                  encoding
+c1.out               _Clocks.BaseClock_0.SubClock_1.activationCount    COUNTER
+c2.out               _Clocks.BaseClock_1.SubClock_1.activationCount    COUNTER
