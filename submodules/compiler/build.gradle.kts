@@ -45,6 +45,17 @@ dependencies {
 }
 
 /**
+ * The runtime library of the generated Modelica, CRMLtoModelica.mo. Its only
+ * copy is in libraries/modelica; it is packaged as the classpath resource
+ * modelica_libraries/CRMLtoModelica.mo, where OMCUtil looks for it.
+ */
+tasks.processResources {
+    from(rootProject.file("libraries/modelica/CRMLtoModelica.mo")) {
+        into("modelica_libraries")
+    }
+}
+
+/**
  * Custom task: crmlc
  */
 tasks.register<JavaExec>("crmlc") {
@@ -84,8 +95,9 @@ tasks.test {
 
 /**
  * End-to-end verification: simulates the generated Modelica with OpenModelica
- * and compares it with the reference results. Skips every case if omc is not
- * installed. Report: build/verification_report.html.
+ * and compares it with the reference results. Skips every case that goes
+ * beyond translation if omc is not installed. How far each suite goes is set
+ * in its test class (see MonitorTest). Report: build/verification_report.html.
  */
 tasks.register<Test>("verificationTest") {
     group = "verification"

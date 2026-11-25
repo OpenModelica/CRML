@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.openmodelica.crml.compiler.crmlcv2.verification.engine.discovery.TestCase;
+import org.openmodelica.crml.compiler.omc.OMCUtil;
 import org.openmodelica.crml.compiler.util.CompilerRoot;
 
 /**
@@ -20,7 +21,7 @@ import org.openmodelica.crml.compiler.util.CompilerRoot;
  * <pre>
  * src/&lt;Name&gt;/package.mo, &lt;Name&gt;.mo   the generated model
  * src/&lt;Name&gt;/*.mo                    the harness, if there is one
- * CRML.mo                            the harness's library, if there is a harness
+ * CRML/package.mo, ...               the harness's library, if there is a harness
  * *_ref.mat                          the reference, if there is one
  * *.mos, *.log                       the omc scripts and what omc printed
  * </pre>
@@ -31,13 +32,12 @@ import org.openmodelica.crml.compiler.util.CompilerRoot;
 public final class Workspace {
 
     private static final Path OUT = CompilerRoot.OUT.resolve("verification");
-    private static final Path CRML_LIBRARY = CompilerRoot.RESOURCES.resolve("modelica_libraries").resolve("CRML.mo");
     private static final Pattern WITHIN = Pattern.compile("^\\s*within\\b[^;]*;", Pattern.MULTILINE);
 
     final TestCase testCase;
     final Path directory;
     final Path packageFile;
-    /** The copied library of the harness, or null without a harness. */
+    /** The package.mo of the copied library of the harness, or null without a harness. */
     final Path crmlLibrary;
     /** The copied reference, or null without one. */
     final Path reference;
@@ -64,8 +64,7 @@ public final class Workspace {
 
         Path crmlLibrary = null;
         if (testCase.hasHarness()) {
-            crmlLibrary = directory.resolve("CRML.mo");
-            Files.copy(CRML_LIBRARY, crmlLibrary);
+            crmlLibrary = OMCUtil.exportCRMLLibrary(directory);
             try (DirectoryStream<Path> files = Files.newDirectoryStream(testCase.harness(), "*.mo")) {
                 for (Path file : files) {
                     String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);

@@ -3,7 +3,7 @@ model Req_speed_all_CRML
   Modelica.Blocks.Interfaces.RealInput v1 annotation (Placement(transformation(
           origin={-120,32}, extent={{-20,-20},{20,20}}), iconTransformation(
           origin={-120,40}, extent={{-20,-20},{20,20}})));
-  CRML.Blocks.Logical4.And4 and4_1
+  CRML.Blocks.Logical4.bAnd4 and4_1
     annotation (Placement(transformation(extent={{22,-10},{42,10}})));
   CRML.ETL.Connectors.Boolean4Output R_speed_all annotation (Placement(
         transformation(extent={{100,-10},{120,10}}), iconTransformation(extent=

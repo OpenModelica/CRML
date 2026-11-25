@@ -37,7 +37,6 @@ CRML/
 ├── build.gradle.kts          root build: shared library versions, Java 8 target for every subproject
 ├── settings.gradle.kts       includes the 7 subprojects and maps each one to submodules/<name>
 ├── Makefile                  shortcuts for gradlew (build, test, test-dom, test-crmlcv2, distribution)
-├── CRMLtoModelica.mo         copy of the Modelica runtime library (see §9)
 ├── submodules/
 │   ├── model/                CRML metamodel (Xcore → EMF Java)
 │   ├── language/             ANTLR grammar, parser, object-model builder, linker, mixfix resolver
@@ -46,7 +45,7 @@ CRML/
 │   ├── util/                 small shared helpers
 │   ├── util-test/            JUnit base class, HTML test-report listener, and other utilities used soley in the tests
 │   └── test-resources/       shared corpus: .crml test models, verification models, Modelica libraries
-├── libraries/modelica/       [NOT USED] EDF CRML Modelica library, CRML_test, and another copy of CRMLtoModelica.mo
+├── libraries/modelica/       Modelica libraries: CRMLtoModelica.mo (runtime library, see §9), CRML/ (EDF), CRML_test/
 ├── resources/                [NOT USED]
 │   ├── crml_tutorial/        tutorial examples, also added to the test-resources classpath
 │   ├── notepad_profile/      Notepad++ syntax highlighting
@@ -835,7 +834,7 @@ submodules/test-resources/src/main/resources/
 │   └── crml-modelica-library-examples/TrafficLight/
 ├── verificationModels/<cat>/<Name>/ <Name>_verif.mo and <Name>_externals.mo (simulation harness)
 ├── refResults/<cat>/                <Name>_verif_ref.mat reference simulation results
-├── modelica_libraries/              CRMLtoModelica.mo, CRML.mo (EDF), CRML_test/
+├── modelica_libraries/CRML/         EDF CRML library, copied from libraries/modelica/CRML at build time
 └── testResourcesRoot                marker file
 ```
 
@@ -853,16 +852,7 @@ Generated Modelica code refers to `CRMLtoModelica`, a small runtime library. It 
 | `Functions` | `cvBooleanToBoolean4`, `and4`, `or4`, `not4`, `add4`, `mul4`, `PStart`, `PEnd`, `gEV`, `lEV`, `Event2Boolean`, truth tables |
 | `Blocks` | `EventFilter`, `Integrate`, `ClockTick`, `CardClock`, `BoolTick`, `unaryBoolAnd`, `ClockAdd`, `setAnd` |
 
-The library exists in **four copies**:
-
-| Copy | Status |
-|---|---|
-| [CRMLtoModelica.mo](../CRMLtoModelica.mo) (repo root) | identical to the next two |
-| `submodules/compiler/src/main/resources/modelica_libraries/CRMLtoModelica.mo` | identical |
-| `submodules/test-resources/src/main/resources/modelica_libraries/CRMLtoModelica.mo` | identical; loaded at runtime by `OMCUtil` |
-| `libraries/modelica/CRMLtoModelica.mo` | **differs** from the other three; loaded by CI |
-
-When you change the library, update all copies, or better, reduce them to one.
+The only copy is [libraries/modelica/CRMLtoModelica.mo](../../libraries/modelica/CRMLtoModelica.mo). It is what CI loads, and the `:compiler` build packages it as the classpath resource `modelica_libraries/CRMLtoModelica.mo`, where `OMCUtil.getCRMLToModelicaFile` finds it. In the same way, the `:test-resources` build packages the EDF library [libraries/modelica/CRML](../../libraries/modelica/CRML) as `modelica_libraries/CRML/`, which the verification harnesses load (`OMCUtil.exportCRMLLibrary`). Edit the libraries only in `libraries/modelica`.
 
 ---
 
@@ -928,7 +918,7 @@ flowchart LR
     A[".crml"] --> B["CRMLC.parse_file<br/>(legacy)"] --> C["Name.mo"]
     C --> D["OMCUtil.generateSimulationScript<br/>Thymeleaf: generate_simulation_script.mos"]
     V["verificationModels/Name/<br/>Name_verif.mo, Name_externals.mo"] --> D
-    LIB["CRMLtoModelica.mo, CRML.mo"] --> D
+    LIB["CRMLtoModelica.mo, CRML/"] --> D
     D --> E["omc Name.mos<br/>checkModel + simulate(Name_verif)"]
     REF["refResults/Name_verif_ref.mat"] --> F["compare_simulation_results.mos<br/>diffSimulationResults"]
     E --> F --> G["OMCmsg: pass if no Failed/Error"]

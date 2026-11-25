@@ -184,7 +184,7 @@ public class BlockBackedConstructsTest {
 
         assertTrue(text.contains("CRMLtoModelica.Types.CRMLPeriods ps1(isLeftBoundaryIncluded = true, "
             + "isRightBoundaryIncluded = true, start_event = c1, close_event = c2);"), text);
-        assertTrue(text.contains("CRMLtoModelica.Types.CRMLPeriods_build ps1_init(ps = ps1);"), text);
+        assertTrue(text.contains("CRMLtoModelica.Types.CRMLPeriods_build ps1_init(P = ps1);"), text);
     }
 
     /** A Boolean boundary is wrapped in an Event construction first. */

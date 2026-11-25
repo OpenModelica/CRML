@@ -75,10 +75,9 @@ public final class SetHandle implements Modelica {
      *
      * <p>This assumes a library contract: {@code CRMLPeriods} has a buffer
      * {@code CRMLPeriod period[...]} and an {@code Integer counter}, the number
-     * of periods opened so far, with entries {@code 1..counter} valid. The
-     * {@code CRMLtoModelica.mo} bundled with the compiler does not provide these
-     * fields - a possible library error - so until a library does, generated
-     * code that lifts over {@code Periods} does not pass {@code checkModel}.
+     * of periods opened so far, with entries {@code 1..counter} valid.
+     * {@code libraries/modelica/CRMLtoModelica.mo} declares these fields but
+     * does not fill them yet (see LIFTING_SPEC.md, section 7.1).
      */
     public static SetHandle periods(ComponentReference periods) {
         return new SetHandle(Kind.PERIODS, periods, null, null, null, BuiltinType.PERIOD);

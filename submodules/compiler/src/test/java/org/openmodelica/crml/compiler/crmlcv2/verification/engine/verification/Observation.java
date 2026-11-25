@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * Which signals carry an output's meaning in each result, and how to compare them.
  *
  * <p>The compiler's library (CRMLtoModelica.mo) and the reference models
- * (CRML.mo, simulated in Dymola) implement the same CRML types differently, so
+ * (the CRML library, simulated in Dymola) implement the same CRML types differently, so
  * the signals are matched by meaning, not by name:
  * <table>
  * <tr><th>Type</th><th>Compiled model</th><th>Reference</th><th>Compared as</th></tr>

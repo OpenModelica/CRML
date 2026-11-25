@@ -31,8 +31,8 @@ import org.openmodelica.crml.compiler.omc.OMCUtil;
  *
  * <p>Lifting over {@code Periods} needs a library in which {@code CRMLPeriods}
  * has the buffer {@code period[]} and its fill level {@code counter}
- * (see {@link org.openmodelica.crml.compiler.crmlcv2.SetHandle#periods}). The bundled library has
- * neither, so {@link #checkOverNoExt} is skipped until one does.
+ * (see {@link org.openmodelica.crml.compiler.crmlcv2.SetHandle#periods}).
+ * {@link #checkOverNoExt} is skipped if the bundled library has neither.
  *
  * <p>Not named {@code Verification*}, so {@code make test-verification} does not
  * run it. Run it with
@@ -81,6 +81,6 @@ public class LiftCheckModelTest extends MonitorTest {
             return false;
         }
         String record = library.substring(start, end);
-        return record.contains("period[") && record.contains("counter");
+        return record.matches("(?s).*\\bperiod\\s*\\[.*") && record.contains("counter");
     }
 }

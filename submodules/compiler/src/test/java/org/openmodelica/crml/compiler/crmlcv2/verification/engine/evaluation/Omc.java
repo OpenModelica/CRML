@@ -140,7 +140,7 @@ public final class Omc {
     private static List<String[]> libraries(Workspace workspace) {
         List<String[]> libraries = new ArrayList<>();
         if (workspace.crmlLibrary != null) {
-            // The harnesses are built from CRML.mo, which uses the MSL.
+            // The harnesses are built from the CRML library, which uses the MSL.
             libraries.add(new String[] {"Modelica", "loadModel(Modelica, {\"4.0.0\"})"});
         }
         libraries.add(new String[] {"CRMLtoModelica", "loadFile(" + literal(OMCUtil.getCRMLToModelicaFile()) + ")"});

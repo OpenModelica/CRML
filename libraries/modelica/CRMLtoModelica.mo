@@ -166,6 +166,22 @@ end CRMLPeriods_build;
 algorithm
   y := if x then Boolean4.true4 else Boolean4.false4;
 end cvBooleanToBoolean4;
+
+  function Bool4toString "Conversion of Boolean4 values to String"
+    input Types.Boolean4 x;
+    output String s;
+    // Alternatively, without the algorithm section, as a binding of the output:
+    // output String s = if x == Types.Boolean4.true4 then "true"
+    //   elseif x == Types.Boolean4.false4 then "false"
+    //   elseif x == Types.Boolean4.undecided then "undecided"
+    //   else "undefined";
+    // Not String(x): for an enumeration it gives the literal's name, "true4".
+  algorithm
+    s := if x == Types.Boolean4.true4 then "true"
+       elseif x == Types.Boolean4.false4 then "false"
+       elseif x == Types.Boolean4.undecided then "undecided"
+       else "undefined";
+  end Bool4toString;
   
   function add4 "Boolean4 accumulation operator for requirements"
     import CRMLtoModelica.Types.Boolean4;

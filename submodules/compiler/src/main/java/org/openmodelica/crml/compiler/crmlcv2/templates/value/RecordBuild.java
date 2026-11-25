@@ -57,7 +57,7 @@ public final class RecordBuild implements Modelica {
 
     /**
      * {@code CRMLPeriods psN(isLeftBoundaryIncluded = ..., ..., start_event =
-     * ..., close_event = ...); CRMLPeriods_build psN_init(ps = psN);}
+     * ..., close_event = ...); CRMLPeriods_build psN_init(P = psN);}
      *
      * <p>Distinct from {@link #period}: CRMLPeriods' two boundary fields are
      * {@code Types.CRMLClock}, not {@code Types.Event}, which is what a CRML
@@ -66,7 +66,7 @@ public final class RecordBuild implements Modelica {
     public ComponentReference periods(TransformationContext ctx, boolean leftIncluded, boolean rightIncluded,
             Expression startClock, Expression closeClock, EObject crmlSource) {
         return build(ctx, "ps", ModelicaTypes.name(BuiltinType.PERIODS),
-            "CRMLtoModelica.Types.CRMLPeriods_build", "ps",
+            "CRMLtoModelica.Types.CRMLPeriods_build", "P",
             new org.openmodelica.crml.modelica.metamodel.ModificationElement[] {
                 mod("isLeftBoundaryIncluded", bool(leftIncluded)),
                 mod("isRightBoundaryIncluded", bool(rightIncluded)),

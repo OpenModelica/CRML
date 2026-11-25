@@ -100,7 +100,7 @@ Externals are inputs bound by the harness. They are listed, but not compared. In
 such as block instances and hoisted helpers, are ignored.
 
 A Clock, Period or Event is compared by what it means, not by the record that implements it.
-The compiler's library (`CRMLtoModelica.mo`) and the reference models (`CRML.mo`) store
+The compiler's library (`CRMLtoModelica.mo`) and the reference models (the `CRML` library) store
 these types differently:
 
 | Type | Compiled model | Reference | Compared as |
