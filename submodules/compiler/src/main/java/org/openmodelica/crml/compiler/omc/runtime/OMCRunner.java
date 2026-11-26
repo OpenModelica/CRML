@@ -6,11 +6,11 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Scanner;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class OMCRunner {
-    private static final Logger logger = LogManager.getLogger(OMCRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(OMCRunner.class);
     
     private final static String cmdlet = System.getProperty("os.name").toLowerCase().contains("win") ? "omc.exe"
             : "omc";

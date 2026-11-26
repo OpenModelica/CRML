@@ -7,8 +7,8 @@ import java.util.Map.Entry;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import crml.language.grammar.crmlBaseVisitor;
 import crml.language.grammar.crmlParser;
@@ -36,7 +36,7 @@ public class crmlVisitorImpl extends crmlBaseVisitor<Value> {
 
 	private StringBuffer localFunctionCalls;
 
-	private static final Logger logger = LogManager.getLogger();
+	private static final Logger logger = LoggerFactory.getLogger(crmlVisitorImpl.class);
 
 	private CategoryMapping category_map;
 

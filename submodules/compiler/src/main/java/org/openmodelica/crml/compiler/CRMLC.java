@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 import org.openmodelica.crml.compiler.omc.CompileSettings;
 import org.openmodelica.crml.compiler.omc.ModelicaSimulationException;
 import org.openmodelica.crml.compiler.omc.OMCUtil;
@@ -19,7 +19,7 @@ import org.openmodelica.crml.compiler.translation.Value;
 import org.openmodelica.crml.compiler.translation.crmlVisitorImpl;
 import org.openmodelica.crml.language.util.Parser;
 import org.openmodelica.crml.language.util.Parser.ParserResult;
-import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main entry point for the crmlc compiler
@@ -29,7 +29,7 @@ import org.apache.logging.log4j.LogManager;
  */
 public class CRMLC {
 
-  private static final Logger logger = LogManager.getLogger();
+  private static final Logger logger = LoggerFactory.getLogger(CRMLC.class);
 
   public static void main(String[] args) throws Exception {
     CommandLineArgs cmd = CommandLineArgs.parse(true, args);
@@ -39,15 +39,18 @@ public class CRMLC {
 
     CompileSettings cs = cmd.projectToOMCSettings();
 
-    logger.trace("Output dir: " + cmd.outputDir);
+    logger.trace("Output dir: {}", cmd.outputDir);
     // remove quotes if they exist
     // cmd.outputDir = cmd.outputDir.replace("\"", "");
 
     File out_dir = cmd.outputDir.toFile();
     out_dir.mkdir();
 
-    logger.trace("Directory for generated .mo files: [" + out_dir.getPath() + "] absolute path: ["
-        + out_dir.getAbsolutePath() + "]");
+    logger.atTrace()
+        .setMessage("Directory for generated .mo files: [{}] absolute path: [{}]")
+        .addArgument(out_dir::getPath)
+        .addArgument(out_dir::getAbsolutePath)
+        .log();
 
     for (String f : cmd.files) {
       // remove quotes if they exist
@@ -58,7 +61,7 @@ public class CRMLC {
         testFiles = file.list();
         for (String test : testFiles) {
           if (test.endsWith(".crml")) {
-            logger.trace("Translating test: " + test);
+            logger.trace("Translating test: {}", test);
             parse_file(Paths.get(test), cmd.outputDir, cmd.stacktrace, cmd.printAST,
                 cmd.generateExternal, cmd.within, cmd.causal);
             if (cmd.simulate != null) {
@@ -66,16 +69,16 @@ public class CRMLC {
               try {
                 msg = OMCUtil.compile(test, path, cs);
                 if (msg.msg.contains("false"))
-                  logger.error("Unable to load Modelica model " + test +
-                      "\n omc fails with the following message: \n" + msg);
+                  logger.error("Unable to load Modelica model {}\n omc fails with the following message: \n{}",
+                      test, msg);
               } catch (ModelicaSimulationException e) {
-                logger.error("Unable to simulate: " + file + "\n");
+                logger.error("Unable to simulate: {}\n", file);
               }
             }
           }
         }
       } else if (file.isFile()) {
-        logger.trace("Translating file: " + file);
+        logger.trace("Translating file: {}", file);
         String stripped_file_name = Utilities.stripNameEndingAndPath(path);
         Path outputDir = cmd.outputDir.resolve(stripped_file_name);
         parse_file(path, outputDir, cmd.stacktrace,
@@ -86,14 +89,14 @@ public class CRMLC {
             msg = OMCUtil.compile(file.getPath(), cmd.outputDir, cs);// TODO: Why does it get path for Stripped file
                                                                      // name?
             if (msg.msg.contains("false"))
-              logger.error("Unable to load Modelica model " + file +
-                  "\n omc fails with the following message: \n" + msg);
+              logger.error("Unable to load Modelica model {}\n omc fails with the following message: \n{}",
+                  file, msg);
           } catch (ModelicaSimulationException e) {
-            logger.error("Unable to simulate: " + file + "\n");
+            logger.error("Unable to simulate: {}\n", file);
           }
         }
       } else
-        logger.error("Translation error : " + path + " is not a correct path");
+        logger.error("Translation error : {} is not a correct path", path);
     }
 
   }
@@ -109,10 +112,10 @@ public class CRMLC {
       ParserResult model = new Parser().parse(fullName);
 
       if (model.ast() == null)
-        logger.error("Unable to parse: " + fullName);
+        logger.error("Unable to parse: {}", fullName);
 
       if (printAST) {
-        logger.trace("\nThe AST for the program: \n" + model.toPrettyTree());
+        logger.atTrace().log(() -> "\nThe AST for the program: \n" + model.toPrettyTree());
       }
 
       List<String> external_var = new ArrayList<String>();
@@ -132,19 +135,19 @@ public class CRMLC {
 
           System.out.println("File : " + out_file.toString() + " within : " + within);
           writeToFile(out_file, "\n", "within " + within + ";", result.toModelica());
-          logger.trace("Translated: " + fullName);
-          logger.trace("Output Modelica file: " + out_file.getAbsolutePath());
+          logger.trace("Translated: {}", fullName);
+          logger.atTrace().setMessage("Output Modelica file: {}").addArgument(out_file::getAbsolutePath).log();
 
           if (generateExternal && !external_var.isEmpty()) {
             File ext_file = new File(gen_dir + java.io.File.separator +
                 Utilities.stripNameEndingAndPath(fullName) + "_external.txt");
             writeToFile(ext_file, "\n", external_var.toArray());
-            logger.trace("External variables saved in: " + ext_file);
+            logger.trace("External variables saved in: {}", ext_file);
           }
         } else {
-          logger.error("Unable to translate: " + fullName + "\n");
+          logger.error("Unable to translate: {}\n", fullName);
           if (printAST) {
-            logger.trace("\nThe AST for the program: \n" + model.toPrettyTree());
+            logger.atTrace().log(() -> "\nThe AST for the program: \n" + model.toPrettyTree());
           }
           if (testMode)
             throw new Exception("Translation error");
@@ -152,22 +155,22 @@ public class CRMLC {
         }
 
       } catch (ParseCancellationException e) {
-        logger.error("Translation error: " + e, e);
+        logger.error("Translation error: {}", e.toString(), e);
         if (printAST) {
-          logger.trace("\nThe AST for the program: \n" + model.toPrettyTree());
+          logger.atTrace().log(() -> "\nThe AST for the program: \n" + model.toPrettyTree());
         }
         if (testMode)
           throw e;
       } catch (Exception e) {
-        logger.error("Uncaught error: " + e, e);
+        logger.error("Uncaught error: {}", e.toString(), e);
         if (printAST) {
-          logger.trace("\nThe AST for the program: \n" + model.toPrettyTree());
+          logger.atTrace().log(() -> "\nThe AST for the program: \n" + model.toPrettyTree());
         }
         if (testMode)
           throw e;
       }
     } catch (Exception e) {
-      logger.error("Uncaught error: " + e, e);
+      logger.error("Uncaught error: {}", e.toString(), e);
       if (testMode)
         throw e;
     }

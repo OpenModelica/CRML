@@ -22,6 +22,8 @@ val xcoreLibVersion   by extra("1.6.0")    // org.eclipse.emf.ecore.xcore.lib
 val xtextVersion      by extra("2.33.0")   // org.eclipse.xtext.* (build-time Xcore generator only)
 val xbaseLibVersion   by extra("2.25.0")   // org.eclipse.xtext.xbase.lib at runtime; last release built for Java 8
 val antlr4Version     by extra("4.9.2")    // org.antlr:antlr4
+val slf4jVersion      by extra("2.0.17")   // org.slf4j:slf4j-api, the logging API (Java 8); see Logging below
+val log4jVersion      by extra("2.24.3")   // Log4j 2, the logging backend of Gradle's runs and tests only
 
 allprojects {
     repositories {
@@ -50,6 +52,51 @@ subprojects {
             languageVersion.set(JavaLanguageVersion.of(21))
         }
     }*/
+}
+
+// ─────────────────────────────────────────────
+//  Logging
+// ─────────────────────────────────────────────
+// The code logs through the SLF4J API, which every Java project gets. No
+// project packages a logging backend: not the jars, compiler-all.jar, the
+// distributions or the Maven packages, so an application using them chooses
+// its own (without one, SLF4J drops the messages). What Gradle runs logs
+// through Log4j 2, configured by logging/log4j2.properties: the tests of every
+// project, and the tasks that add the loggingBackend configuration to their
+// classpath, such as run and crmlc in :compiler.
+//
+// :web is left out: TeaVM compiles it to JavaScript, where SLF4J cannot look
+// up a backend; the sources it compiles do not log.
+configure(subprojects.filter { it.name != "web" }) {
+    val loggingBackend by configurations.creating {
+        description = "The logging backend of Gradle's runs and tests: Log4j 2 behind SLF4J. Never packaged."
+        isCanBeConsumed = false
+    }
+    configurations.named("testRuntimeOnly") {
+        extendsFrom(loggingBackend)
+    }
+    dependencies {
+        "implementation"("org.slf4j:slf4j-api:$slf4jVersion")
+        // The API too, so that the backend never brings a version of its own.
+        loggingBackend("org.slf4j:slf4j-api:$slf4jVersion")
+        // The bridge for SLF4J 2.x; log4j-slf4j-impl is the one for 1.7.
+        loggingBackend("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
+        loggingBackend("org.apache.logging.log4j:log4j-core:$log4jVersion")
+        loggingBackend(files(rootProject.file("logging")))
+    }
+}
+
+// Kept off every classpath Gradle resolves, whatever brings them:
+// log4j-slf4j-impl, the bridge for SLF4J 1.7, which SLF4J 2.x does not detect,
+// so logging would silently do nothing; and log4j-to-slf4j, which sends Log4j
+// to SLF4J, and with log4j-slf4j2-impl would pass every message back and
+// forth between the two. Only on the classpaths: an exclude on the consumable
+// configurations would be published.
+subprojects {
+    configurations.matching { it.name.endsWith("Classpath") || it.name == "loggingBackend" }.configureEach {
+        exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j-impl")
+        exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+    }
 }
 
 // Compile with any JDK that can run Gradle (17+), but emit Java 8 bytecode

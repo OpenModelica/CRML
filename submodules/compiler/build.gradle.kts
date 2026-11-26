@@ -9,6 +9,9 @@ repositories {
 }
 
 val antlr4Version: String by rootProject.extra
+// Log4j behind SLF4J, for what Gradle runs only; see Logging in the root
+// build. The tests have it; run and crmlc add it below.
+val loggingBackend: Configuration by configurations
 
 dependencies {
     implementation(project(":language"))
@@ -18,23 +21,13 @@ dependencies {
     implementation(project(":modelica")) 
     implementation(project(":util"))
 
-    implementation("org.apache.logging.log4j:log4j-api") {
-        version {
-            strictly("[2.17.0]")
-        }
-    }
-    implementation("org.apache.logging.log4j:log4j-core") {
-        version {
-            strictly("[2.17.0]")
-        }
-    }
-
     implementation("org.thymeleaf:thymeleaf:3.1.3.RELEASE")
-    
-    implementation("org.jcommander:jcommander:1.83")
-    implementation("com.aventstack:extentreports:5.0.9")
-    implementation("com.j2html:j2html:1.6.0")
 
+    implementation("org.jcommander:jcommander:1.83")
+
+    // Only for the test reports.
+    testImplementation("com.aventstack:extentreports:5.0.9")
+    testImplementation("com.j2html:j2html:1.6.0")
 
     testImplementation(project(":util-test"))
     testImplementation(project(":test-resources"))
@@ -61,7 +54,7 @@ tasks.processResources {
 tasks.register<JavaExec>("crmlc") {
     dependsOn("classes")
     mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
-    classpath = sourceSets["main"].runtimeClasspath
+    classpath = sourceSets["main"].runtimeClasspath + loggingBackend
 }
 
 /**
@@ -80,6 +73,12 @@ tasks.register("printSourceSetInformation") {
 
 application {
     mainClass.set("org.openmodelica.crml.compiler.app.CompilerMain")
+}
+
+// ./gradlew :compiler:run logs through the backend; the distribution of the
+// application plugin, like the jars, comes without one.
+tasks.named<JavaExec>("run") {
+    classpath += loggingBackend
 }
 
 tasks.test {
