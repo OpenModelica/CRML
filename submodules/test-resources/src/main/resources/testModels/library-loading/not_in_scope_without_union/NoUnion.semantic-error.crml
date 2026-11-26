@@ -1,0 +1,7 @@
+// Expected: validation error, 'or' does not resolve. Logic is loaded in the
+// same run, but this model does not union it, so its operators are not in scope.
+model NoUnion is {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

@@ -1,0 +1,6 @@
+// A library operator calls an operator of the library it depends on.
+model UseImplication is Implication union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_implies_y is x 'implies' y;
+};

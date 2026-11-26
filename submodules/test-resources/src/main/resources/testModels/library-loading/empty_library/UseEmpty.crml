@@ -1,0 +1,4 @@
+// An empty library is a valid dependency.
+model UseEmpty is Empty union {
+	Boolean x is external;
+};

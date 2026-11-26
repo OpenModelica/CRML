@@ -1,0 +1,3 @@
+# The model class Pump extends Machine, which lives in the library Equipment.
+[Class::name == "Pump"].superClasses contains [Class::name == "Machine"]
+[Class::name == "Pump"].superClasses.@root.name == "Equipment"

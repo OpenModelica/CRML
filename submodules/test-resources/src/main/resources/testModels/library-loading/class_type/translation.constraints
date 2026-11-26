@@ -1,0 +1,41 @@
+# A library class as a variable type.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseClass"] == 1
+count [Class::@container.name == "Equipment"] == 1
+
+# ---- UseClass
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseClass"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseClass.mo"
+[TraceLink::@file == "UseClass.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseClass"
+[TraceLink::@file == "UseClass.trace", kind == "MODEL_TO_CLASS"].modelica.partial == false
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseClass.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseClass.mo"] == 0
+count [Reference::@file == "UseClass.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseClass.mo", target.@file != "UseClass.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseClass.mo"] == 2
+
+# UseClass (own): each element once, of the right kind, directly in UseClass's class.
+count [Variable::@container.name == "UseClass"].@referrers[TraceLink::@file == "UseClass.trace", kind == "VARIABLE_TO_COMPONENT"] == 1
+all [Variable::@container.name == "UseClass"].@referrers[TraceLink::@file == "UseClass.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseClass.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseClass", name == "pump1"].@referrers[TraceLink::@file == "UseClass.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "pump1"
+
+# Equipment: each element once, of the right kind, directly in UseClass's class.
+count [Class::@container.name == "Equipment"].@referrers[TraceLink::@file == "UseClass.trace", kind == "CLASS_TO_MODEL"] == 1
+all [Class::@container.name == "Equipment"].@referrers[TraceLink::@file == "UseClass.trace"].kind == "CLASS_TO_MODEL"
+all [Class::@container.name == "Equipment"].@referrers[TraceLink::@file == "UseClass.trace"].modelica.@container == [TraceLink::@file == "UseClass.trace", kind == "MODEL_TO_CLASS"].modelica
+[Class::@container.name == "Equipment", name == "Pump"].@referrers[TraceLink::@file == "UseClass.trace", kind == "CLASS_TO_MODEL"].modelica.name == "Pump"
+
+# ---- Call sites and structure
+# pump1 is a Pump, and the constructor binding id = "P1" is kept.
+[Variable::@container.name == "UseClass", name == "pump1"].@referrers[TraceLink::@file == "UseClass.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.declaredType.target == [Class::@container.name == "Equipment", name == "Pump"].@referrers[TraceLink::@file == "UseClass.trace", kind == "CLASS_TO_MODEL"].modelica
+count [ModificationElement::@file == "UseClass.mo", name == "id"] == 1
+[ModificationElement::@file == "UseClass.mo", name == "id"].value.value == "P1"

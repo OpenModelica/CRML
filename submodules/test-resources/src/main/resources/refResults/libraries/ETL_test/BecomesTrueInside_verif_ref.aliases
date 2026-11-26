@@ -1,0 +1,17 @@
+# Aliases of BecomesTrueInside_verif_ref.mat: where it records a generated signal
+# that no name ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.BecomesTrueInside, keeps the output as a
+# synchronous Modelica clock:
+#   b1 -> becomesTrue -> inside.u,  P1 -> inside.tl,  inside.y -> c_b1_becomes_true_inside_p1
+# The result file names the partitions only _Clocks.BaseClock_<n>:
+#   BaseClock_0 holds inside.clockToBoolean.*: the input clock of Inside (b1 becomes true)
+#   BaseClock_1 holds nothing named: the clock inside.eventClock creates, the output
+#   BaseClock_2 holds externals.showEvent_b1: the clock of the externals
+# so the output is BaseClock_1. (In this scenario BaseClock_0 and BaseClock_1 tick
+# alike, once at 3.5 s, as b1 becomes true only inside P1; the choice follows from
+# the structure, not from the data.)
+#
+# generated signal                  reference signal                                  encoding
+c_b1_becomes_true_inside_p1.out     _Clocks.BaseClock_1.SubClock_1.activationCount    COUNTER

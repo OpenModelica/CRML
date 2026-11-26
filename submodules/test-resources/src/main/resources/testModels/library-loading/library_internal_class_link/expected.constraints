@@ -1,0 +1,4 @@
+# Linked inside the library itself, before any model uses it.
+[Class::name == "Pump"].superClasses == [Class::name == "Machine"]
+# The model's variable is typed by the library class.
+[Variable::name == "pump1"].domain.domain == [Class::name == "Pump"]

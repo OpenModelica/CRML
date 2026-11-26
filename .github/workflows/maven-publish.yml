@@ -1,0 +1,106 @@
+name: Maven publish
+
+# Publishes the compiled projects to the GitHub Packages Maven repository of
+# this repository as org.openmodelica.crml:crml-{util,model,modelica,language,
+# compiler}, each with its sources and Javadoc jars; crml-compiler also carries
+# compiler-all.jar under the classifier "all".
+#
+# Versions come from the tags maven-<major>.<minor>.<patch>; the latest one is
+# the last release (0.0.0 if there is none).
+#  - A push to a branch below publishes the snapshot of the next patch release
+#    for that branch, e.g. 0.0.2-elephant-SNAPSHOT after maven-0.0.1. Each push
+#    replaces the branch's snapshot.
+#  - Running the workflow by hand (Actions > Maven publish > Run workflow)
+#    releases the next patch, minor or major version, or the version typed in,
+#    and tags the commit maven-<version>.
+#  - Pushing a tag maven-<version> yourself releases <version>.
+# GitHub Packages does not let a release version be published twice.
+on:
+  push:
+    branches: [ elephant, object_model_port ]
+    tags: [ 'maven-*' ]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Part of the last released version to increment'
+        type: choice
+        options: [ patch, minor, major ]
+        default: patch
+      version:
+        description: 'Exact version to release instead, e.g. 0.1.0 (optional)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # to push the maven-<version> tag of a release
+  packages: write
+
+# Two releases at once could pick the same next version.
+concurrency:
+  group: maven-publish-${{ github.event_name == 'push' && github.ref || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   # all the tags, to find the last release
+    - uses: actions/setup-java@v4
+      with:
+          distribution: 'temurin'
+          java-version: '17'
+
+    - name: choose the version
+      env:
+        BUMP: ${{ github.event.inputs.bump }}
+        INPUT_VERSION: ${{ github.event.inputs.version }}
+      run: |
+        LAST=$(git tag --list 'maven-*' | sed 's/^maven-//' \
+               | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+        LAST=${LAST:-0.0.0}
+        IFS=. read -r MAJOR MINOR PATCH <<< "$LAST"
+        echo "Last release: $LAST"
+
+        if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            case "$BUMP" in
+              major) VERSION="$((MAJOR + 1)).0.0" ;;
+              minor) VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+              *)     VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+            esac
+          fi
+          if git rev-parse -q --verify "refs/tags/maven-$VERSION" > /dev/null; then
+            echo "::error::maven-$VERSION already exists"; exit 1
+          fi
+          echo "CRML_TAG=maven-$VERSION" >> "$GITHUB_ENV"
+        elif [ "$GITHUB_REF_TYPE" = tag ]; then
+          VERSION="${GITHUB_REF_NAME#maven-}"
+        else
+          BRANCH=$(echo "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9.\n' '-')
+          VERSION="$MAJOR.$MINOR.$((PATCH + 1))-$BRANCH-SNAPSHOT"
+        fi
+
+        if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$'; then
+          echo "::error::'$VERSION' is not a version like 1.2.3 or 1.2.3-qualifier"; exit 1
+        fi
+        echo "Publishing version $VERSION"
+        echo "CRML_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+    - name: build and publish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: ./gradlew publish -PcrmlVersion="$CRML_VERSION"
+
+    # Only once the packages are published, so a failed release takes no
+    # version. A tag pushed with GITHUB_TOKEN does not start this workflow again.
+    - name: tag the release
+      if: env.CRML_TAG != ''
+      run: |
+        git tag "$CRML_TAG" "$GITHUB_SHA"
+        git push origin "$CRML_TAG"

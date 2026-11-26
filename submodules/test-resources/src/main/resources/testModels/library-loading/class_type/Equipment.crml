@@ -1,0 +1,6 @@
+library Equipment is {
+	class Pump is {
+		String id;
+		Boolean cav is external;
+	};
+};

@@ -1,0 +1,1 @@
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"

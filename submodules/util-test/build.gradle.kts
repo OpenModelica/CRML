@@ -3,14 +3,18 @@ plugins {
     id("antlr")
 }
 
-group = "crml"
-version = "1.0-SNAPSHOT"
-
 dependencies {
     antlr("org.antlr:antlr4:4.9.2")
     implementation("org.antlr:antlr4:4.9.2")
 
     implementation(project(":util"))
+
+    // The model constraint engine (org.openmodelica.crml.testutil.constraints) works on
+    // any EMF model. Versions are the ones the root build pins for the whole project.
+    val emfCoreVersion: String by rootProject.extra
+    val emfCommonVersion: String by rootProject.extra
+    implementation("org.eclipse.emf:org.eclipse.emf.ecore:$emfCoreVersion")
+    implementation("org.eclipse.emf:org.eclipse.emf.common:$emfCommonVersion")
 
     implementation("com.j2html:j2html:1.6.0")
     

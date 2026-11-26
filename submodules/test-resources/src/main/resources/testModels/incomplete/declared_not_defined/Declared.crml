@@ -1,0 +1,5 @@
+// A variable can be declared without a definition.
+model Declared is {
+	Boolean x;
+	Boolean y is x;
+};

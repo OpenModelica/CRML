@@ -1,0 +1,4 @@
+library Temporal is {
+	Operator [ Boolean ] 'holds' Boolean b 'during' Period P = integrate b on P;
+	Operator [ Boolean ] 'holds' Boolean b 'during all' Periods P = and ('holds' b 'during' P.element);
+};

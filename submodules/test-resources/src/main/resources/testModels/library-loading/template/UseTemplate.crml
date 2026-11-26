@@ -1,0 +1,6 @@
+// A Template declared in a library is callable from a model that unions it.
+model UseTemplate is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

@@ -1,3 +1,0 @@
-within CRML_test.Spec_doc;
-package ClockConstructors_no_ext
-end ClockConstructors_no_ext;

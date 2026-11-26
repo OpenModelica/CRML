@@ -1,0 +1,4 @@
+// The model is not closed yet.
+model UnclosedModel is {
+	Boolean x is true;
+	Boolean y is x;

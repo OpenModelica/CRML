@@ -1,0 +1,32 @@
+// Subset of testModels/libraries/ETL.crml that the current grammar accepts:
+// the Category declarations are left out. The operator bodies are those of
+// the testModels/libraries/ETL_test models, so the models below compute what
+// the ETL_test models of the same name compute.
+library ETL is {
+	// Operators on Boolean
+	Template b1 'or' b2 = not (not b1 and not b2);
+	Template b1 'xor' b2 = (b1 'or' b2) and (not (b1 and b2));
+	Template b1 'implies' b2 = (not b1) 'or' b2;
+
+	// Operators on clocks
+	Operator [ Clock ] Clock C 'inside' Period P
+		= C filter ((tick C >= P start) and (tick C <= P end));
+	Operator [ Integer ] 'count' Clock C 'inside' Period P = card (C 'inside' P);
+
+	// Operators on events
+	Operator [ Clock ] Boolean b 'becomes true' = new Clock b;
+	Operator [ Clock ] Boolean b 'becomes false' = new Clock (not b);
+	Operator [ Clock ] Boolean b 'becomes true inside' Period P = (b 'becomes true') 'inside' P;
+	Operator [ Clock ] Boolean b 'becomes false inside' Period P = (b 'becomes false') 'inside' P;
+
+	// Operators for the evaluation of requirements
+	Operator [ Boolean ] 'check' Boolean phi 'over' Periods P
+		= and ('evaluate' phi 'over' P.element);
+	Operator [ Boolean ] 'evaluate' Boolean phi 'over' Period P
+		= integrate (('decide' phi 'over' P) * phi) on P;
+	Operator [ Boolean ] 'decide' Boolean phi 'over' Period P = phi 'or' new Boolean (P end);
+
+	Operator [ Boolean ] 'id' Boolean b = b;
+	Operator [ Boolean ] 'cte_false' Boolean b = false;
+	Operator [ Boolean ] 'cte_true' Boolean b = true;
+};

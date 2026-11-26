@@ -1,0 +1,81 @@
+# Two models of one run share a library.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "First"] == 3
+count [Variable::@container.name == "Second"] == 3
+count [CustomOperator::@container.name == "Logic"] == 1
+
+# ---- First
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "First"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "First.mo"
+[TraceLink::@file == "First.trace", kind == "MODEL_TO_CLASS"].modelica.name == "First"
+[TraceLink::@file == "First.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "First.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "First.mo"] == 0
+count [Reference::@file == "First.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "First.mo", target.@file != "First.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "First.mo"] == 2
+
+# First (own): each element once, of the right kind, directly in First's class.
+count [Variable::@container.name == "First"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "First"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "First.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "First", name == "x"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "First", name == "y"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "y"
+[Variable::@container.name == "First", name == "x_or_y"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x_or_y"
+
+# Logic: each element once, of the right kind, directly in First's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "First.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "First.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "First.trace"].modelica.@container == [TraceLink::@file == "First.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What First does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "Second"].@referrers.@file not contains "First.trace"
+all [Class::@container.name == "Second"].@referrers.@file not contains "First.trace"
+all [Variable::@container.name == "Second"].@referrers.@file not contains "First.trace"
+
+# ---- Second
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "Second"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "Second.mo"
+[TraceLink::@file == "Second.trace", kind == "MODEL_TO_CLASS"].modelica.name == "Second"
+[TraceLink::@file == "Second.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "Second.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "Second.mo"] == 0
+count [Reference::@file == "Second.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "Second.mo", target.@file != "Second.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "Second.mo"] == 2
+
+# Second (own): each element once, of the right kind, directly in Second's class.
+count [Variable::@container.name == "Second"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"] == 3
+all [Variable::@container.name == "Second"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "Second.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "Second", name == "a"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "a"
+[Variable::@container.name == "Second", name == "b"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "b"
+[Variable::@container.name == "Second", name == "a_or_b"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "a_or_b"
+
+# Logic: each element once, of the right kind, directly in Second's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "Second.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "Second.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "Second.trace"].modelica.@container == [TraceLink::@file == "Second.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# What Second does not reach is not in it: scope flows one way only.
+all [CustomOperator::@container.name == "First"].@referrers.@file not contains "Second.trace"
+all [Class::@container.name == "First"].@referrers.@file not contains "Second.trace"
+all [Variable::@container.name == "First"].@referrers.@file not contains "Second.trace"
+
+# ---- Call sites and structure
+# x_or_y calls the function of Logic's 'or'.
+[Variable::@container.name == "First", name == "x_or_y"].@referrers[TraceLink::@file == "First.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "First.trace"].modelica
+# a_or_b calls the function of Logic's 'or'.
+[Variable::@container.name == "Second", name == "a_or_b"].@referrers[TraceLink::@file == "Second.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "Second.trace"].modelica

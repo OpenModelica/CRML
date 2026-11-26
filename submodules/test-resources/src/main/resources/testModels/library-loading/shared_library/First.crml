@@ -1,0 +1,6 @@
+// Two models in one run use the same library, which is loaded only once.
+model First is Logic union {
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_or_y is x 'or' y;
+};

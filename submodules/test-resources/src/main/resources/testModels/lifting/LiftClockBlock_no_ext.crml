@@ -1,0 +1,17 @@
+model LiftClockBlock_no_ext is {
+	// A lifted operator whose body builds a clock.
+	//
+	// The operator becomes a block that holds a clock, and lifting it declares an array of
+	// instances of that block. For 'clock.ticks[clock.counter] := time' in an array of
+	// instances, OpenModelica (1.26.7, 1.27.2) counts one equation for the whole ticks[] where
+	// a scalar instance gets one per entry, so the model passed checkModel but did not
+	// simulate. Types.CRMLClock_build in CRMLtoModelica.mo therefore assigns ticks[] entry by
+	// entry, and the model simulates.
+	Operator [ Boolean ] 'has become true' Boolean b = (card (new Clock b)) > 0;
+
+	Boolean b1 is if (2.0 < time) then true else false;
+	Boolean b2 is if (3.0 < time) then true else false;
+	Boolean S is { b1, b2 };
+
+	Boolean all_became_true is and ('has become true' S.element); // false until 3s, then true
+};

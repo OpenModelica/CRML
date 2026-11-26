@@ -1,0 +1,3 @@
+# The variable's type and the constructor binding point into the library.
+[Variable::name == "pump1"].domain.domain.@root.name == "Equipment"
+[Variable::name == "pump1"].definition.bindings.element.@root.name == "Equipment"

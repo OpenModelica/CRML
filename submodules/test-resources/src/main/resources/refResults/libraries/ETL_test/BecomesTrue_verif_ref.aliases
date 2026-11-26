@@ -1,0 +1,19 @@
+# Aliases of BecomesTrue_verif_ref.mat: where it records a generated signal that no
+# name ties to it. Format and rules: ReferenceResolver and Aliases in
+# compiler/src/test/.../verification/engine/verification/reference.
+#
+# The reference model, CRML_test.ETL.BecomesTrue, keeps the output as a synchronous
+# Modelica clock: event4ToEvent.y -> clockEvent -> c_b1_becomes_true. Each ClockEvent
+# makes a base clock, and there are three:
+#   clockEvent                                   the output
+#   show_c_b1_becomes_true.eventClock            a second clock on the same event (show block)
+#   externals.showEvent_eventPeriodic_b1.eventClock   the clock of the externals
+# The result file names them only _Clocks.BaseClock_<n>:
+#   BaseClock_1 holds externals.showEvent_eventPeriodic_b1.y
+#   BaseClock_2 holds show_c_b1_becomes_true.y
+#   BaseClock_0 holds nothing named: a clock only passed on, the output
+# so the output is BaseClock_0. (It ticks like BaseClock_2, as it should: both come
+# from the same event.)
+#
+# generated signal        reference signal                                  encoding
+c_b1_becomes_true.out     _Clocks.BaseClock_0.SubClock_1.activationCount    COUNTER

@@ -1,0 +1,4 @@
+count [Model::name == "MissingValue"] / [Variable] == 2
+# x has no definition: it contains no value.
+count [Variable::name == "x"] / [Value] == 0
+[Variable::name == "y"].definition is not empty

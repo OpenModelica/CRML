@@ -1,0 +1,4 @@
+# Logic has a syntax error (a missing ';'). It is still loaded, partially:
+# its operator is used; depending on it is a validation error (not checked here).
+count [Library::name == "Logic"] == 1
+[Variable::name == "x_or_y"].definition.operator.@root.name == "Logic"

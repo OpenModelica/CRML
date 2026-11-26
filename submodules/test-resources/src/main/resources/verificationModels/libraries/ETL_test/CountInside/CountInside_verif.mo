@@ -1,12 +1,16 @@
 within CountInside;
 model CountInside_verif
   extends CountInside;
+  Modelica.Clocked.BooleanSignals.NonPeriodic.ClockToBoolean c2b;
   CountInside_externals externals
     annotation (Placement(transformation(extent={{-200,0},{-140,60}})));
 equation
-  // Bindings
-  P1 = externals.P1;
-  C1 = externals.C1;
+  // Bindings: the externals of the CRML model are b1 and b2; P1 and C1 are
+  // built from them by the model itself. externals.C1 is a Modelica Clock,
+  // turned into a Boolean that is true at its ticks.
+  b1 = CRMLtoModelica.Functions.cvBooleanToBoolean4(externals.bool1.y);
+  c2b.u = externals.C1;
+  b2 = CRMLtoModelica.Functions.cvBooleanToBoolean4(c2b.y);
     annotation (Placement(transformation(extent={{0,-20},{60,40}})),
               Icon(coordinateSystem(preserveAspectRatio=false,
         extent={{-200,-100},{100,100}},

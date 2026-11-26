@@ -1,0 +1,57 @@
+# Logic, reached through Left and Right, is emitted once.
+# <Model>.mo is the Modelica class generated for a model, <Model>.trace its trace
+# (see LibraryLoading in :compiler and "Checking a translation" in
+# CONSTRAINT_LANGUAGE.md). Every expected value follows from the CRML sources.
+
+# What is quantified over, so that no 'all' below passes vacuously.
+count [Variable::@container.name == "UseDiamond"] == 5
+count [CustomOperator::@container.name == "Left"] == 1
+count [CustomOperator::@container.name == "Right"] == 1
+count [CustomOperator::@container.name == "Logic"] == 1
+
+# ---- UseDiamond
+
+# Its class, and whether it is partial (it is when a variable it has, own or inherited, is unbound).
+[Model::name == "UseDiamond"].@referrers[TraceLink::kind == "MODEL_TO_CLASS"].modelica.@file == "UseDiamond.mo"
+[TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica.name == "UseDiamond"
+[TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica.partial == true
+
+# Nothing dropped, at any depth; no unresolved name, no reference into another model's class.
+count [TraceLink::@file == "UseDiamond.trace", kind == "UNSUPPORTED"] == 0
+count [Placeholder::@file == "UseDiamond.mo"] == 0
+count [Reference::@file == "UseDiamond.mo", reason == "UNRESOLVED", rawText != ""] == 0
+count [Reference::@file == "UseDiamond.mo", target.@file != "UseDiamond.mo"] == 0
+
+# Exactly one generated class per model, operator and class it reaches: nothing twice, nothing extra.
+count [ClassDefinition::@file == "UseDiamond.mo"] == 4
+
+# UseDiamond (own): each element once, of the right kind, directly in UseDiamond's class.
+count [Variable::@container.name == "UseDiamond"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"] == 5
+all [Variable::@container.name == "UseDiamond"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.@container == [TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica
+[Variable::@container.name == "UseDiamond", name == "x"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x"
+[Variable::@container.name == "UseDiamond", name == "y"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "y"
+[Variable::@container.name == "UseDiamond", name == "x_or_y"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x_or_y"
+[Variable::@container.name == "UseDiamond", name == "x_xor_y"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "x_xor_y"
+[Variable::@container.name == "UseDiamond", name == "not_x"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.name == "not_x"
+
+# Left: each element once, of the right kind, directly in UseDiamond's class.
+count [CustomOperator::@container.name == "Left"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Left"].@referrers[TraceLink::@file == "UseDiamond.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Left"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica.@container == [TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# Right: each element once, of the right kind, directly in UseDiamond's class.
+count [CustomOperator::@container.name == "Right"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Right"].@referrers[TraceLink::@file == "UseDiamond.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Right"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica.@container == [TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# Logic: each element once, of the right kind, directly in UseDiamond's class.
+count [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "OPERATOR_TO_FUNCTION"] == 1
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseDiamond.trace"].kind == "OPERATOR_TO_FUNCTION"
+all [CustomOperator::@container.name == "Logic"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica.@container == [TraceLink::@file == "UseDiamond.trace", kind == "MODEL_TO_CLASS"].modelica
+
+# ---- Call sites and structure
+# Each call reaches the function of the right library; xor calls Logic's or.
+[Variable::@container.name == "UseDiamond", name == "x_or_y"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica
+[Variable::@container.name == "UseDiamond", name == "x_xor_y"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Right", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica
+[Variable::@container.name == "UseDiamond", name == "not_x"].@referrers[TraceLink::@file == "UseDiamond.trace", kind == "VARIABLE_TO_COMPONENT"].modelica.binding.function.target == [CustomOperator::@container.name == "Left", keywords.keyword contains "'negation of'"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica
+[CustomOperator::@container.name == "Right", keywords.keyword contains "'xor'"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica.statements.value.arguments[ParenthesizedExpression].inner.function.target == [CustomOperator::@container.name == "Logic", keywords.keyword contains "'or'"].@referrers[TraceLink::@file == "UseDiamond.trace"].modelica

@@ -104,31 +104,46 @@ end CRMLClock;
     end when;
     
     end CRMLEvent_build;
-model CRMLPeriods_build
-
-CRMLPeriods P;
-  
+model CRMLPeriods_build "Fills the period buffer of a CRMLPeriods from its start and close clocks"
+  CRMLPeriods P;
+protected
+  final parameter Integer N = size(P.period, 1) "Capacity of the period buffer";
+  Boolean startTick = P.start_event.b == Boolean4.true4;
+  Boolean closeTick = P.close_event.b == Boolean4.true4;
+  discrete Boolean opened[N](each start = false, each fixed = true);
+  discrete Boolean closed[N](each start = false, each fixed = true);
+  discrete Real tOpen[N](each start = -1, each fixed = true);
+  discrete Real tClose[N](each start = -1, each fixed = true);
+initial equation
+  pre(P.counter) = 0;
 equation
-P.is_open = if( (P.start_event.b == Boolean4.true4) and not (P.close_event.b == Boolean4.true4))then true else false;
-for i in 1: size(P.period, 1) loop
-   // P.period[i].start_event.b = P.start_event.ticks[i];
-    //P.period[i].close_event.b = P.close_event.ticks[i];
-   end for;
-
-algorithm
-  
-  //e := (clock.b == CRMLtoModelica.Types.Boolean4.true4);
-  when (P.start_event.b  == CRMLtoModelica.Types.Boolean4.true4 and change(P.start_event.b)) then
-   
-    P.period[P.counter].is_open := true;
-     end when;
-   when (P.close_event.b  == CRMLtoModelica.Types.Boolean4.true4 and change(P.close_event.b)) then
-    
-    P.period[P.counter].is_open :=  false;
-    P.counter := pre(P.counter)+1;
+  P.is_open = if (P.start_event.b == Boolean4.true4) and not (P.close_event.b == Boolean4.true4) then true else false;
+  // counter: the number of periods opened so far; period[1..counter] are valid.
+  when edge(startTick) then
+    P.counter = pre(P.counter) + 1;
+  end when;
+  // An error, not a warning: past N the periods would be dropped silently, and
+  // whatever is computed over the set of periods would be wrong without notice.
+  assert(P.counter <= N, "CRMLPeriods: more periods opened than the buffer holds (period[" + String(N) + "])");
+  for i in 1:N loop
+    // Period i opens with the i-th tick of the start clock ...
+    when P.counter >= i then
+      opened[i] = true;
+      tOpen[i] = time;
     end when;
-
-
+    // ... and closes with the first tick of the close clock after that.
+    when edge(closeTick) and pre(opened[i]) and not pre(closed[i]) then
+      closed[i] = true;
+      tClose[i] = time;
+    end when;
+    P.period[i].isLeftBoundaryIncluded = P.isLeftBoundaryIncluded;
+    P.period[i].isRightBoundaryIncluded = P.isRightBoundaryIncluded;
+    P.period[i].start_event.b = if opened[i] then Boolean4.true4 else Boolean4.false4;
+    P.period[i].start_event.t = tOpen[i];
+    P.period[i].close_event.b = if closed[i] then Boolean4.true4 else Boolean4.false4;
+    P.period[i].close_event.t = tClose[i];
+    P.period[i].is_open = opened[i] and not closed[i];
+  end for;
 end CRMLPeriods_build;
   
     model CRMLClock_build
@@ -144,7 +159,15 @@ end CRMLPeriods_build;
       //e := (clock.b == CRMLtoModelica.Types.Boolean4.true4);
       when (clock.b == CRMLtoModelica.Types.Boolean4.true4 and change(clock.b)) then
         clock.counter := pre(clock.counter)+1;
-        clock.ticks[clock.counter] := time;
+        // Not clock.ticks[clock.counter] := time: in an array of block instances
+        // (a lifted operator that builds a clock), OpenModelica counts that
+        // assignment as one equation for the whole of ticks[]. Written so that it
+        // visibly covers every entry, the model is balanced.
+        for i in 1:size(clock.ticks, 1) loop
+          if i == clock.counter then
+            clock.ticks[i] := time;
+          end if;
+        end for;
          end when;
       
       equation
@@ -166,6 +189,22 @@ end CRMLPeriods_build;
 algorithm
   y := if x then Boolean4.true4 else Boolean4.false4;
 end cvBooleanToBoolean4;
+
+  function Bool4toString "Conversion of Boolean4 values to String"
+    input Types.Boolean4 x;
+    output String s;
+    // Alternatively, without the algorithm section, as a binding of the output:
+    // output String s = if x == Types.Boolean4.true4 then "true"
+    //   elseif x == Types.Boolean4.false4 then "false"
+    //   elseif x == Types.Boolean4.undecided then "undecided"
+    //   else "undefined";
+    // Not String(x): for an enumeration it gives the literal's name, "true4".
+  algorithm
+    s := if x == Types.Boolean4.true4 then "true"
+       elseif x == Types.Boolean4.false4 then "false"
+       elseif x == Types.Boolean4.undecided then "undecided"
+       else "undefined";
+  end Bool4toString;
   
   function add4 "Boolean4 accumulation operator for requirements"
     import CRMLtoModelica.Types.Boolean4;
@@ -299,24 +338,29 @@ end cvBooleanToBoolean4;
 
     end PEnd;
 
-    function gEV
-    input CRMLtoModelica.Types.Event r1;
-    input CRMLtoModelica.Types.Event r2;
-    
-    output Types.Boolean4 out = Functions.cvBooleanToBoolean4(r1.t>r2.t);
-    algorithm
-       
+    function occurred "True if the event has happened"
+      input CRMLtoModelica.Types.Event e;
+      // An event that has not happened yet has the time -1 (CRMLEvent_build,
+      // CRMLClock.ticks, CRMLPeriods_build).
+      output Boolean y = e.t <> -1;
+    end occurred;
 
+    function gEV "r1 >= r2 for events; an event that has not happened yet is later than any that has"
+      input CRMLtoModelica.Types.Event r1;
+      input CRMLtoModelica.Types.Event r2;
+      output Types.Boolean4 out = Functions.cvBooleanToBoolean4(
+        if not occurred(r2) then not occurred(r1)
+        elseif not occurred(r1) then true
+        else r1.t >= r2.t);
     end gEV;
-    
-    function lEV
-    input CRMLtoModelica.Types.Event r1;
-    input CRMLtoModelica.Types.Event r2;
-    
-    output Types.Boolean4 out = Functions.cvBooleanToBoolean4(r1.t>r2.t);
-    algorithm
-      
-    
+
+    function lEV "r1 <= r2 for events; an event that has not happened yet is later than any that has"
+      input CRMLtoModelica.Types.Event r1;
+      input CRMLtoModelica.Types.Event r2;
+      output Types.Boolean4 out = Functions.cvBooleanToBoolean4(
+        if not occurred(r1) then not occurred(r2)
+        elseif not occurred(r2) then true
+        else r1.t <= r2.t);
     end lEV;
 
     function Event2Boolean

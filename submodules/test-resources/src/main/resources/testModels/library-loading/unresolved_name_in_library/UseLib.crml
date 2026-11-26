@@ -1,0 +1,4 @@
+// This model is valid by itself; only the library is faulty.
+model UseLib is Lib union {
+	Boolean x is external;
+};

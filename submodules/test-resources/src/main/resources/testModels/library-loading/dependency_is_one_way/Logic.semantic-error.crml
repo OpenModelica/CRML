@@ -1,0 +1,5 @@
+// Expected: validation error, 'negation of' does not resolve. It is declared
+// in Extended, which depends on Logic; scope does not flow back.
+library Logic is {
+	Operator [ Boolean ] 'nor' Boolean b1 'with' Boolean b2 = 'negation of' (b1 and b2);
+};

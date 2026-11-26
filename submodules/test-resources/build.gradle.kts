@@ -15,6 +15,17 @@ sourceSets {
     }
 }
 
+/**
+ * The EDF CRML library, which the verification harnesses (verificationModels/)
+ * are built on. Its only copy is in libraries/modelica; it is packaged as the
+ * package directory modelica_libraries/CRML/ (load CRML/package.mo).
+ */
+tasks.processResources {
+    from(rootProject.file("libraries/modelica/CRML")) {
+        into("modelica_libraries/CRML")
+    }
+}
+
 tasks.register("debugResources") {
     doLast {
         sourceSets["main"].resources.srcDirs.forEach {

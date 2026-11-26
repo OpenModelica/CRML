@@ -1,0 +1,5 @@
+// A dependency that is never used is still loaded and is not an error.
+model UseNothing is Logic union {
+	Boolean x is external;
+	Boolean y is x;
+};

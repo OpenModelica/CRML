@@ -1,0 +1,6 @@
+# M -> C -> B -> A: 'or' comes from A, three levels down.
+[Variable::name == "x_or_y"].definition.operator.@root.name == "A"
+count [Model::name == "UseChain"] / [Sequence] == 0
+# B and C are empty; they only pass A on.
+[Library::name == "B"].operators is empty
+[Library::name == "C"].operators is empty

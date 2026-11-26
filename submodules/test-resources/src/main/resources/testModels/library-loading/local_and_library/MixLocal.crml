@@ -1,0 +1,10 @@
+// Operators of the model and of the library are in scope together, and a
+// model operator can call a library operator.
+model MixLocal is Logic union {
+	Template b1 'implies' b2 = not b1 'or' b2;
+	Operator [ Boolean ] 'negation of' Boolean b = not b;
+	Boolean x is external;
+	Boolean y is external;
+	Boolean x_implies_y is x 'implies' y;
+	Boolean nor is 'negation of' (x 'or' y);
+};

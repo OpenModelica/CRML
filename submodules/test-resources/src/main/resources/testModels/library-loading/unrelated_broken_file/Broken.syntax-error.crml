@@ -1,0 +1,3 @@
+library Broken is {
+	Operator [ Boolean ] 'broken' Boolean b = ;
+};
