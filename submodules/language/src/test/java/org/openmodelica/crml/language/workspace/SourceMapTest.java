@@ -70,6 +70,26 @@ public class SourceMapTest {
     }
 
     @Test
+    void tracesAnOperatorCallWithSeveralKeywordsToAllOfItsText() {
+        // Parsed as ('both' x) 'with' z: one Sequence, extended by the outer node.
+        String text = "model M is {\n"
+            + "  Operator [ Boolean ] 'both' Boolean a 'with' Boolean b = a and b;\n"
+            + "  Boolean x is external;\n"
+            + "  Boolean z is external;\n"
+            + "  Boolean y is 'both' x 'with' z;\n"
+            + "};";
+        CrmlWorkspace ws = new CrmlWorkspace();
+        CrmlResource r = ws.load(text);
+        ws.resolve();
+        SourceMap map = r.getSourceMap();
+
+        ComputedValue call = (ComputedValue) variable(r, "y").getDefinition();
+        assertEquals("'both'", map.start(call).getText());
+        assertEquals("z", map.stop(call).getText());
+        assertSame(call, map.objectAt(text.lastIndexOf("'with'")), "the second keyword is part of the call");
+    }
+
+    @Test
     void findsTheInnermostObjectAtAnOffset() {
         CrmlWorkspace ws = new CrmlWorkspace();
         String text = "model M is {\n  Boolean x is external;\n  Boolean y is x;\n};";

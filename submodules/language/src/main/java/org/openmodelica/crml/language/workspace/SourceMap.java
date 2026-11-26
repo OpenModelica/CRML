@@ -18,6 +18,7 @@ import org.eclipse.emf.common.notify.impl.AdapterImpl;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.openmodelica.crml.model.metamodel.Sequence;
 
 import crml.language.grammar.crmlLexer;
 
@@ -111,10 +112,19 @@ public final class SourceMap extends AdapterImpl {
      * Records that {@code object} was built from {@code node}. The first
      * record wins: the innermost node is built first, the nodes that only
      * pass its result on come later.
+     *
+     * <p>Except for a {@link Sequence}: there the last record wins. A node
+     * with a user keyword does not just pass on the Sequence its operand
+     * built, it extends it, so {@code 'count' C 'inside' P}, parsed as
+     * {@code ('count' C) 'inside' P}, is one Sequence of both nodes. The
+     * outermost node is the one that covers all of it, and so the operator
+     * call that replaces the Sequence (see {@link #replace}).
      */
     @java.lang.SuppressWarnings("squid:S6213") //record refers to a modelica constuct. No naming conflict on Java8.
     public void record(EObject object, ParseTree node) {
-        if (object != null && node != null) {
+        if (object instanceof Sequence && node != null) {
+            nodes.put(object, node);
+        } else if (object != null && node != null) {
             nodes.putIfAbsent(object, node);
         }
     }
