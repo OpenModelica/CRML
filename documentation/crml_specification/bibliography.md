@@ -1,3 +1,5 @@
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+
 # 7. Bibliography
 
 * 88Solutions Corporation *et al.*, *Kernel Modeling Language (KerML)*. Object Management Group, Inc. (OMG), 2021.

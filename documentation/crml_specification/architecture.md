@@ -1,3 +1,5 @@
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+
 # 2. CRML architecture
 
 The ability to write CRML models for the expression and simulation of requirements builds on two main parts:

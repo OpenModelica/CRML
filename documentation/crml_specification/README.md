@@ -1,11 +1,11 @@
 
 # CRML Language specification
 
-Authors
+## Authors
 - Daniel Bouskela, EDF
 - Audrey Jardin, EDF
 
-Contributors
+## Contributors
 - Lena Buffoni, Adrian Pop LiU
 
 
@@ -15,6 +15,10 @@ Contributors
 |1.1	|06/12/2022	|Addition of keyword new. Removal of keyword nil. Use of keyword external is modified.|
 |2.0	|20/10/2026	|Move to markdown for easier contributions|
 
+
+## License
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+This project is public. The choice of license type is currently underway.
 **Add licencing info**
 
 ## Contents

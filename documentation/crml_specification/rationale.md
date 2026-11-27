@@ -1,3 +1,5 @@
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+
 # 1. Rationale for CRML
 
 ## 1.1 Motivation

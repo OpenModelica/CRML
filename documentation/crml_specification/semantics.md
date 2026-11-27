@@ -1,3 +1,5 @@
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+
 # 3. Formal semantics
 
 ## 3.1 Continuous clock
