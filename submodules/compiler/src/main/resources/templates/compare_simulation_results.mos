@@ -29,7 +29,17 @@ end trimArray;
 sz;
 set;
 intersect := trimArray(sz, set);
-diffSimulationResults(
+print("[CRML-COMPARED-VARS-BEGIN]\n");
+for v in intersect loop
+  print(v + "\n");
+end for;
+print("[CRML-COMPARED-VARS-END]\n");
+(diffOk, diffFailed) := diffSimulationResults(
 "[(${res_file})]", "[(${ref_file})]"
 , "diff",
 vars = intersect); getErrorString();
+print("[CRML-DIFF-FAILED-VARS-BEGIN]\n");
+for v in diffFailed loop
+  print(v + "\n");
+end for;
+print("[CRML-DIFF-FAILED-VARS-END]\n");

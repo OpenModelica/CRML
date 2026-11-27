@@ -49,6 +49,10 @@ public class FORMLTests extends ReportedTest {
         OMCmsg ret = Util.runTest(fileName, cs, CompileStage.SIMULATE);
         emit(FilesWrapper.of(ret.files), "Files");
         emit(ret.msg, "OMC message");
+        if (ret.comparedVars() != null) {
+            emit(String.join(", ", ret.comparedVars()), "Compared variables");
+            emit(String.join(", ", ret.diffFailedVars()), "Differing variables");
+        }
         if(ret.msg.contains("Failed")||ret.msg.contains("Error"))
 		    fail("Unable to run Modelica script " + PathUtil.toString(fileName+ ".mos", Option.ABSOLUTE) , 
 		            new Throwable( "\n omc fails with the following message: \n" + ret.msg));

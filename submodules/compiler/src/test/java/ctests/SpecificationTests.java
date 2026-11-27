@@ -50,5 +50,9 @@ public class SpecificationTests extends ReportedTest {
                 OMCmsg ret = Util.runTest(fileName, cs, CompileStage.VERIFY);
         emit(FilesWrapper.of(ret.files), "Files");
         emit(ret.msg, "OMC message");
+        if (ret.comparedVars() != null) {
+            emit(String.join(", ", ret.comparedVars()), "Compared variables");
+            emit(String.join(", ", ret.diffFailedVars()), "Differing variables");
+        }
 	}
 }

@@ -1,14 +1,20 @@
 within CRML_test.ETL.CountInside;
 model CountInside_verif
   extends CountInside;
-  Modelica.Clocked.BooleanSignals.NonPeriodic.ClockToBoolean c2b;
   CountInside_externals externals
     annotation (Placement(transformation(extent={{-200,0},{-140,60}})));
 equation
   // Bindings
-  P1 = externals.P1;
-  c2b.u = externals.C1;
-  C1.b = CRMLtoModelica.Functions.cvBooleanToBoolean4(c2b.y);
+  // NOTE: Reverted to the bindings of commit 922c396 ("add CRML_test Modelica library").
+  // Commit 24c8067 ("verification scenario update") changed them to
+  //   P1 = externals.P1; c2b.u = externals.C1;
+  //   C1.b = CRMLtoModelica.Functions.cvBooleanToBoolean4(c2b.y);
+  // (with a ClockToBoolean c2b), which does not match this library:
+  // C1 is a Clock (no field b) and P1 is a TimeLocator, not a CRMLPeriod.
+  // Those bindings fit the compiler-generated model instead
+  // (see verificationModels/libraries/ETL_test/CountInside/CountInside_verif.mo).
+  P1 =externals.tl1;
+  C1 = externals.C1;
     annotation (Placement(transformation(extent={{0,-20},{60,40}})),
               Icon(coordinateSystem(preserveAspectRatio=false,
         extent={{-200,-100},{100,100}},

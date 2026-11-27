@@ -5,8 +5,10 @@ model CountInside_verif
     annotation (Placement(transformation(extent={{-200,0},{-140,60}})));
 equation
   // Bindings
-  P1 = externals.P1;
-  C1 = externals.C1;
+  // In CountInside.crml only b1 and b2 are external: P1 and C1 are computed from them
+  // (P1 = [new Event b1, new Event (not b1)], C1 = new Clock b2), so only b1 and b2 are bound.
+  b1 = externals.b1;
+  b2 = externals.b2;
     annotation (Placement(transformation(extent={{0,-20},{60,40}})),
               Icon(coordinateSystem(preserveAspectRatio=false,
         extent={{-200,-100},{100,100}},
