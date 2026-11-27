@@ -1,3 +1,5 @@
+Copyright (c) 2022-CurrentYear, EDF and Open Source Modelica Consortium (OSMC) c/o Linköpings universitet.
+
 # 4. Syntax
 
 ## 4.1 Notation
